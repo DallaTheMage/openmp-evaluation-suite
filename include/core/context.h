@@ -8,8 +8,8 @@ typedef struct WorkContext {
     Collection *output;
     int chunksize;
     int threadnumber;
-    int warmup_iterations;
-    int work_iterations;
+    size_t warmup_iterations;
+    size_t work_iterations;
 } WorkContext;
 
 #endif /* CONTEXT_H */
