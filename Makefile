@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -Wall -Wextra -Wpedantic -std=c89 -Iinclude -fopenmp
+CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude -fopenmp
 LDLIBS = -fopenmp -lm
 
 TARGET = main
@@ -8,6 +8,7 @@ TARGET = main
 SRC = $(wildcard src/*.c) \
       $(wildcard src/core/*.c) \
       $(wildcard src/data/*.c) \
+      $(wildcard src/data/writers/*.c) \
       $(wildcard src/data/generators/*.c) \
       $(wildcard src/metrics/*.c) \
       $(wildcard src/profiling/*.c) \

@@ -1,18 +1,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <omp.h>
+
 #include "test/stress.h"
 #include "config/types.h"
 #include "core/microroutines.h"
 #include "data/generator.h"
 #include "data/collection.h"
 #include "config/configuration.h"
+#include "data/writer.h"
 
-int stressTest(void) {
+int stressTest(void)
+{
     unsigned short threadnumber[] = STRESS_THREADS;
     unsigned short chunksize[] = STRESS_CHUNKS;
     uint32 sizes[] = STRESS_PROBLEM_SIZES;
-    FILE *file;
+
     Routine routines[] = {
         { "Parallel for Arithmetic scale", routine_micro_scale },
         { "Parallel for best cache", routine_matrix_row_best },
@@ -26,16 +29,16 @@ int stressTest(void) {
 
     uint32 realsize;
 
-    unsigned short numRoutines;
-    unsigned short numSizes;
-    unsigned short numThreads;
-    unsigned short numChunks;
+    size_t numRoutines;
+    size_t numSizes;
+    size_t numThreads;
+    size_t numChunks;
 
-    unsigned short i;
-    unsigned short j;
-    unsigned short k;
-    unsigned short l;
-    unsigned short r;
+    size_t i;
+    size_t j;
+    size_t k;
+    size_t l;
+    size_t r;
 
     double start;
     double total;
@@ -43,6 +46,8 @@ int stressTest(void) {
 
     WorkContext *ctx;
     DataGenerator *generator;
+    Writer *writer;
+    Result result;
 
     void (*run)(WorkContext *);
     const char *name;
@@ -52,20 +57,36 @@ int stressTest(void) {
     numThreads = sizeof(threadnumber) / sizeof(threadnumber[0]);
     numChunks = sizeof(chunksize) / sizeof(chunksize[0]);
 
-    ctx = (WorkContext *)malloc(sizeof(WorkContext));
+    ctx = malloc(sizeof *ctx);
 
-    file = fopen("results.csv", "a");
-    if (file == NULL) {
-        return 1;
-    }
-
-    if (ctx == NULL) {
+    if (!ctx) {
         printf("Context problem.\n");
         return 1;
     }
 
     ctx->input = NULL;
     ctx->output = NULL;
+
+    /*
+     * Creazione del writer.
+     */
+    writer = create_csv_writer();
+
+    if (!writer) {
+        printf("Writer creation problem.\n");
+        free(ctx);
+        return 1;
+    }
+
+    /*
+     * Apertura del file.
+     */
+    if (!writer->operations.open(writer, "results.csv", "a")) {
+        printf("File opening problem.\n");
+        free(writer);
+        free(ctx);
+        return 1;
+    }
 
     for (i = 0; i < numRoutines; ++i) {
 
@@ -80,9 +101,13 @@ int stressTest(void) {
              */
             ctx->input = collection_create((size_t)sizes[j]);
 
-            if (ctx->input == NULL) {
+            if (!ctx->input) {
                 printf("Input collection creation problem.\n");
+
+                writer->operations.close(writer);
+                free(writer);
                 free(ctx);
+
                 return 1;
             }
 
@@ -92,11 +117,15 @@ int stressTest(void) {
              */
             ctx->output = collection_create((size_t)sizes[j]);
 
-            if (ctx->output == NULL) {
+            if (!ctx->output) {
                 printf("Output collection creation problem.\n");
+
                 collection_destroy(ctx->input);
-                ctx->input = NULL;
+
+                writer->operations.close(writer);
+                free(writer);
                 free(ctx);
+
                 return 1;
             }
 
@@ -115,16 +144,16 @@ int stressTest(void) {
                 (double)realsize
             );
 
-            if (generator == NULL) {
+            if (!generator) {
                 printf("Generator problem.\n");
 
                 collection_destroy(ctx->input);
                 collection_destroy(ctx->output);
 
-                ctx->input = NULL;
-                ctx->output = NULL;
-
+                writer->operations.close(writer);
+                free(writer);
                 free(ctx);
+
                 return 1;
             }
 
@@ -140,10 +169,10 @@ int stressTest(void) {
                 collection_destroy(ctx->input);
                 collection_destroy(ctx->output);
 
-                ctx->input = NULL;
-                ctx->output = NULL;
-
+                writer->operations.close(writer);
+                free(writer);
                 free(ctx);
+
                 return 1;
             }
 
@@ -163,7 +192,8 @@ int stressTest(void) {
                 for (l = 0; l < numChunks; ++l) {
 
                     printf(
-                        "Testing %s with log2N=%ld, threadnumber=%d, chunksize=%d\n",
+                        "Testing %s with log2N=%ld, "
+                        "threadnumber=%d, chunksize=%d\n",
                         name,
                         (long)sizes[j],
                         threadnumber[k],
@@ -176,14 +206,14 @@ int stressTest(void) {
                     ctx->work_iterations = WORK_REPS;
 
                     /*
-                     * Warmup
+                     * Warmup.
                      */
                     for (r = 0; r < ctx->warmup_iterations; ++r) {
                         run(ctx);
                     }
 
                     /*
-                     * Benchmark
+                     * Benchmark.
                      */
                     total = 0.0;
 
@@ -198,15 +228,33 @@ int stressTest(void) {
 
                     time = total / (double)ctx->work_iterations;
 
-                    fprintf(
-                        file,
-                        "%s, log2N=%ld, threadnumber=%d, chunksize=%d, time=%f\n",
-                        name,
-                        (long)sizes[j],
-                        threadnumber[k],
-                        chunksize[l],
-                        time
-                    );
+                    /*
+                     * Aggiornamento del Result.
+                     *
+                     * Lo stesso record viene riutilizzato
+                     * per ogni configurazione.
+                     */
+                    result.benchname = name;
+                    result.log2n = (long)sizes[j];
+                    result.threadnumber = threadnumber[k];
+                    result.chunksize = chunksize[l];
+                    result.time = time;
+
+                    /*
+                     * Scrittura del risultato.
+                     */
+                    if (!writer->operations.write(writer, &result)) {
+                        printf("Result writing problem.\n");
+
+                        collection_destroy(ctx->input);
+                        collection_destroy(ctx->output);
+
+                        writer->operations.close(writer);
+                        free(writer);
+                        free(ctx);
+
+                        return 1;
+                    }
                 }
             }
 
@@ -221,7 +269,13 @@ int stressTest(void) {
         }
     }
 
+    /*
+     * Chiusura del writer.
+     */
+    writer->operations.close(writer);
+    free(writer);
+
     free(ctx);
-    fclose(file);
+
     return 0;
 }

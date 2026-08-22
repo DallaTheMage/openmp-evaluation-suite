@@ -58,7 +58,9 @@ static double xoshiro_to_double(uint64 x) {
 
 static int xoshiro256_init(DataGenerator *gen) {
     RandomConfig *cfg;
-    if (gen == NULL || gen->config == NULL) return 0;
+    if (gen == NULL || gen->config == NULL) {
+        return 0;
+    }
     cfg = (RandomConfig *)gen->config;
 
     xoshiro256_seed(&cfg->rng_state, (uint64)time(NULL));
@@ -71,7 +73,9 @@ static int xoshiro256_fill(DataGenerator *gen, Collection *collection) {
     uint64 i;
     double range;
 
-    if (gen == NULL || gen->config == NULL || collection == NULL) return 0;
+    if (gen == NULL || gen->config == NULL || collection == NULL) {
+        return 0;
+    }
     cfg = (RandomConfig *)gen->config;
 
     if (IS_DOUBLE && collection->data != NULL) {
@@ -102,8 +106,9 @@ DataGenerator* generator_xoshiro256_create(double min, double max) {
     RandomConfig *cfg;
 
     gen = (DataGenerator *)malloc(sizeof(DataGenerator));
-    if (gen == NULL) return NULL;
-
+    if (gen == NULL) {
+        return NULL;
+    }
     cfg = (RandomConfig *)malloc(sizeof(RandomConfig));
     if (cfg == NULL) {
         free(gen);
