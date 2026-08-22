@@ -267,6 +267,7 @@ int stressTest(void)
             ctx->input = NULL;
             ctx->output = NULL;
         }
+        writer->operations.flush(writer);
     }
 
     /*

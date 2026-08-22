@@ -26,7 +26,13 @@ static unsigned short write_csv(Writer *writer, Result *record)
 
         return result >= 0;
     }
+    return 0;
+}
 
+static unsigned short flush_csv(Writer *writer) {
+    if (writer && writer->file) {
+        return fflush(writer->file) == 0;
+    }
     return 0;
 }
 
@@ -57,7 +63,7 @@ Writer *create_csv_writer(void)
 
     writer->operations.open = open_csv;
     writer->operations.write = write_csv;
+    writer->operations.flush = flush_csv;
     writer->operations.close = close_csv;
-
     return writer;
 }

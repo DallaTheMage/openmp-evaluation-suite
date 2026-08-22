@@ -12,6 +12,7 @@ typedef struct {
                            const char *mode);
     unsigned short (*write)(Writer *writer,
                             Result *record);
+    unsigned short (*flush)(Writer *writer);
     unsigned short (*close)(Writer *writer);
 } WriterOperations;
 
