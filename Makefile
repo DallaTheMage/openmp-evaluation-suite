@@ -10,6 +10,7 @@ SRC = $(wildcard src/*.c) \
       $(wildcard src/data/*.c) \
       $(wildcard src/data/writers/*.c) \
       $(wildcard src/data/generators/*.c) \
+      $(wildcard src/data/rngs/*.c) \
       $(wildcard src/metrics/*.c) \
       $(wildcard src/profiling/*.c) \
       $(wildcard src/test/*.c)

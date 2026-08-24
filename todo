@@ -1,7 +1,7 @@
 
 ✅ C99 nel Makefile
 ✅ Result unico e riutilizzato
-✅ Writer con function pointer
+✅ ResultWriter con function pointer
 ✅ size_t per gli indici
 ✅ rinominare inputsize → log2n
 🔧 CSV con header e colonne vere

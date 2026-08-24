@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include "data/writer.h"
+#include "data/writers/csv.h"
 
-static unsigned short open_csv(Writer *writer,
+static unsigned short open_csv(ResultWriter *writer,
                                const char *filename,
                                const char *mode) {
     if (writer && filename && mode) {
@@ -11,10 +11,8 @@ static unsigned short open_csv(Writer *writer,
     return 0;
 }
 
-static unsigned short write_csv(Writer *writer, Result *record)
-{
+static unsigned short write_csv(ResultWriter *writer, const Result *record) {
     int result;
-
     if (writer && writer->file && record) {
         result = fprintf(writer->file,
                          "%s,%ld,%d,%d,%f\n",
@@ -23,44 +21,33 @@ static unsigned short write_csv(Writer *writer, Result *record)
                          record->threadnumber,
                          record->chunksize,
                          record->time);
-
         return result >= 0;
     }
     return 0;
 }
 
-static unsigned short flush_csv(Writer *writer) {
+static unsigned short flush_csv(ResultWriter *writer) {
     if (writer && writer->file) {
         return fflush(writer->file) == 0;
     }
     return 0;
 }
 
-static unsigned short close_csv(Writer *writer)
-{
+static unsigned short close_csv(ResultWriter *writer) {
     int result;
-
     if (writer && writer->file) {
         result = fclose(writer->file);
         writer->file = NULL;
-
         return result == 0;
     }
-
     return 0;
 }
 
-Writer *create_csv_writer(void)
-{
-    Writer *writer;
-
+ResultWriter *create_csv_writer(void) {
+    ResultWriter *writer;
     writer = malloc(sizeof *writer);
-
-    if (!writer)
-        return NULL;
-
+    if (!writer) { return NULL; }
     writer->file = NULL;
-
     writer->operations.open = open_csv;
     writer->operations.write = write_csv;
     writer->operations.flush = flush_csv;

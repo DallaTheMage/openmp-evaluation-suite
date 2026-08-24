@@ -1,133 +1,203 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
 #include "data/generator.h"
-#include "config/types.h"
+#include "data/rng.h"
 
-/* Rotazione dei bit a sinistra per uint64 */
-static uint64 rotl(const uint64 x, int k) {
-    return (x << k) | (x >> (64 - k));
-}
-
-/* Stato del generatore xoshiro256** */
-typedef struct {
-    uint64 s[4];
-} Xoshiro256State;
 
 typedef struct {
-    double min;
-    double max;
-    Xoshiro256State rng_state;
-} RandomConfig;
 
-/* Splitmix64 adattato a uint64 per il seeding */
-static uint64 splitmix64_next(uint64 *state) {
-    uint64 z = (*state += 0x9E3779B97F4A7C15UL);
-    z = (z ^ (z >> 30)) * 0xBF58476d1CE4E5B9UL;
-    z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
-    return z ^ (z >> 31);
+    datatype min;
+    datatype max;
+
+    RandomSource *rng;
+
+} Xoshiro256GeneratorConfig;
+
+
+/*
+ * ============================================================
+ * Random uint64 -> double [0, 1)
+ * ============================================================
+ */
+
+static double random_to_double(uint64 value)
+{
+    return (double)(value >> 11)
+         * (1.0 / 9007199254740992.0);
 }
 
-static void xoshiro256_seed(Xoshiro256State *state, uint64 seed) {
-    uint64 sm_state = seed;
-    state->s[0] = splitmix64_next(&sm_state);
-    state->s[1] = splitmix64_next(&sm_state);
-    state->s[2] = splitmix64_next(&sm_state);
-    state->s[3] = splitmix64_next(&sm_state);
-}
 
-static uint64 xoshiro256_next(Xoshiro256State *state) {
-    const uint64 result = rotl(state->s[1] * 5, 7) * 9;
-    const uint64 t = state->s[1] << 17;
+/*
+ * ============================================================
+ * Init
+ * ============================================================
+ */
 
-    state->s[2] ^= state->s[0];
-    state->s[3] ^= state->s[1];
-    state->s[1] ^= state->s[2];
-    state->s[0] ^= state->s[3];
+static int generator_xoshiro256_init(
+    DataGenerator *generator
+)
+{
+    Xoshiro256GeneratorConfig *config;
 
-    state->s[2] ^= t;
-    state->s[0] = rotl(state->s[0], 45);
-
-    return result;
-}
-
-/* Conversione a double usando i 53 bit della mantissa */
-static double xoshiro_to_double(uint64 x) {
-    return (double)(x >> 11) * (1.0 / 9007199254740992.0);
-}
-
-static int xoshiro256_init(DataGenerator *gen) {
-    RandomConfig *cfg;
-    if (gen == NULL || gen->config == NULL) {
+    if (generator == NULL ||
+        generator->config == NULL) {
         return 0;
     }
-    cfg = (RandomConfig *)gen->config;
 
-    xoshiro256_seed(&cfg->rng_state, (uint64)time(NULL));
+    config =
+        (Xoshiro256GeneratorConfig *)generator->config;
+
+    config->rng =
+        random_create((uint64)time(NULL));
+
+    if (config->rng == NULL) {
+        return 0;
+    }
+
     return 1;
 }
 
-static int xoshiro256_fill(DataGenerator *gen, Collection *collection) {
-    RandomConfig *cfg;
-    double *data;
-    uint64 i;
-    double range;
 
-    if (gen == NULL || gen->config == NULL || collection == NULL) {
+/*
+ * ============================================================
+ * Fill
+ * ============================================================
+ */
+
+static int generator_xoshiro256_fill(
+    DataGenerator *generator,
+    Collection *collection
+)
+{
+    Xoshiro256GeneratorConfig *config;
+
+    uint64 i;
+    double normalized;
+    double min;
+    double max;
+
+    if (generator == NULL ||
+        generator->config == NULL ||
+        collection == NULL ||
+        collection->data == NULL) {
         return 0;
     }
-    cfg = (RandomConfig *)gen->config;
 
-    if (IS_DOUBLE && collection->data != NULL) {
-        data = (double *)collection->data;
-        range = cfg->max - cfg->min;
+    config =
+        (Xoshiro256GeneratorConfig *)generator->config;
 
-        for (i = 0; i < collection->size; ++i) {
-            uint64 raw_bits = xoshiro256_next(&cfg->rng_state);
-            double norm = xoshiro_to_double(raw_bits);
-            data[i] = cfg->min + (norm * range);
-        }
-        return 1;
+    min = (double)config->min;
+    max = (double)config->max;
+
+    for (i = 0; i < collection->size; ++i) {
+
+        normalized =
+            random_to_double(
+                random_next(config->rng)
+            );
+
+        collection->data[i] =
+            (datatype)(
+                min +
+                normalized * (max - min)
+            );
     }
-    return 0;
+
+    return 1;
 }
 
-static void xoshiro256_clean(DataGenerator *gen) {
-    if (gen != NULL) {
-        if (gen->config != NULL) {
-            free(gen->config);
-        }
-        free(gen);
+
+/*
+ * ============================================================
+ * Clean
+ * ============================================================
+ */
+
+static void generator_xoshiro256_clean(
+    DataGenerator *generator
+)
+{
+    Xoshiro256GeneratorConfig *config;
+
+    if (generator == NULL) {
+        return;
     }
+
+    config =
+        (Xoshiro256GeneratorConfig *)generator->config;
+
+    if (config != NULL) {
+
+        if (config->rng != NULL) {
+            random_destroy(config->rng);
+            config->rng = NULL;
+        }
+
+        free(config);
+        generator->config = NULL;
+    }
+
+    free(generator);
 }
 
-DataGenerator* generator_xoshiro256_create(double min, double max) {
-    DataGenerator *gen;
-    RandomConfig *cfg;
 
-    gen = (DataGenerator *)malloc(sizeof(DataGenerator));
-    if (gen == NULL) {
-        return NULL;
-    }
-    cfg = (RandomConfig *)malloc(sizeof(RandomConfig));
-    if (cfg == NULL) {
-        free(gen);
-        return NULL;
-    }
+/*
+ * ============================================================
+ * Factory
+ * ============================================================
+ */
 
-    cfg->min = min;
-    cfg->max = max;
+DataGenerator *generator_xoshiro256_create(
+    datatype min,
+    datatype max
+)
+{
+    DataGenerator *generator;
+    Xoshiro256GeneratorConfig *config;
 
-    gen->name = "random_xoshiro256";
-    gen->config = cfg;
-    gen->operations.init = xoshiro256_init;
-    gen->operations.fill = xoshiro256_fill;
-    gen->operations.clean = xoshiro256_clean;
+    generator =
+        (DataGenerator *)malloc(
+            sizeof(DataGenerator)
+        );
 
-    if (gen->operations.init(gen) != 1) {
-        xoshiro256_clean(gen);
+    if (generator == NULL) {
         return NULL;
     }
 
-    return gen;
+    config =
+        (Xoshiro256GeneratorConfig *)malloc(
+            sizeof(Xoshiro256GeneratorConfig)
+        );
+
+    if (config == NULL) {
+        free(generator);
+        return NULL;
+    }
+
+    config->min = min;
+    config->max = max;
+    config->rng = NULL;
+
+    generator->name =
+        "random_xoshiro256";
+
+    generator->config =
+        config;
+
+    generator->operations.init =
+        generator_xoshiro256_init;
+
+    generator->operations.fill =
+        generator_xoshiro256_fill;
+
+    generator->operations.clean =
+        generator_xoshiro256_clean;
+
+    if (!generator_init(generator)) {
+        generator_destroy(generator);
+        return NULL;
+    }
+
+    return generator;
 }
