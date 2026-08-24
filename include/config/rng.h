@@ -16,7 +16,7 @@
  * Default RNG.
  */
 #ifndef RNG_TYPE
-#define RNG_TYPE RNG_XOSHIRO256
+#define RNG_TYPE RNG_SPLITMIX64
 #endif
 
 

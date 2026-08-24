@@ -45,7 +45,7 @@ typedef uint64_t uint64;
  * Default datatype.
  */
 #ifndef DATATYPE
-#define DATATYPE DATATYPE_DOUBLE
+#define DATATYPE DATATYPE_FLOAT
 #endif
 
 
@@ -63,6 +63,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    1
     #define DATATYPE_IS_UNSIGNED  0
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_UINT8
 
@@ -72,6 +74,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    0
     #define DATATYPE_IS_UNSIGNED  1
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_INT16
 
@@ -81,6 +85,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    1
     #define DATATYPE_IS_UNSIGNED  0
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_UINT16
 
@@ -90,6 +96,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    0
     #define DATATYPE_IS_UNSIGNED  1
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_INT32
 
@@ -99,6 +107,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    1
     #define DATATYPE_IS_UNSIGNED  0
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_UINT32
 
@@ -108,6 +118,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    0
     #define DATATYPE_IS_UNSIGNED  1
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_INT64
 
@@ -117,6 +129,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    1
     #define DATATYPE_IS_UNSIGNED  0
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_UINT64
 
@@ -126,6 +140,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  0
     #define DATATYPE_IS_SIGNED    0
     #define DATATYPE_IS_UNSIGNED  1
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_FLOAT
 
@@ -135,6 +151,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  1
     #define DATATYPE_IS_SIGNED    1
     #define DATATYPE_IS_UNSIGNED  0
+    #define DATATYPE_IS_FLOAT     1
+    #define DATATYPE_IS_DOUBLE    0
 
 #elif DATATYPE == DATATYPE_DOUBLE
 
@@ -144,6 +162,8 @@ typedef uint64_t uint64;
     #define DATATYPE_IS_FLOATING  1
     #define DATATYPE_IS_SIGNED    1
     #define DATATYPE_IS_UNSIGNED  0
+    #define DATATYPE_IS_FLOAT     0
+    #define DATATYPE_IS_DOUBLE    1
 
 #else
 

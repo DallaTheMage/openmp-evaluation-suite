@@ -1,126 +1,260 @@
-#include <omp.h>
 #include <stddef.h>
+#include <omp.h>
+
+#include "config/types.h"
 #include "core/context.h"
 #include "core/microroutines.h"
 
+
 /*
- * 1. Microbenchmark: Scale con intensità aritmetica bilanciata
+ * ============================================================
+ * Generic arithmetic operation
+ * ============================================================
  */
-void routine_micro_scale(WorkContext *ctx) {
-    double *in;
-    double *out;
+
+static datatype arithmetic_step(datatype value)
+{
+#if DATATYPE_IS_FLOATING
+
+    return value
+         * (datatype)1.000001
+         + (datatype)0.000001;
+
+#else
+
+    return value
+         * (datatype)2
+         + (datatype)1;
+
+#endif
+}
+
+
+/*
+ * ============================================================
+ * 1. Parallel scale
+ * ============================================================
+ */
+
+void routine_micro_scale(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
+
     size_t size;
-    int threadnumber;
-    int chunksize;
     size_t i;
 
-    if (ctx == NULL || ctx->input == NULL) return;
+    int threadnumber;
+    int chunksize;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     size = ctx->input->size;
 
     threadnumber = ctx->threadnumber;
     chunksize = ctx->chunksize;
 
-    #pragma omp parallel for num_threads(threadnumber) schedule(CHOSEN_SCHEDULE, chunksize) default(none) shared(in, out, size, chunksize, threadnumber) private(i)
+    #pragma omp parallel for \
+        num_threads(threadnumber) \
+        schedule(CHOSEN_SCHEDULE, chunksize) \
+        default(none) \
+        shared(in, out, size, chunksize) \
+        private(i)
+
     for (i = 0; i < size; ++i) {
-        double val = in[i];
+
+        datatype val;
         int k;
-        /* Piccolo carico computazionale per evitare il collo di bottiglia puro della RAM */
+
+        val = in[i];
+
         for (k = 0; k < 8; ++k) {
-            val = val * 1.000001 + 0.000001;
+            val = arithmetic_step(val);
         }
+
         out[i] = val;
     }
 }
 
+
 /*
- * 2. Matrice BEST: Accesso per riga (Cache-friendly)
+ * ============================================================
+ * 2. Matrix row-major
+ * ============================================================
  */
-void routine_matrix_row_best(WorkContext *ctx) {
-    double *in;
-    double *out;
-    size_t rows, cols;
-    int threadnumber, chunksize;
-    size_t r, c;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+void routine_matrix_row_best(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    size_t rows;
+    size_t cols;
+
+    size_t r;
+    size_t c;
+
+    int threadnumber;
+    int chunksize;
+
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     rows = ctx->input->rows;
     cols = ctx->input->columns;
+
     threadnumber = ctx->threadnumber;
     chunksize = ctx->chunksize;
 
-    #pragma omp parallel for num_threads(threadnumber) schedule(CHOSEN_SCHEDULE, chunksize) default(none) shared(in, out, rows, cols, threadnumber, chunksize) private(r, c)
+    #pragma omp parallel for \
+        num_threads(threadnumber) \
+        schedule(CHOSEN_SCHEDULE, chunksize) \
+        default(none) \
+        shared(in, out, rows, cols, chunksize) \
+        private(r, c)
+
     for (r = 0; r < rows; ++r) {
+
         for (c = 0; c < cols; ++c) {
-            size_t idx = r * cols + c;
-            double val = in[idx];
+
+            size_t idx;
+            datatype val;
             int k;
+
+            idx = r * cols + c;
+
+            val = in[idx];
+
             for (k = 0; k < 4; ++k) {
-                val = val * 1.000001;
+                val = arithmetic_step(val);
             }
+
             out[idx] = val;
         }
     }
 }
 
+
 /*
- * 3. Matrice WORST: Accesso per colonna (Cache-unfriendly / Stride-N)
+ * ============================================================
+ * 3. Matrix column-major
+ * ============================================================
  */
-void routine_matrix_col_worst(WorkContext *ctx) {
-    double *in;
-    double *out;
-    size_t rows, cols;
-    int threadnumber, chunksize;
-    size_t r, c;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+void routine_matrix_col_worst(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    size_t rows;
+    size_t cols;
+
+    size_t r;
+    size_t c;
+
+    int threadnumber;
+    int chunksize;
+
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     rows = ctx->input->rows;
     cols = ctx->input->columns;
+
     threadnumber = ctx->threadnumber;
     chunksize = ctx->chunksize;
 
-    #pragma omp parallel for num_threads(threadnumber) schedule(CHOSEN_SCHEDULE, chunksize) default(none) shared(in, out, rows, cols, threadnumber, chunksize) private(r, c)
+    #pragma omp parallel for \
+        num_threads(threadnumber) \
+        schedule(CHOSEN_SCHEDULE, chunksize) \
+        default(none) \
+        shared(in, out, rows, cols, chunksize) \
+        private(r, c)
+
     for (c = 0; c < cols; ++c) {
+
         for (r = 0; r < rows; ++r) {
-            size_t idx = r * cols + c;
-            double val = in[idx];
+
+            size_t idx;
+            datatype val;
             int k;
+
+            idx = r * cols + c;
+
+            val = in[idx];
+
             for (k = 0; k < 4; ++k) {
-                val = val * 1.000001;
+                val = arithmetic_step(val);
             }
+
             out[idx] = val;
         }
     }
 }
 
+
 /*
- * 4. Reduction: Somma vettoriale parallela
+ * ============================================================
+ * 4. Parallel reduction
+ * ============================================================
  */
-void routine_reduction_sum(WorkContext *ctx) {
-    double *in;
-    double *out;
+
+void routine_reduction_sum(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
+
     size_t size;
-    int threadnumber, chunksize;
     size_t i;
-    double sum = 0.0;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+    int threadnumber;
+    int chunksize;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    datatype sum;
+
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     size = ctx->input->size;
+
     threadnumber = ctx->threadnumber;
     chunksize = ctx->chunksize;
 
-    #pragma omp parallel for num_threads(threadnumber) schedule(CHOSEN_SCHEDULE, chunksize) default(none) shared(in, size, threadnumber, chunksize) private(i) reduction(+:sum)
+    sum = (datatype)0;
+
+    #pragma omp parallel for \
+        num_threads(threadnumber) \
+        schedule(CHOSEN_SCHEDULE, chunksize) \
+        default(none) \
+        shared(in, size, chunksize) \
+        private(i) \
+        reduction(+:sum)
+
     for (i = 0; i < size; ++i) {
         sum += in[i];
     }
@@ -128,109 +262,210 @@ void routine_reduction_sum(WorkContext *ctx) {
     out[0] = sum;
 }
 
+
 /*
- * 5. Scan Parallela nativa con OpenMP (inscan)
+ * ============================================================
+ * 5. Parallel inclusive scan
+ * ============================================================
  */
-void routine_scan_inclusive(WorkContext *ctx) {
-    double *in;
-    double *out;
+
+void routine_scan_inclusive(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
+
     size_t size;
-    int threadnumber;
     size_t i;
-    double running_sum;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+    int threadnumber;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    datatype running_sum;
+
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     size = ctx->input->size;
+
     threadnumber = ctx->threadnumber;
-    running_sum = 0.0;
-    /*
-     * Nota: Quando si usa reduction(inscan, ...), non si può specificare
-     * una schedule personalizzata (es. dynamic/guided), OpenMP richiede
-     * l'uso dello schedule di default (static).
-     */
-    #pragma omp parallel for num_threads(threadnumber) default(none) shared(in, out, size, threadnumber) private(i) reduction(inscan, +:running_sum)
+
+    running_sum = (datatype)0;
+
+    #pragma omp parallel for \
+        num_threads(threadnumber) \
+        default(none) \
+        shared(in, out, size) \
+        private(i) \
+        reduction(inscan, +:running_sum)
+
     for (i = 0; i < size; ++i) {
+
         running_sum += in[i];
+
         #pragma omp scan inclusive(running_sum)
+
         out[i] = running_sum;
     }
 }
 
+
 /*
- * 6. Tasking: Visita ricorsiva/divide-et-impera con task paralleli
+ * ============================================================
+ * 6. Task divide-and-conquer
+ * ============================================================
  */
-static void compute_task_recursive(double *in, double *out, size_t start, size_t end) {
-    size_t threshold = 1024; /* Soglia per passare al calcolo sequenziale */
+
+static void compute_task_recursive(
+    datatype *in,
+    datatype *out,
+    size_t start,
+    size_t end
+)
+{
+    const size_t threshold = 1024;
 
     if (end - start <= threshold) {
+
         size_t i;
+
         for (i = start; i < end; ++i) {
-            double val = in[i];
+
+            datatype val;
             int k;
+
+            val = in[i];
+
             for (k = 0; k < 4; ++k) {
-                val = val * 1.000001 + 0.000001;
+                val = arithmetic_step(val);
             }
+
             out[i] = val;
         }
-    } else {
-        size_t mid = start + (end - start) / 2;
 
-        #pragma omp task shared(in, out) if(end - start > 4096)
-        compute_task_recursive(in, out, start, mid);
+        return;
+    }
 
-        #pragma omp task shared(in, out) if(end - start > 4096)
-        compute_task_recursive(in, out, mid, end);
+    {
+        size_t mid;
+
+        mid = start + (end - start) / 2;
+
+        #pragma omp task \
+            shared(in, out) \
+            if(end - start > 4096)
+
+        compute_task_recursive(
+            in,
+            out,
+            start,
+            mid
+        );
+
+        #pragma omp task \
+            shared(in, out) \
+            if(end - start > 4096)
+
+        compute_task_recursive(
+            in,
+            out,
+            mid,
+            end
+        );
 
         #pragma omp taskwait
     }
 }
 
-void routine_task_divide_conquer(WorkContext *ctx) {
-    double *in;
-    double *out;
+
+void routine_task_divide_conquer(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
+
     size_t size;
+
     int threadnumber;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     size = ctx->input->size;
+
     threadnumber = ctx->threadnumber;
 
-    #pragma omp parallel num_threads(threadnumber) default(none) shared(in, out, size)
+    #pragma omp parallel \
+        num_threads(threadnumber) \
+        default(none) \
+        shared(in, out, size)
     {
         #pragma omp single
         {
-            compute_task_recursive(in, out, 0, size);
+            compute_task_recursive(
+                in,
+                out,
+                0,
+                size
+            );
         }
     }
 }
 
+
 /*
- * 7. Synchronization: Riduzione manuale con #pragma omp atomic (Alternative approach)
+ * ============================================================
+ * 7. Atomic reduction
+ * ============================================================
  */
-void routine_atomic_reduction(WorkContext *ctx) {
-    double *in;
-    double *out;
+
+void routine_atomic_reduction(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
+
     size_t size;
-    int threadnumber, chunksize;
     size_t i;
-    double global_sum = 0.0;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+    int threadnumber;
+    int chunksize;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    datatype global_sum;
+
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     size = ctx->input->size;
+
     threadnumber = ctx->threadnumber;
     chunksize = ctx->chunksize;
 
-    #pragma omp parallel for num_threads(threadnumber) schedule(CHOSEN_SCHEDULE, chunksize) default(none) shared(in, size, threadnumber, chunksize, global_sum) private(i)
+    global_sum = (datatype)0;
+
+    #pragma omp parallel for \
+        num_threads(threadnumber) \
+        schedule(CHOSEN_SCHEDULE, chunksize) \
+        default(none) \
+        shared(in, size, chunksize, global_sum) \
+        private(i)
+
     for (i = 0; i < size; ++i) {
+
         #pragma omp atomic
         global_sum += in[i];
     }
@@ -238,34 +473,59 @@ void routine_atomic_reduction(WorkContext *ctx) {
     out[0] = global_sum;
 }
 
+
 /*
- * 8. Taskloop: Parallelizzazione di un ciclo tramite task (OpenMP 4.5+)
+ * ============================================================
+ * 8. Taskloop scale
+ * ============================================================
  */
-void routine_taskloop_scale(WorkContext *ctx) {
-    double *in;
-    double *out;
+
+void routine_taskloop_scale(WorkContext *ctx)
+{
+    datatype *in;
+    datatype *out;
+
     size_t size;
-    int threadnumber;
     size_t i;
 
-    if (ctx == NULL || ctx->input == NULL || ctx->output == NULL) return;
+    int threadnumber;
 
-    in = (double *)ctx->input->data;
-    out = (double *)ctx->output->data;
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+
     size = ctx->input->size;
+
     threadnumber = ctx->threadnumber;
 
-    #pragma omp parallel num_threads(threadnumber) default(none) shared(in, out, size)
+    #pragma omp parallel \
+        num_threads(threadnumber) \
+        default(none) \
+        shared(in, out, size)
     {
         #pragma omp single
         {
-            #pragma omp taskloop grainsize(512) shared(in, out, size) private(i)
+            #pragma omp taskloop \
+                grainsize(512) \
+                shared(in, out, size) \
+                private(i)
+
             for (i = 0; i < size; ++i) {
-                double val = in[i];
+
+                datatype val;
                 int k;
+
+                val = in[i];
+
                 for (k = 0; k < 8; ++k) {
-                    val = val * 1.000001 + 0.000001;
+                    val = arithmetic_step(val);
                 }
+
                 out[i] = val;
             }
         }
