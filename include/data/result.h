@@ -7,6 +7,8 @@ typedef struct {
     int threadnumber;
     int chunksize;
     double time;
+    double speedup;
+    double overhead;
 } Result;
 
 #endif /* RESULT_H */

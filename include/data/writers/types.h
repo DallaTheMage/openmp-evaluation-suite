@@ -10,6 +10,8 @@
         unsigned short (*open)(ResultWriter *writer,
                                const char *filename,
                                const char *mode);
+        unsigned short (*clean)(ResultWriter *writer,
+                                const char *filename);
         unsigned short (*write)(ResultWriter *writer,
                                 const Result *record);
         unsigned short (*flush)(ResultWriter *writer);

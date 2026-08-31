@@ -1,37 +1,66 @@
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <omp.h>
-
 #include "test/stress.h"
-
 #include "config/types.h"
 #include "config/configuration.h"
-
 #include "core/microroutines.h"
-
 #include "data/collection.h"
 #include "data/generator.h"
 #include "data/writers/writer.h"
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-int stressTest(void)
-{
+static void destroy_collections(WorkContext *ctx) {
+    if (ctx->input != NULL) {
+        collection_destroy(ctx->input);
+        ctx->input = NULL;
+    }
+
+    if (ctx->output != NULL) {
+        collection_destroy(ctx->output);
+        ctx->output = NULL;
+    }
+}
+
+static void cleanup_stress_test(WorkContext *ctx, ResultWriter *writer) {
+    destroy_collections(ctx);
+
+    if (writer != NULL) {
+        writer->operations.close(writer);
+        free(writer);
+    }
+
+    free(ctx);
+}
+
+static double benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *)) {
+    double start;
+    double total = 0.0;
+    size_t i;
+
+    for (i = 0; i < ctx->warmup_iterations; ++i) {
+        run(ctx);
+    }
+
+    for (i = 0; i < ctx->work_iterations; ++i) {
+        start = omp_get_wtime();
+        run(ctx);
+        total += omp_get_wtime() - start;
+    }
+
+    return total / (double)ctx->work_iterations;
+}
+
+int stressTest() {
     unsigned short threadnumber[] = STRESS_THREADS;
     unsigned short chunksize[] = STRESS_CHUNKS;
     uint32 sizes[] = STRESS_PROBLEM_SIZES;
 
-    Routine routines[] = {
-        { "Parallel for Arithmetic scale", routine_micro_scale },
-        { "Parallel for best cache", routine_matrix_row_best },
-        { "Parallel for worst cache", routine_matrix_col_worst },
-        { "Parallel for reduction", routine_reduction_sum },
-        { "Parallel inclusive scan", routine_scan_inclusive },
-        { "Task", routine_task_divide_conquer },
-        { "Atomic reduction", routine_atomic_reduction },
-        { "Taskloop", routine_taskloop_scale }
-    };
+    const char *filename = "results.csv";
+    const char *writing_mode = "a";
 
+    const MicroRoutine* microroutines = get_microroutines();
     size_t numRoutines;
     size_t numSizes;
     size_t numThreads;
@@ -41,13 +70,13 @@ int stressTest(void)
     size_t j;
     size_t k;
     size_t l;
-    size_t r;
 
     uint64 real_size;
 
-    double start;
-    double total;
     double time;
+    double speedup;
+    double overhead;
+    double baseline;
 
     WorkContext *ctx;
     DataGenerator *generator;
@@ -58,35 +87,10 @@ int stressTest(void)
     void (*run)(WorkContext *);
     const char *name;
 
-
-    /*
-     * --------------------------------------------------------
-     * Number of configurations
-     * --------------------------------------------------------
-     */
-
-    numRoutines =
-        sizeof(routines) /
-        sizeof(routines[0]);
-
-    numSizes =
-        sizeof(sizes) /
-        sizeof(sizes[0]);
-
-    numThreads =
-        sizeof(threadnumber) /
-        sizeof(threadnumber[0]);
-
-    numChunks =
-        sizeof(chunksize) /
-        sizeof(chunksize[0]);
-
-
-    /*
-     * --------------------------------------------------------
-     * Work context
-     * --------------------------------------------------------
-     */
+    numRoutines = get_microroutines_count();
+    numSizes = ARRAY_SIZE(sizes);
+    numThreads = ARRAY_SIZE(threadnumber);
+    numChunks = ARRAY_SIZE(chunksize);
 
     ctx = malloc(sizeof(*ctx));
 
@@ -98,211 +102,68 @@ int stressTest(void)
     ctx->input = NULL;
     ctx->output = NULL;
 
-
-    /*
-     * --------------------------------------------------------
-     * Result writer
-     * --------------------------------------------------------
-     */
-
     writer = create_writer();
 
     if (writer == NULL) {
         printf("ResultWriter creation problem.\n");
-
         free(ctx);
-
         return 1;
     }
 
+    if (!writer->operations.clean(writer, filename) ||
+        !writer->operations.open(writer, filename, writing_mode)) {
 
-    /*
-     * --------------------------------------------------------
-     * Open results file
-     * --------------------------------------------------------
-     */
-
-    if (!writer->operations.open(
-            writer,
-            "results.csv",
-            "a")) {
-
-        printf("File opening problem.\n");
-
-        free(writer);
-        free(ctx);
-
+        printf("File cleaning and opening problem.\n");
+        cleanup_stress_test(ctx, writer);
         return 1;
     }
-
-
-    /*
-     * ========================================================
-     * Benchmark
-     * ========================================================
-     */
 
     for (i = 0; i < numRoutines; ++i) {
-
-        run = routines[i].run;
-        name = routines[i].name;
-
-
-        /*
-         * ----------------------------------------------------
-         * Problem sizes
-         * ----------------------------------------------------
-         */
+        run = microroutines[i].run;
+        name = microroutines[i].name;
 
         for (j = 0; j < numSizes; ++j) {
+            real_size = (uint64)1 << sizes[j];
 
-            /*
-             * sizes[j] = log2(N)
-             */
-            real_size =
-                ((uint64)1 << sizes[j]);
+            ctx->input = collection_create((size_t)sizes[j]);
+            ctx->output = collection_create((size_t)sizes[j]);
 
-
-            /*
-             * ------------------------------------------------
-             * Input collection
-             * ------------------------------------------------
-             */
-
-            ctx->input =
-                collection_create(
-                    (size_t)sizes[j]
-                );
-
-            if (ctx->input == NULL) {
-
-                printf(
-                    "Input collection creation problem.\n"
-                );
-
-                writer->operations.close(writer);
-                free(writer);
-                free(ctx);
-
+            if (ctx->input == NULL || ctx->output == NULL) {
+                printf("Collection creation problem.\n");
+                cleanup_stress_test(ctx, writer);
                 return 1;
             }
 
-
-            /*
-             * ------------------------------------------------
-             * Output collection
-             * ------------------------------------------------
-             */
-
-            ctx->output =
-                collection_create(
-                    (size_t)sizes[j]
-                );
-
-            if (ctx->output == NULL) {
-
-                printf(
-                    "Output collection creation problem.\n"
-                );
-
-                collection_destroy(ctx->input);
-
-                writer->operations.close(writer);
-                free(writer);
-                free(ctx);
-
-                return 1;
-            }
-
-
-            /*
-             * ------------------------------------------------
-             * Random data generator
-             * ------------------------------------------------
-             *
-             * Il tipo concreto dell'RNG viene scelto
-             * attraverso RNG_TYPE.
-             *
-             * stress.c non conosce xoshiro/splitmix.
-             * ------------------------------------------------
-             */
-
-            generator =
-                generator_random_create(
-                    (datatype)0,
-                    (datatype)real_size
-                );
+            generator = generator_random_create(
+                (datatype)0,
+                (datatype)real_size
+            );
 
             if (generator == NULL) {
-
-                printf(
-                    "Generator creation problem.\n"
-                );
-
-                collection_destroy(ctx->input);
-                collection_destroy(ctx->output);
-
-                writer->operations.close(writer);
-                free(writer);
-                free(ctx);
-
+                printf("Generator creation problem.\n");
+                cleanup_stress_test(ctx, writer);
                 return 1;
             }
 
-
-            /*
-             * ------------------------------------------------
-             * Fill input collection
-             * ------------------------------------------------
-             */
-
-            if (!generator_fill(
-                    generator,
-                    ctx->input)) {
-
-                printf(
-                    "Collection generation problem.\n"
-                );
-
+            if (!generator_fill(generator, ctx->input)) {
+                printf("Collection generation problem.\n");
                 generator_destroy(generator);
-
-                collection_destroy(ctx->input);
-                collection_destroy(ctx->output);
-
-                writer->operations.close(writer);
-                free(writer);
-                free(ctx);
-
+                cleanup_stress_test(ctx, writer);
                 return 1;
             }
 
-
-            /*
-             * Il generatore non serve più dopo il fill.
-             */
             generator_destroy(generator);
             generator = NULL;
 
-
-            /*
-             * =================================================
-             * Thread configurations
-             * =================================================
-             */
+            baseline = 0.0;
 
             for (k = 0; k < numThreads; ++k) {
-
-                ctx->threadnumber =
-                    threadnumber[k];
-
-
-                /*
-                 * ------------------------------------------------
-                 * Chunk configurations
-                 * ------------------------------------------------
-                 */
+                ctx->threadnumber = threadnumber[k];
 
                 for (l = 0; l < numChunks; ++l) {
+                    ctx->chunksize = chunksize[l];
+                    ctx->warmup_iterations = WARMUP_REPS;
+                    ctx->work_iterations = WORK_REPS;
 
                     printf(
                         "Testing %s with log2N=%u, "
@@ -313,152 +174,39 @@ int stressTest(void)
                         chunksize[l]
                     );
 
+                    time = benchmark_routine(ctx, run);
 
-                    ctx->chunksize =
-                        chunksize[l];
-
-                    ctx->warmup_iterations =
-                        WARMUP_REPS;
-
-                    ctx->work_iterations =
-                        WORK_REPS;
-
-
-                    /*
-                     * =============================================
-                     * Warmup
-                     * =============================================
-                     */
-
-                    for (
-                        r = 0;
-                        r < ctx->warmup_iterations;
-                        ++r
-                    ) {
-                        run(ctx);
+                    if (threadnumber[k] == 1) {
+                        baseline = time;
+                        speedup = 1.0;
+                        overhead = 0.0;
+                    } else {
+                        speedup = baseline / time;
+                        overhead =
+                            time - (baseline / threadnumber[k]);
                     }
-
-
-                    /*
-                     * =============================================
-                     * Benchmark
-                     * =============================================
-                     */
-
-                    total = 0.0;
-
-                    for (
-                        r = 0;
-                        r < ctx->work_iterations;
-                        ++r
-                    ) {
-
-                        start =
-                            omp_get_wtime();
-
-                        run(ctx);
-
-                        total +=
-                            omp_get_wtime() -
-                            start;
-                    }
-
-
-                    time =
-                        total /
-                        (double)ctx->work_iterations;
-
-
-                    /*
-                     * =============================================
-                     * Result
-                     * =============================================
-                     */
 
                     result.benchname = name;
+                    result.log2n = (long)sizes[j];
+                    result.threadnumber = threadnumber[k];
+                    result.chunksize = chunksize[l];
+                    result.time = time;
+                    result.speedup = speedup;
+                    result.overhead = overhead;
 
-                    result.log2n =
-                        (long)sizes[j];
-
-                    result.threadnumber =
-                        threadnumber[k];
-
-                    result.chunksize =
-                        chunksize[l];
-
-                    result.time =
-                        time;
-
-
-                    /*
-                     * =============================================
-                     * Write result
-                     * =============================================
-                     */
-
-                    if (!writer->operations.write(
-                            writer,
-                            &result)) {
-
-                        printf(
-                            "Result writing problem.\n"
-                        );
-
-                        collection_destroy(
-                            ctx->input
-                        );
-
-                        collection_destroy(
-                            ctx->output
-                        );
-
-                        writer->operations.close(
-                            writer
-                        );
-
-                        free(writer);
-                        free(ctx);
-
+                    if (!writer->operations.write(writer, &result)) {
+                        printf("Result writing problem.\n");
+                        cleanup_stress_test(ctx, writer);
                         return 1;
                     }
                 }
             }
-
-
-            /*
-             * ------------------------------------------------
-             * Destroy collections
-             * ------------------------------------------------
-             */
-
-            collection_destroy(ctx->input);
-            collection_destroy(ctx->output);
-
-            ctx->input = NULL;
-            ctx->output = NULL;
+            destroy_collections(ctx);
         }
-
-
-        /*
-         * ----------------------------------------------------
-         * Flush results after each routine
-         * ----------------------------------------------------
-         */
-
         writer->operations.flush(writer);
     }
-
-
-    /*
-     * ========================================================
-     * Cleanup
-     * ========================================================
-     */
-
     writer->operations.close(writer);
-
     free(writer);
     free(ctx);
-
     return 0;
 }
