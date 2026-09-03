@@ -8,7 +8,7 @@
 #include "config/schedule.h"
 #include "config/thread.h"
 #include "config/chunksize.h"
-#include "core/microroutines.h"
+#include "micro/microroutines.h"
 #include "data/collection.h"
 #include "data/generator.h"
 #include "data/writers/writer.h"

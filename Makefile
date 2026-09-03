@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude -fopenmp
+CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude -Isrc/microroutines -fopenmp
 LDLIBS = -fopenmp -lm
 
 BUILD_DIR = build/$(notdir $(CC))
