@@ -183,6 +183,7 @@ int stressTest(const char *output_file) {
 
                     time = benchmark_routine(ctx, run);
 
+                    // TODO: This calculation can be done during data analysis.
                     if (threadnumber[k] == 1) {
                         baseline = time;
                         speedup = 1.0;
