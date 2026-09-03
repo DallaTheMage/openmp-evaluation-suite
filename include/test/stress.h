@@ -1,1 +1,1 @@
-int stressTest(void);
+int stressTest(const char *output_file);

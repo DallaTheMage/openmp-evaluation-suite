@@ -56,12 +56,12 @@ static double benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *)) {
     return total / (double)ctx->work_iterations;
 }
 
-int stressTest() {
+int stressTest(const char *output_file) {
     unsigned short threadnumber[] = STRESS_THREADS;
     unsigned short chunksize[] = STRESS_CHUNKS;
     uint32 sizes[] = STRESS_PROBLEM_SIZES;
 
-    const char *filename = "results.csv";
+    const char *filename = output_file;
     const char *writing_mode = "a";
     const char *header = "benchname,Problem size (log2n),threadnumber,chunksize,time,speedup,overhead";
 
