@@ -1,12 +1,5 @@
-#ifndef DEFINES_H
-#define DEFINES_H
-
-/* =========================================================================
-   CONFIGURAZIONI DIMENSIONI TEST
-   ========================================================================= */
-#include "config/sizes.h"
-
-
+#ifndef UTILS_H
+#define UTILS_H
 /* =========================================================================
    MACRO HELPER BITWISE PER ANSI C (C89)
    ========================================================================= */
@@ -20,4 +13,4 @@
 /* Occupazione dinamica della memoria in Byte basata sul tipo dati */
 #define GET_SIZE_IN_BYTES(log2_n)   (GET_ELEMENT_COUNT(log2_n) * sizeof(datatype))
 
-#endif /* DEFINES_H */
+#endif /* UTILS_H */

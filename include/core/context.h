@@ -5,7 +5,7 @@
 
 typedef struct WorkContext {
     Collection *input;
-    Collection *output;
+    Collection *output; // TODO: think about deprecate this Collection
     int chunksize;
     int threadnumber;
     size_t warmup_iterations;

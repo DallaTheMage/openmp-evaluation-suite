@@ -37,7 +37,8 @@ static unsigned short write_csv(ResultWriter *writer, const Result *record) {
     int result;
     if (writer && writer->file && record) {
         result = fprintf(writer->file,
-                         "%s,%ld,%d,%d,%f,%f,%f\n",
+                         "%d,%s,%ld,%d,%d,%f,%f,%f\n",
+                         record->test_id,
                          record->benchname,
                          record->log2n,
                          record->threadnumber,

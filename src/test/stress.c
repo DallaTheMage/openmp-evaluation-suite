@@ -13,7 +13,9 @@
 #include "data/generator.h"
 #include "data/writers/writer.h"
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+static void destroy_collections(WorkContext *ctx);
+static void cleanup_stress_test(WorkContext *ctx, ResultWriter *writer);
+static double benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *));
 
 static void destroy_collections(WorkContext *ctx) {
     if (ctx->input != NULL) {
@@ -63,7 +65,7 @@ int stressTest(const char *output_file) {
 
     const char *filename = output_file;
     const char *writing_mode = "a";
-    const char *header = "benchname,Problem size (log2n),threadnumber,chunksize,time,speedup,overhead";
+    const char *header = "Test ID, Test name, Problem size (log2n), Thread number, Chunk size, AVG time, Speedup, Overhead";
 
     const MicroRoutine* microroutines = get_microroutines();
     size_t numRoutines;
@@ -191,6 +193,7 @@ int stressTest(const char *output_file) {
                             time - (baseline / threadnumber[k]);
                     }
 
+                    result.test_id = (int)i;
                     result.benchname = name;
                     result.log2n = (long)sizes[j];
                     result.threadnumber = threadnumber[k];

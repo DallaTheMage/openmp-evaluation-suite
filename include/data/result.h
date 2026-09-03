@@ -2,6 +2,7 @@
 #define RESULT_H
 
 typedef struct {
+    int test_id;
     const char *benchname;
     long log2n;
     int threadnumber;

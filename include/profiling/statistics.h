@@ -2,7 +2,6 @@
 #define STATISTICS_H
 
 #include <stddef.h>
-#include "defines.h"
 
 /* =========================================================================
    1. STRUTTURE DATI STATISTICHE E DI SCALABILITÀ
