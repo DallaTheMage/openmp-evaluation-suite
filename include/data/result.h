@@ -9,6 +9,7 @@ typedef struct {
     int chunksize;
     double time;
     double speedup;
+    double efficiency;
     double overhead;
 } Result;
 
