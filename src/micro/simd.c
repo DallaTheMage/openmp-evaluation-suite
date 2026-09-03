@@ -118,3 +118,49 @@ void routine_parallel_for_simd(WorkContext *ctx)
 
 #endif
 }
+
+void routine_loop(WorkContext *ctx)
+{
+#if OPENMP_HAS_LOOP
+
+    datatype *in;
+    datatype *out;
+
+    size_t size;
+    size_t i;
+
+    int threadnumber;
+
+    if (ctx == NULL ||
+        ctx->input == NULL ||
+        ctx->output == NULL) {
+        return;
+    }
+
+    in = ctx->input->data;
+    out = ctx->output->data;
+    size = ctx->input->size;
+    threadnumber = ctx->threadnumber;
+
+    /* Utilizza la direttiva 'loop' introdotta in OpenMP 5.0 */
+    #pragma omp parallel num_threads(threadnumber) default(none) shared(in, out, size)
+    {
+        #pragma omp loop
+        for (i = 0; i < size; ++i) {
+            datatype val = in[i];
+            int k;
+
+            for (k = 0; k < 8; ++k) {
+                val = arithmetic_step(val);
+            }
+
+            out[i] = val;
+        }
+    }
+
+#else
+
+    (void)ctx;
+
+#endif
+}
