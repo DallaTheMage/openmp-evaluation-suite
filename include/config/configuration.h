@@ -13,9 +13,6 @@
         #define WORK_REPS      1
     #endif
 
-    #define CUSTOM_THREAD_NUMBERS 2, 4 /* ... */
-    #define STRESS_THREADS { 1, CUSTOM_THREAD_NUMBERS }
-    #define STRESS_CHUNKS { 1024 /* ... */ }
 
     /* =========================================================================
        STRESS TEST PROBLEM SIZES (POWER OF TWO LOGARITHMIC EXPONENTIALS)

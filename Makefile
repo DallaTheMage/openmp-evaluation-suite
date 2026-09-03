@@ -3,29 +3,23 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude -fopenmp
 LDLIBS = -fopenmp -lm
 
-TARGET = main
+BUILD_DIR = build/$(notdir $(CC))
+TARGET = $(BUILD_DIR)/main
 
-SRC = $(wildcard src/*.c) \
-      $(wildcard src/core/*.c) \
-      $(wildcard src/data/*.c) \
-      $(wildcard src/data/writers/*.c) \
-      $(wildcard src/data/generators/*.c) \
-      $(wildcard src/data/rngs/*.c) \
-      $(wildcard src/metrics/*.c) \
-      $(wildcard src/profiling/*.c) \
-      $(wildcard src/test/*.c)
-
-OBJ = $(SRC:.c=.o)
+SRC := $(shell find src -name '*.c')
+OBJ := $(SRC:src/%.c=$(BUILD_DIR)/%.o)
 
 .PHONY: all clean
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
+	@mkdir -p $(@D)
 	$(CC) $(OBJ) -o $@ $(LDLIBS)
 
-src/%.o: src/%.c
+$(BUILD_DIR)/%.o: src/%.c
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -rf $(BUILD_DIR)

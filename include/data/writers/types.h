@@ -9,7 +9,8 @@
     struct ResultWriterOperations {
         unsigned short (*open)(ResultWriter *writer,
                                const char *filename,
-                               const char *mode);
+                               const char *mode,
+                               const char *header);
         unsigned short (*clean)(ResultWriter *writer,
                                 const char *filename);
         unsigned short (*write)(ResultWriter *writer,

@@ -3,7 +3,11 @@
 #include <omp.h>
 #include "test/stress.h"
 #include "config/types.h"
-#include "config/configuration.h"
+#include "config/sizes.h"
+#include "config/iterations.h"
+#include "config/schedule.h"
+#include "config/thread.h"
+#include "config/chunksize.h"
 #include "core/microroutines.h"
 #include "data/collection.h"
 #include "data/generator.h"
@@ -59,6 +63,7 @@ int stressTest() {
 
     const char *filename = "results.csv";
     const char *writing_mode = "a";
+    const char *header = "benchname,Problem size (log2n),threadnumber,chunksize,time,speedup,overhead";
 
     const MicroRoutine* microroutines = get_microroutines();
     size_t numRoutines;
@@ -111,7 +116,7 @@ int stressTest() {
     }
 
     if (!writer->operations.clean(writer, filename) ||
-        !writer->operations.open(writer, filename, writing_mode)) {
+        !writer->operations.open(writer, filename, writing_mode, header)) {
 
         printf("File cleaning and opening problem.\n");
         cleanup_stress_test(ctx, writer);

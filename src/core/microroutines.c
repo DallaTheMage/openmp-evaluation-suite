@@ -6,8 +6,11 @@
 #include "config/types.h"
 #include "core/context.h"
 #include "core/microroutines.h"
-#include "config/configuration.h"
-
+#include "config/sizes.h"
+#include "config/iterations.h"
+#include "config/schedule.h"
+#include "config/thread.h"
+#include "config/chunksize.h"
 
 static datatype arithmetic_step(datatype value) {
 #if DATATYPE_IS_FLOATING

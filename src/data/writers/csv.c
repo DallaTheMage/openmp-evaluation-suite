@@ -3,10 +3,17 @@
 
 static unsigned short open_csv(ResultWriter *writer,
                                const char *filename,
-                               const char *mode) {
+                               const char *mode,
+                               const char *header) {
     if (writer && filename && mode) {
         writer->file = fopen(filename, mode);
-        if (writer->file) { return 1; }
+        if (writer->file) {
+            if(header) {
+                fprintf(writer->file, "%s\n", header);
+                fflush(writer->file);
+            }
+            return 1;
+        }
     }
     return 0;
 }
