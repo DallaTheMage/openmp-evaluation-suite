@@ -3,3 +3,4 @@
 *.csv
 main
 build/
+macro/
