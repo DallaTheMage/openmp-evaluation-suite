@@ -64,8 +64,8 @@ void generator_destroy(DataGenerator *generator)
  */
 
 DataGenerator *generator_random_create(
-    datatype min,
-    datatype max
+    double min,
+    double max
 )
 {
 #if RNG_TYPE == RNG_XOSHIRO256

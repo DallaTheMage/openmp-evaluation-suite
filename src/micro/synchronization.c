@@ -14,8 +14,8 @@
 
 void routine_sections(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     size_t quarter;
@@ -77,8 +77,8 @@ void routine_sections(WorkContext *ctx)
 
 void routine_barrier(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -119,8 +119,8 @@ void routine_barrier(WorkContext *ctx)
 
 void routine_nowait(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -159,8 +159,8 @@ void routine_nowait(WorkContext *ctx)
 
 void routine_ordered(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -188,7 +188,7 @@ void routine_ordered(WorkContext *ctx)
         shared(in, out, size, chunksize)
 
     for (size_t i = 0; i < size; ++i) {
-        datatype val = arithmetic_step(in[i]);
+        double val = arithmetic_step(in[i]);
 
         #pragma omp ordered
         out[i] = val;
@@ -202,8 +202,8 @@ void routine_ordered(WorkContext *ctx)
 
 void routine_masked(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;

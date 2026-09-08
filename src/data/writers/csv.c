@@ -1,5 +1,10 @@
 #include <stdlib.h>
+#include "data/writers/utils.h"
 #include "data/writers/csv.h"
+
+static char *add_csv_extension(const char *filename) {
+    return prepare_filepath(filename, ".csv");
+}
 
 static unsigned short open_csv(ResultWriter *writer,
                                const char *filename,
@@ -37,15 +42,17 @@ static unsigned short write_csv(ResultWriter *writer, const Result *record) {
     int result;
     if (writer && writer->file && record) {
         result = fprintf(writer->file,
-                         "%d,%s,%ld,%d,%d,%f,%f,%f\n",
+                         "%d,%s,%s,%ld,%d,%d,%f,%f,%f, %f\n",
                          record->test_id,
+                         record->test_type,
                          record->benchname,
                          record->log2n,
                          record->threadnumber,
                          record->chunksize,
                          record->time,
                          record->speedup,
-                         record->overhead);
+                         record->overhead,
+                         record->efficiency);
         return result >= 0;
     }
     return 0;
@@ -73,6 +80,7 @@ ResultWriter *create_csv_writer(void) {
     writer = malloc(sizeof *writer);
     if (!writer) { return NULL; }
     writer->file = NULL;
+    writer->operations.prepare_filepath = add_csv_extension;
     writer->operations.open = open_csv;
     writer->operations.clean = clean_csv;
     writer->operations.write = write_csv;

@@ -12,8 +12,8 @@
 #if OPENMP_HAS_3_0
 
 static void compute_task_recursive(
-    datatype *in,
-    datatype *out,
+    double *in,
+    double *out,
     size_t start,
     size_t end
 )
@@ -23,7 +23,7 @@ static void compute_task_recursive(
 
     if (end - start <= threshold) {
         for (size_t i = start; i < end; ++i) {
-            datatype val = in[i];
+            double val = in[i];
 
             for (int k = 0; k < 4; ++k)
                 val = arithmetic_step(val);
@@ -48,8 +48,8 @@ static void compute_task_recursive(
 
 void routine_task_divide_conquer(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -83,8 +83,8 @@ void routine_task_divide_conquer(WorkContext *ctx)
 
 void routine_taskloop_scale(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -112,7 +112,7 @@ void routine_taskloop_scale(WorkContext *ctx)
                 grainsize(512)
 
             for (size_t i = 0; i < size; ++i) {
-                datatype val = in[i];
+                double val = in[i];
 
                 for (int k = 0; k < 8; ++k)
                     val = arithmetic_step(val);

@@ -12,29 +12,20 @@
 
 void routine_matrix_row_best(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
-
-    size_t rows;
-    size_t cols;
-
-    int threadnumber;
-    int chunksize;
-
     if (ctx == NULL ||
         ctx->input == NULL ||
         ctx->output == NULL) {
         return;
     }
 
-    in = ctx->input->data;
-    out = ctx->output->data;
+    const double * restrict in = ctx->input->data;
+    double * restrict out = ctx->output->data;
 
-    rows = ctx->input->rows;
-    cols = ctx->input->columns;
+    const size_t rows = ctx->input->rows;
+    const size_t cols = ctx->input->columns;
 
-    threadnumber = ctx->threadnumber;
-    chunksize = ctx->chunksize;
+    const int threadnumber = ctx->threadnumber;
+    const int chunksize = ctx->chunksize;
 
     #pragma omp parallel for \
         num_threads(threadnumber) \
@@ -43,12 +34,13 @@ void routine_matrix_row_best(WorkContext *ctx)
         shared(in, out, rows, cols, chunksize)
 
     for (size_t r = 0; r < rows; ++r) {
-        for (size_t c = 0; c < cols; ++c) {
-            size_t idx = r * cols + c;
-            datatype val = in[idx];
+        const size_t row_offset = r * cols;
 
-            for (int k = 0; k < 4; ++k)
-                val = arithmetic_step(val);
+        for (size_t c = 0; c < cols; ++c) {
+            const size_t idx = row_offset + c;
+            double val = in[idx];
+
+            val = arithmetic_step(val);
 
             out[idx] = val;
         }
@@ -58,29 +50,20 @@ void routine_matrix_row_best(WorkContext *ctx)
 
 void routine_matrix_col_worst(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
-
-    size_t rows;
-    size_t cols;
-
-    int threadnumber;
-    int chunksize;
-
     if (ctx == NULL ||
         ctx->input == NULL ||
         ctx->output == NULL) {
         return;
     }
 
-    in = ctx->input->data;
-    out = ctx->output->data;
+    const double * restrict in = ctx->input->data;
+    double * restrict out = ctx->output->data;
 
-    rows = ctx->input->rows;
-    cols = ctx->input->columns;
+    const size_t rows = ctx->input->rows;
+    const size_t cols = ctx->input->columns;
 
-    threadnumber = ctx->threadnumber;
-    chunksize = ctx->chunksize;
+    const int threadnumber = ctx->threadnumber;
+    const int chunksize = ctx->chunksize;
 
     #pragma omp parallel for \
         num_threads(threadnumber) \
@@ -90,11 +73,13 @@ void routine_matrix_col_worst(WorkContext *ctx)
 
     for (size_t c = 0; c < cols; ++c) {
         for (size_t r = 0; r < rows; ++r) {
-            size_t idx = r * cols + c;
-            datatype val = in[idx];
+            const size_t idx = r * cols + c;
+            double val = in[idx];
 
-            for (int k = 0; k < 4; ++k)
-                val = arithmetic_step(val);
+            val = arithmetic_step(val);
+            val = arithmetic_step(val);
+            val = arithmetic_step(val);
+            val = arithmetic_step(val);
 
             out[idx] = val;
         }
@@ -106,29 +91,20 @@ void routine_matrix_col_worst(WorkContext *ctx)
 
 void routine_matrix_collapse(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
-
-    size_t rows;
-    size_t cols;
-
-    int threadnumber;
-    int chunksize;
-
     if (ctx == NULL ||
         ctx->input == NULL ||
         ctx->output == NULL) {
         return;
     }
 
-    in = ctx->input->data;
-    out = ctx->output->data;
+    const double * restrict in = ctx->input->data;
+    double * restrict out = ctx->output->data;
 
-    rows = ctx->input->rows;
-    cols = ctx->input->columns;
+    const size_t rows = ctx->input->rows;
+    const size_t cols = ctx->input->columns;
 
-    threadnumber = ctx->threadnumber;
-    chunksize = ctx->chunksize;
+    const int threadnumber = ctx->threadnumber;
+    const int chunksize = ctx->chunksize;
 
     #pragma omp parallel for \
         num_threads(threadnumber) \
@@ -139,11 +115,13 @@ void routine_matrix_collapse(WorkContext *ctx)
 
     for (size_t r = 0; r < rows; ++r) {
         for (size_t c = 0; c < cols; ++c) {
-            size_t idx = r * cols + c;
-            datatype val = in[idx];
+            const size_t idx = r * cols + c;
+            double val = in[idx];
 
-            for (int k = 0; k < 4; ++k)
-                val = arithmetic_step(val);
+            val = arithmetic_step(val);
+            val = arithmetic_step(val);
+            val = arithmetic_step(val);
+            val = arithmetic_step(val);
 
             out[idx] = val;
         }

@@ -1,8 +1,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include "config/types.h"
-
+#include <stdint.h>
 
 /*
  * ============================================================
@@ -17,12 +16,12 @@ struct RandomSource {
     /*
      * Generate the next 64 random bits.
      */
-    uint64 (*next)(RandomSource *self);
+    uint64_t (*next)(RandomSource *self);
 
     /*
      * Reset the generator with a new seed.
      */
-    void (*seed)(RandomSource *self, uint64 seed);
+    void (*seed)(RandomSource *self, uint64_t seed);
 
     /*
      * Destroy the RNG.
@@ -42,11 +41,11 @@ struct RandomSource {
  * ============================================================
  */
 
-uint64 random_next(RandomSource *rng);
+uint64_t random_next(RandomSource *rng);
 
 void random_seed(
     RandomSource *rng,
-    uint64 seed
+    uint64_t seed
 );
 
 void random_destroy(RandomSource *rng);
@@ -59,7 +58,7 @@ void random_destroy(RandomSource *rng);
  *
  * The selected implementation depends on RNG_TYPE.
  */
-RandomSource *random_create(uint64 seed);
+RandomSource *random_create(uint64_t seed);
 
 
 /*
@@ -69,11 +68,11 @@ RandomSource *random_create(uint64 seed);
  */
 
 RandomSource *random_xoshiro256_create(
-    uint64 seed
+    uint64_t seed
 );
 
 RandomSource *random_splitmix64_create(
-    uint64 seed
+    uint64_t seed
 );
 
 

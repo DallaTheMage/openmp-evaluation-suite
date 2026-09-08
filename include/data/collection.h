@@ -2,9 +2,7 @@
 #define DATA_COLLECTION_H
 
 #include <stddef.h>
-
-#include "config/types.h"
-
+#include <stdint.h>
 
 typedef struct Collection Collection;
 
@@ -23,10 +21,10 @@ typedef struct {
 } CollectionOperations;
 
 struct Collection {
-    datatype *data;
-    uint64 size;
-    uint64 rows;
-    uint64 columns;
+    double *data;
+    uint64_t size;
+    uint64_t rows;
+    uint64_t columns;
     const CollectionOperations *operations;
 };
 

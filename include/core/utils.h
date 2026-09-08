@@ -11,6 +11,6 @@
 #define GET_MATRIX_DIM(log2_n)      ((unsigned long)1UL << ((log2_n) >> 1))
 
 /* Occupazione dinamica della memoria in Byte basata sul tipo dati */
-#define GET_SIZE_IN_BYTES(log2_n)   (GET_ELEMENT_COUNT(log2_n) * sizeof(datatype))
+#define GET_SIZE_IN_BYTES(log2_n)   (GET_ELEMENT_COUNT(log2_n) * sizeof(double))
 
 #endif /* UTILS_H */

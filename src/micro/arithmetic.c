@@ -1,17 +1,10 @@
-#include "config/types.h"
-#include "config/types.h"
-
 #include "micro/arithmetic.h"
+#include "config/iterations.h"
 
-datatype arithmetic_step(datatype value)
-{
-#if DATATYPE_IS_FLOATING
-    return value
-         * (datatype)1.000001
-         + (datatype)0.000001;
-#else
-    return value
-         * (datatype)2
-         + (datatype)1;
-#endif
+double arithmetic_step(double value) {
+    // Aumentando il lavoro computazionale interno
+    for (int i = 0; i < SLOWDOWN_REPS; ++i) {
+        value = value * (double)1.000001 + (double)0.000001;
+    }
+    return value;
 }

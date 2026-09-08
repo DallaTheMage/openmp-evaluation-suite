@@ -1,7 +1,8 @@
 #ifndef DATA_GENERATOR_H
 #define DATA_GENERATOR_H
 
-#include "config/types.h"
+#include <stdint.h>
+
 #include "data/collection.h"
 #include "data/rng.h"
 
@@ -60,8 +61,8 @@ void generator_destroy(
  */
 
 DataGenerator *generator_random_create(
-    datatype min,
-    datatype max
+    double min,
+    double max
 );
 
 
@@ -70,13 +71,13 @@ DataGenerator *generator_random_create(
  */
 
 DataGenerator *generator_xoshiro256_create(
-    datatype min,
-    datatype max
+    double min,
+    double max
 );
 
 DataGenerator *generator_splitmix64_create(
-    datatype min,
-    datatype max
+    double min,
+    double max
 );
 
 

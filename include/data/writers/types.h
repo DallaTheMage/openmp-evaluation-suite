@@ -7,6 +7,7 @@
     typedef struct ResultWriterOperations ResultWriterOperations;
 
     struct ResultWriterOperations {
+        char *(*prepare_filepath)(const char *filename);
         unsigned short (*open)(ResultWriter *writer,
                                const char *filename,
                                const char *mode,

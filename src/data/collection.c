@@ -1,8 +1,7 @@
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "config/types.h"
+#include <stdint.h>
+#include <inttypes.h>
 #include "core/utils.h"
 #include "data/collection.h"
 
@@ -29,7 +28,7 @@ static void collection_reset(
     const Collection *collection
 )
 {
-    uint64 i;
+    uint64_t i;
 
     if (collection == NULL ||
         collection->data == NULL) {
@@ -37,7 +36,7 @@ static void collection_reset(
     }
 
     for (i = 0; i < collection->size; ++i) {
-        collection->data[i] = (datatype)0;
+        collection->data[i] = (double)0;
     }
 }
 
@@ -155,9 +154,9 @@ Collection *collection_create(
      * Allocate data.
      */
     collection->data =
-        (datatype *)malloc(
+        (double *)malloc(
             total_elements *
-            sizeof(datatype)
+            sizeof(double)
         );
 
     if (collection->data == NULL) {
@@ -172,13 +171,13 @@ Collection *collection_create(
      * Set metadata.
      */
     collection->size =
-        (uint64)total_elements;
+        (uint64_t)total_elements;
 
     collection->rows =
-        (uint64)matrix_dim;
+        (uint64_t)matrix_dim;
 
     collection->columns =
-        (uint64)matrix_dim;
+        (uint64_t)matrix_dim;
 
     collection->operations =
         &DEFAULT_COLLECTION_OPERATIONS;
@@ -189,13 +188,13 @@ Collection *collection_create(
      *
      * Important:
      *
-     * We explicitly cast to datatype so that this
+     * We explicitly cast to double so that this
      * remains correct for float/integer datatypes.
      */
     for (i = 0; i < total_elements; ++i) {
 
         collection->data[i] =
-            (datatype)1;
+            (double)1;
     }
 
 

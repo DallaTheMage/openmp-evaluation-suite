@@ -34,4 +34,4 @@ $(BUILD_DIR)/%.o: src/%.c
 -include $(DEP)
 
 clean:
-	rm -rf build
+	rm -rf build output

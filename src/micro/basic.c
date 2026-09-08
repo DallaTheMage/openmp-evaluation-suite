@@ -11,8 +11,8 @@
 
 void routine_micro_scale(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -38,11 +38,8 @@ void routine_micro_scale(WorkContext *ctx)
         shared(in, out, size, chunksize)
 
     for (size_t i = 0; i < size; ++i) {
-        datatype val = in[i];
-
-        for (int k = 0; k < 8; ++k)
-            val = arithmetic_step(val);
-
+        double val = in[i];
+        val = arithmetic_step(val);
         out[i] = val;
     }
 }
@@ -50,8 +47,8 @@ void routine_micro_scale(WorkContext *ctx)
 
 void routine_for(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
@@ -78,11 +75,8 @@ void routine_for(WorkContext *ctx)
         #pragma omp for \
             schedule(CHOSEN_SCHEDULE, chunksize)
         for (size_t i = 0; i < size; ++i) {
-            datatype val = in[i];
-
-            for (int k = 0; k < 8; ++k)
-                val = arithmetic_step(val);
-
+            double val = in[i];
+            val = arithmetic_step(val);
             out[i] = val;
         }
     }

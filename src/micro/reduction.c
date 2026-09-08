@@ -11,14 +11,14 @@
 
 void routine_reduction_sum(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
     int chunksize;
 
-    datatype sum = (datatype)0;
+    double sum = (double)0;
 
     if (ctx == NULL ||
         ctx->input == NULL ||
@@ -51,13 +51,13 @@ void routine_reduction_sum(WorkContext *ctx)
 
 void routine_scan_inclusive(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
 
-    datatype running_sum = (datatype)0;
+    double running_sum = (double)0;
 
     if (ctx == NULL ||
         ctx->input == NULL ||
@@ -93,14 +93,14 @@ void routine_scan_inclusive(WorkContext *ctx)
 
 void routine_critical_reduction(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
     int chunksize;
 
-    datatype global_sum = (datatype)0;
+    double global_sum = (double)0;
 
     if (ctx == NULL ||
         ctx->input == NULL ||
@@ -136,14 +136,14 @@ void routine_critical_reduction(WorkContext *ctx)
 
 void routine_atomic_reduction(WorkContext *ctx)
 {
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     int threadnumber;
     int chunksize;
 
-    datatype global_sum = (datatype)0;
+    double global_sum = (double)0;
 
     if (ctx == NULL ||
         ctx->input == NULL ||

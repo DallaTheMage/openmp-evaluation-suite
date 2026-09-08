@@ -1,8 +1,10 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
-#include "test/common.h"
+#include "test/test.h"
 #include "data/collection.h"
+#include "test/tests/weak.h"
+#include "test/tests/strong.h"
+#include "test/tests/stress.h"
 
 void destroy_collections(WorkContext *ctx) {
     if (ctx == NULL) return;
@@ -47,4 +49,18 @@ double benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *)) {
     }
 
     return total / (double)ctx->work_iterations;
+}
+
+static const Test tests[] = {
+    { "Stress Test", stressTest },
+    { "Weak Scaling Test", weakScalingTest },
+    { "Strong Scaling Test", strongScalingTest }
+};
+
+const Test *get_test_set(void) {
+    return tests;
+}
+
+size_t get_test_count(void) {
+    return sizeof(tests) / sizeof(tests[0]);
 }

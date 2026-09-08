@@ -3,6 +3,7 @@
 
 typedef struct {
     int test_id;
+    const char *test_type;
     const char *benchname;
     long log2n;
     int threadnumber;

@@ -8,7 +8,7 @@
  * ============================================================
  */
 
-uint64 random_next(RandomSource *rng)
+uint64_t random_next(RandomSource *rng)
 {
     if (rng == NULL || rng->next == NULL) {
         return UINT64_C(0);
@@ -20,7 +20,7 @@ uint64 random_next(RandomSource *rng)
 
 void random_seed(
     RandomSource *rng,
-    uint64 seed
+    uint64_t seed
 )
 {
     if (rng == NULL || rng->seed == NULL) {
@@ -47,7 +47,7 @@ void random_destroy(RandomSource *rng)
  * ============================================================
  */
 
-RandomSource *random_create(uint64 seed)
+RandomSource *random_create(uint64_t seed)
 {
 #if RNG_TYPE == RNG_XOSHIRO256
 

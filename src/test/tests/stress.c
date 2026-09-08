@@ -3,7 +3,6 @@
 #include <omp.h>
 
 /* 1. Tipi base e configurazioni del progetto */
-#include "config/types.h"
 #include "config/sizes.h"
 #include "config/iterations.h"
 #include "config/schedule.h"
@@ -18,75 +17,49 @@
 
 /* 3. Micro-routine e utility di test condivise */
 #include "micro/microroutines.h"
-#include "test/common.h"
+#include "test/test.h"
 
 /* 4. Header specifico del test corrente (es. strong.h, weak.h o stress.h) */
-#include "test/stress.h"
+#include "test/tests/stress.h"
 
-int stressTest(const char *output_file) {
+int stressTest(ResultWriter *writer, WorkContext *ctx) {
     unsigned short threadnumber[] = STRESS_THREADS;
     unsigned short chunksize[] = STRESS_CHUNKS;
-    uint32 sizes[] = STRESS_PROBLEM_SIZES;
-
-    const char *filename = output_file;
-    const char *writing_mode = "a";
-    const char *header = "Test ID, Test name, Problem size (log2n), Thread number, Chunk size, AVG time, Speedup, Overhead";
+    uint32_t sizes[] = STRESS_PROBLEM_SIZES;
 
     const MicroRoutine* microroutines = get_microroutines();
-    size_t numRoutines;
-    size_t numSizes;
-    size_t numThreads;
-    size_t numChunks;
+    size_t numRoutines = get_microroutines_count();
+    size_t numSizes = ARRAY_SIZE(sizes);
+    size_t numThreads = ARRAY_SIZE(threadnumber);
+    size_t numChunks = ARRAY_SIZE(chunksize);
 
-    size_t i;
-    size_t j;
-    size_t k;
-    size_t l;
+    size_t i, j, k, l;
 
-    uint64 real_size;
+    uint64_t real_size;
 
     double time;
     double speedup;
+    double efficiency;
     double overhead;
-    double baseline;
 
-    WorkContext *ctx;
     DataGenerator *generator;
-    ResultWriter *writer;
-
-    Result result;
+    /* Inizializzazione completa a zero per evitare valori non definiti sullo stack */
+    Result result = {0};
 
     void (*run)(WorkContext *);
     const char *name;
 
-    numRoutines = get_microroutines_count();
-    numSizes = ARRAY_SIZE(sizes);
-    numThreads = ARRAY_SIZE(threadnumber);
-    numChunks = ARRAY_SIZE(chunksize);
-
-    ctx = malloc(sizeof(*ctx));
-
     if (ctx == NULL) {
-        printf("Context problem.\n");
+        printf("WorkContext is NULL.\n");
         return 1;
     }
 
     ctx->input = NULL;
     ctx->output = NULL;
 
-    writer = create_writer();
-
     if (writer == NULL) {
-        printf("ResultWriter creation problem.\n");
+        printf("ResultWriter is NULL.\n");
         free(ctx);
-        return 1;
-    }
-
-    if (!writer->operations.clean(writer, filename) ||
-        !writer->operations.open(writer, filename, writing_mode, header)) {
-
-        printf("File cleaning and opening problem.\n");
-        cleanup_test_context(ctx, writer);
         return 1;
     }
 
@@ -95,44 +68,41 @@ int stressTest(const char *output_file) {
         name = microroutines[i].name;
 
         for (j = 0; j < numSizes; ++j) {
-            real_size = (uint64)1 << sizes[j];
+            real_size = (uint64_t)1 << sizes[j];
 
             ctx->input = collection_create((size_t)sizes[j]);
             ctx->output = collection_create((size_t)sizes[j]);
 
             if (ctx->input == NULL || ctx->output == NULL) {
                 printf("Collection creation problem.\n");
-                cleanup_test_context(ctx, writer);
+                destroy_collections(ctx);
                 return 1;
             }
 
-            generator = generator_random_create(
-                (datatype)0,
-                (datatype)real_size
-            );
+            generator = generator_random_create((double)0, (double)real_size);
 
             if (generator == NULL) {
                 printf("Generator creation problem.\n");
-                cleanup_test_context(ctx, writer);
+                destroy_collections(ctx);
                 return 1;
             }
 
             if (!generator_fill(generator, ctx->input)) {
                 printf("Collection generation problem.\n");
                 generator_destroy(generator);
-                cleanup_test_context(ctx, writer);
+                destroy_collections(ctx);
                 return 1;
             }
 
             generator_destroy(generator);
             generator = NULL;
 
-            baseline = 0.0;
+            /* Loop over chunksize first so each chunk size gets its own baseline */
+            for (l = 0; l < numChunks; ++l) {
+                double baseline = 0.0;
 
-            for (k = 0; k < numThreads; ++k) {
-                ctx->threadnumber = threadnumber[k];
-
-                for (l = 0; l < numChunks; ++l) {
+                for (k = 0; k < numThreads; ++k) {
+                    ctx->threadnumber = threadnumber[k];
                     ctx->chunksize = chunksize[l];
                     ctx->warmup_iterations = WARMUP_REPS;
                     ctx->work_iterations = WORK_REPS;
@@ -148,27 +118,32 @@ int stressTest(const char *output_file) {
 
                     time = benchmark_routine(ctx, run);
 
-                    if (threadnumber[k] == 1) {
+                    /* Set baseline on single-thread or on the first thread count evaluated */
+                    if (k == 0 || threadnumber[k] == 1) {
                         baseline = time;
                         speedup = 1.0;
+                        efficiency = 1.0;
                         overhead = 0.0;
                     } else {
-                        speedup = baseline / time;
-                        overhead = time - (baseline / threadnumber[k]);
+                        speedup = (baseline > 0.0 && time > 0.0) ? (baseline / time) : 0.0;
+                        efficiency = (threadnumber[k] > 0) ? (speedup / (double)threadnumber[k]) : 0.0;
+                        overhead = time - (baseline / (double)threadnumber[k]);
                     }
 
                     result.test_id = (int)i;
+                    result.test_type = "Stress Test";
                     result.benchname = name;
                     result.log2n = (long)sizes[j];
                     result.threadnumber = threadnumber[k];
                     result.chunksize = chunksize[l];
                     result.time = time;
                     result.speedup = speedup;
+                    result.efficiency = efficiency;
                     result.overhead = overhead;
 
                     if (!writer->operations.write(writer, &result)) {
                         printf("Result writing problem.\n");
-                        cleanup_test_context(ctx, writer);
+                        destroy_collections(ctx);
                         return 1;
                     }
                 }
@@ -177,8 +152,5 @@ int stressTest(const char *output_file) {
         }
         writer->operations.flush(writer);
     }
-    writer->operations.close(writer);
-    free(writer);
-    free(ctx);
     return 0;
 }

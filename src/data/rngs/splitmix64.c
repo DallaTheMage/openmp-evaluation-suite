@@ -9,7 +9,7 @@
  */
 
 typedef struct {
-    uint64 state;
+    uint64_t state;
 } SplitMix64State;
 
 
@@ -19,9 +19,9 @@ typedef struct {
  * ============================================================
  */
 
-static uint64 splitmix64_next(RandomSource *self) {
+static uint64_t splitmix64_next(RandomSource *self) {
     SplitMix64State *state;
-    uint64 z;
+    uint64_t z;
     state = (SplitMix64State *)self->state;
     state->state += UINT64_C(0x9E3779B97F4A7C15);
     z = state->state;
@@ -36,7 +36,7 @@ static uint64 splitmix64_next(RandomSource *self) {
  * ============================================================
  */
 
-static void splitmix64_seed(RandomSource *self, uint64 seed) {
+static void splitmix64_seed(RandomSource *self, uint64_t seed) {
     SplitMix64State *state;
     state = (SplitMix64State *)self->state;
     state->state = seed;
@@ -66,7 +66,7 @@ static void splitmix64_destroy(RandomSource *self) {
  * ============================================================
  */
 
-RandomSource *random_splitmix64_create(uint64 seed) {
+RandomSource *random_splitmix64_create(uint64_t seed) {
     RandomSource *rng;
     SplitMix64State *state;
     rng = (RandomSource *)malloc(

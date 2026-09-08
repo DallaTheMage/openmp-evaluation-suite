@@ -6,19 +6,19 @@
 #include "micro/microroutines.h"
 
 
-static datatype arithmetic_step(datatype value)
+static double arithmetic_step(double value)
 {
 #if DATATYPE_IS_FLOATING
 
     return value
-         * (datatype)1.000001
-         + (datatype)0.000001;
+         * (double)1.000001
+         + (double)0.000001;
 
 #else
 
     return value
-         * (datatype)2
-         + (datatype)1;
+         * (double)2
+         + (double)1;
 
 #endif
 }
@@ -28,8 +28,8 @@ void routine_simd(WorkContext *ctx)
 {
 #if OPENMP_HAS_SIMD
 
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     size_t i;
@@ -46,7 +46,7 @@ void routine_simd(WorkContext *ctx)
 
     #pragma omp simd
     for (i = 0; i < size; ++i) {
-        datatype val;
+        double val;
         int k;
 
         val = in[i];
@@ -70,8 +70,8 @@ void routine_parallel_for_simd(WorkContext *ctx)
 {
 #if OPENMP_HAS_SIMD
 
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     size_t i;
@@ -100,7 +100,7 @@ void routine_parallel_for_simd(WorkContext *ctx)
         shared(in, out, size, chunksize)
 
     for (i = 0; i < size; ++i) {
-        datatype val;
+        double val;
         int k;
 
         val = in[i];
@@ -123,8 +123,8 @@ void routine_loop(WorkContext *ctx)
 {
 #if OPENMP_HAS_LOOP
 
-    datatype *in;
-    datatype *out;
+    double *in;
+    double *out;
 
     size_t size;
     size_t i;
@@ -147,7 +147,7 @@ void routine_loop(WorkContext *ctx)
     {
         #pragma omp loop
         for (i = 0; i < size; ++i) {
-            datatype val = in[i];
+            double val = in[i];
             int k;
 
             for (k = 0; k < 8; ++k) {

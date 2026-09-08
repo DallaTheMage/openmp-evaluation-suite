@@ -22,7 +22,7 @@
 #define STRESS_NUM_PROBLEM_SIZES   5U
 
 /* Dimensione del problema N PER THREAD per mantenere il carico costante */
-#define WEAK_LOG2_N_PER_THREAD     22U
+#define WEAK_LOG2_N_PER_THREAD     18U
 /* Dimensione fissa del problema N per misurare lo Strong Scaling al variare di P */
 #define STRONG_LOG2_N_DEFAULT      26U
 #endif /* CONFIG_SIZES_H */

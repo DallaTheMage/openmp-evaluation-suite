@@ -9,7 +9,7 @@
  */
 
 typedef struct {
-    uint64 s[4];
+    uint64_t s[4];
 } Xoshiro256State;
 
 
@@ -19,8 +19,8 @@ typedef struct {
  * ============================================================
  */
 
-static uint64 rotl64(
-    uint64 x,
+static uint64_t rotl64(
+    uint64_t x,
     int k
 )
 {
@@ -34,11 +34,11 @@ static uint64 rotl64(
  * ============================================================
  */
 
-static uint64 splitmix64_seed_next(
-    uint64 *state
+static uint64_t splitmix64_seed_next(
+    uint64_t *state
 )
 {
-    uint64 z;
+    uint64_t z;
 
     *state += UINT64_C(0x9E3779B97F4A7C15);
 
@@ -62,11 +62,11 @@ static uint64 splitmix64_seed_next(
 
 static void xoshiro256_seed(
     RandomSource *self,
-    uint64 seed
+    uint64_t seed
 )
 {
     Xoshiro256State *state;
-    uint64 sm_state;
+    uint64_t sm_state;
 
     state = (Xoshiro256State *)self->state;
 
@@ -85,13 +85,13 @@ static void xoshiro256_seed(
  * ============================================================
  */
 
-static uint64 xoshiro256_next(
+static uint64_t xoshiro256_next(
     RandomSource *self
 )
 {
     Xoshiro256State *state;
-    uint64 result;
-    uint64 t;
+    uint64_t result;
+    uint64_t t;
 
     state = (Xoshiro256State *)self->state;
 
@@ -149,7 +149,7 @@ static void xoshiro256_destroy(
  */
 
 RandomSource *random_xoshiro256_create(
-    uint64 seed
+    uint64_t seed
 )
 {
     RandomSource *rng;
