@@ -19,7 +19,7 @@
 #include "micro/microroutines.h"
 #include "test/test.h"
 
-/* 4. Header specifico del test corrente (es. strong.h, weak.h o stress.h) */
+/* 4. Header specifico del test corrente */
 #include "test/tests/weak.h"
 
 /* Calcola log2 per potenze di 2 senza math.h */
@@ -32,90 +32,78 @@ static uint32_t get_log2_u16(unsigned short v) {
     return log2_val;
 }
 
-int weakScalingTest(ResultWriter *writer, WorkContext *ctx) {
+int weakScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *Logger) {
+    if (ctx == NULL) {
+        printf("Context problem: WorkContext is NULL.\n");
+        return 1;
+    }
+    if (writer == NULL) {
+        printf("ResultWriter creation problem: writer is NULL.\n");
+        return 1;
+    }
+
+#ifdef WEAK_THREADS
+    unsigned short threadnumber[] = WEAK_THREADS;
+#else
     unsigned short threadnumber[] = STRESS_THREADS;
+#endif
+
+#ifdef WEAK_CHUNKS
+    unsigned short chunksize[] = WEAK_CHUNKS;
+#else
     unsigned short chunksize[] = STRESS_CHUNKS;
+#endif
 
     const MicroRoutine* microroutines = get_microroutines();
     size_t numRoutines = get_microroutines_count();
     size_t numThreads = ARRAY_SIZE(threadnumber);
     size_t numChunks = ARRAY_SIZE(chunksize);
 
-    size_t i, k, l;
-
     uint32_t base_log2n = WEAK_LOG2_N_PER_THREAD;
-    uint32_t scaled_log2n;
-    uint64_t real_size;
 
-    double time;
-    double speedup;
-    double efficiency;
-    double overhead;
+    for (size_t i = 0; i < numRoutines; ++i) {
+        void (*run)(WorkContext *) = microroutines[i].run;
+        const char *name = microroutines[i].name;
 
-    DataGenerator *generator;
-    // Inizializza la struct a zero per evitare qualsiasi campo rimasto indefinito
-    Result result = {0};
+        for (size_t l = 0; l < numChunks; ++l) {
+            double baseline_time = 0.0;
 
-    void (*run)(WorkContext *);
-    const char *name;
+            for (size_t k = 0; k < numThreads; ++k) {
+                TestResult result = {0};
 
-    if (ctx == NULL) {
-        printf("Context problem.\n");
-        return 1;
-    }
+                uint32_t scaled_log2n = base_log2n + get_log2_u16(threadnumber[k]);
+                uint64_t real_size = (uint64_t)1 << scaled_log2n;
 
-    ctx->input = NULL;
-    ctx->output = NULL;
-
-    if (writer == NULL) {
-        printf("ResultWriter creation problem.\n");
-        free(ctx);
-        return 1;
-    }
-
-    for (i = 0; i < numRoutines; ++i) {
-        run = microroutines[i].run;
-        name = microroutines[i].name;
-
-        for (l = 0; l < numChunks; ++l) {
-            /* Reset baseline per chunksize configuration */
-            double baseline = 0.0;
-
-            for (k = 0; k < numThreads; ++k) {
                 ctx->threadnumber = threadnumber[k];
                 ctx->chunksize = chunksize[l];
                 ctx->warmup_iterations = WARMUP_REPS;
                 ctx->work_iterations = WORK_REPS;
 
-                scaled_log2n = base_log2n + get_log2_u16(threadnumber[k]);
-                real_size = (uint64_t)1 << scaled_log2n;
-
                 ctx->input = collection_create((size_t)scaled_log2n);
-                ctx->output = collection_create((size_t)scaled_log2n);
 
-                if (ctx->input == NULL || ctx->output == NULL) {
+                if (ctx->input == NULL) {
                     printf("Collection creation problem.\n");
-                    cleanup_test_context(ctx, writer);
+                    destroy_collections(ctx);
                     return 1;
                 }
 
-                generator = generator_random_create((double)0, (double)real_size);
-
-                if (generator == NULL) {
-                    printf("Generator creation problem.\n");
-                    cleanup_test_context(ctx, writer);
-                    return 1;
-                }
-
-                if (!generator_fill(generator, ctx->input)) {
+                DataGenerator *generator = generator_random_create(0.0, (double)real_size);
+                if (generator == NULL || !generator_fill(generator, ctx->input)) {
                     printf("Collection generation problem.\n");
-                    generator_destroy(generator);
-                    cleanup_test_context(ctx, writer);
+                    if (generator) generator_destroy(generator);
+                    destroy_collections(ctx);
                     return 1;
                 }
-
                 generator_destroy(generator);
-                generator = NULL;
+
+                // Metadati e configurazione
+                result.meta.id = (int)i;
+                result.meta.type = "Weak Scaling";
+                result.meta.benchname = name;
+
+                result.config.log2n = (long)scaled_log2n;
+                result.config.thread_number = threadnumber[k];
+                result.config.chunksize = chunksize[l];
 
                 printf(
                     "Weak Scaling %s with base_log2N=%u, scaled_log2N=%u, "
@@ -127,33 +115,35 @@ int weakScalingTest(ResultWriter *writer, WorkContext *ctx) {
                     chunksize[l]
                 );
 
-                time = benchmark_routine(ctx, run);
+                // Esegue il benchmark e popola result.time (mean, min, max, variance)
+                benchmark_routine(ctx, run, &result);
 
-                /* Calcolo di baseline, efficiency, speedup e overhead */
+                double current_time = result.time.mean;
+
+                /*
+                 * Calcolo delle metriche per il Weak Scaling (Gustafson's Law):
+                 * Efficiency = T1 / Tp
+                 * Speedup    = Efficiency * P = (T1 / Tp) * P
+                 * Overhead   = Tp - T1
+                 */
                 if (k == 0 || threadnumber[k] == 1) {
-                    baseline = time;
-                    efficiency = 1.0;
-                    speedup = (double)threadnumber[k];
-                    overhead = 0.0;
+                    baseline_time = current_time;
+                    result.metrics.efficiency = 1.0;
+                    result.metrics.speedup = (double)threadnumber[k];
+                    result.metrics.overhead = 0.0;
                 } else {
-                    efficiency = (baseline > 0.0) ? (baseline / time) : 0.0;
-                    speedup = efficiency * (double)threadnumber[k];
-                    overhead = time - baseline;
+                    double threads_cnt = (double)threadnumber[k];
+
+                    result.metrics.efficiency = (current_time > 0.0)
+                                               ? (baseline_time / current_time) : 0.0;
+                    result.metrics.speedup = result.metrics.efficiency * threads_cnt;
+
+                    double raw_overhead = current_time - baseline_time;
+                    result.metrics.overhead = (raw_overhead > 0.0) ? raw_overhead : 0.0;
                 }
 
-                result.test_id = (int)i;
-                result.test_type = "Weak Scaling";
-                result.benchname = name;
-                result.log2n = (long)scaled_log2n;
-                result.threadnumber = threadnumber[k];
-                result.chunksize = chunksize[l];
-                result.time = time;
-                result.speedup = speedup;
-                result.efficiency = efficiency;
-                result.overhead = overhead;
-
                 if (!writer->operations.write(writer, &result)) {
-                    printf("Result writing problem.\n");
+                    printf("TestResult writing problem.\n");
                     destroy_collections(ctx);
                     return 1;
                 }

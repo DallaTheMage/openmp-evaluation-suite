@@ -4,5 +4,5 @@
     #include "data/generator.h"
     #include "data/writers/writer.h"
 
-    int strongScalingTest(ResultWriter *writer, WorkContext *ctx);
+    int strongScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger);
 #endif /* STRONG_H */

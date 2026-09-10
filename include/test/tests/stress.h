@@ -4,5 +4,5 @@
     #include "data/generator.h"
     #include "data/writers/writer.h"
 
-    int stressTest(ResultWriter *writer, WorkContext *ctx);
+    int stressTest(ResultWriter *writer, WorkContext *ctx, Logger *logger);
 #endif /* STRESS_H */

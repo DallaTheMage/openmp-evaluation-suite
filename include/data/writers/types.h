@@ -15,7 +15,7 @@
         unsigned short (*clean)(ResultWriter *writer,
                                 const char *filename);
         unsigned short (*write)(ResultWriter *writer,
-                                const Result *record);
+                                const TestResult *record);
         unsigned short (*flush)(ResultWriter *writer);
         unsigned short (*close)(ResultWriter *writer);
     };

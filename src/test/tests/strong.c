@@ -19,126 +19,113 @@
 #include "micro/microroutines.h"
 #include "test/test.h"
 
-/* 4. Header specifico del test corrente (es. strong.h, weak.h o stress.h) */
+/* 4. Header specifico del test corrente */
 #include "test/tests/strong.h"
 
-int strongScalingTest(ResultWriter *writer, WorkContext *ctx) {
+int strongScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger) {
+    if (ctx == NULL) {
+        printf("Context problem: WorkContext is NULL.\n");
+        return 1;
+    }
+    if (writer == NULL) {
+        printf("ResultWriter creation problem: writer is NULL.\n");
+        return 1;
+    }
+
+    // Usiamo le configurazioni dedicate allo Strong Scaling se definite
+#ifdef STRONG_THREADS
+    unsigned short threadnumber[] = STRONG_THREADS;
+#else
     unsigned short threadnumber[] = STRESS_THREADS;
+#endif
+
+#ifdef STRONG_CHUNKS
+    unsigned short chunksize[] = STRONG_CHUNKS;
+#else
     unsigned short chunksize[] = STRESS_CHUNKS;
+#endif
 
     const MicroRoutine* microroutines = get_microroutines();
     size_t numRoutines = get_microroutines_count();
     size_t numThreads = ARRAY_SIZE(threadnumber);
     size_t numChunks = ARRAY_SIZE(chunksize);
 
-    size_t i, k, l;
-
-    /* Fixed problem size for Strong Scaling */
+    /* Dimensione fissa del problema per lo Strong Scaling */
     uint32_t log2n = STRONG_LOG2_N_DEFAULT;
     uint64_t real_size = (uint64_t)1 << log2n;
 
-    double time;
-    double speedup;
-    double efficiency;
-    double overhead;
-
-    DataGenerator *generator;
-    /* Inizializzazione completa a zero per prevenire warning di Valgrind sullo stack */
-    Result result = {0};
-
-    void (*run)(WorkContext *);
-    const char *name;
-
-    if (ctx == NULL) {
-        printf("Context problem.\n");
-        return 1;
-    }
-
-    ctx->input = NULL;
-    ctx->output = NULL;
-
-    if (writer == NULL) {
-        printf("ResultWriter creation problem.\n");
-        return 1;
-    }
-
-    for (i = 0; i < numRoutines; ++i) {
-        run = microroutines[i].run;
-        name = microroutines[i].name;
+    for (size_t i = 0; i < numRoutines; ++i) {
+        void (*run)(WorkContext *) = microroutines[i].run;
+        const char *name = microroutines[i].name;
 
         ctx->input = collection_create((size_t)log2n);
-        ctx->output = collection_create((size_t)log2n);
 
-        if (ctx->input == NULL || ctx->output == NULL) {
+        if (ctx->input == NULL) {
             printf("Collection creation problem.\n");
             destroy_collections(ctx);
             return 1;
         }
 
-        generator = generator_random_create((double)0, (double)real_size);
-
-        if (generator == NULL) {
-            printf("Generator creation problem.\n");
+        DataGenerator *generator = generator_random_create(0.0, (double)real_size);
+        if (generator == NULL || !generator_fill(generator, ctx->input)) {
+            printf("Generator creation or filling problem.\n");
+            if (generator) generator_destroy(generator);
             destroy_collections(ctx);
             return 1;
         }
-
-        if (!generator_fill(generator, ctx->input)) {
-            printf("Collection generation problem.\n");
-            generator_destroy(generator);
-            destroy_collections(ctx);
-            return 1;
-        }
-
         generator_destroy(generator);
-        generator = NULL;
 
-        /* Invert loops: loop over chunksize first so each chunk size gets its own baseline */
-        for (l = 0; l < numChunks; ++l) {
-            double baseline = 0.0;
+        /* Ciclo esterno su chunksize: ogni configurazione di chunk ha la sua baseline */
+        for (size_t l = 0; l < numChunks; ++l) {
+            double baseline_time = 0.0;
 
-            for (k = 0; k < numThreads; ++k) {
+            for (size_t k = 0; k < numThreads; ++k) {
+                TestResult result = {0};
+
+                // Inizializzazione metadati e configurazione
+                result.meta.id = (int)i;
+                result.meta.type = "Strong Scaling";
+                result.meta.benchname = name;
+
+                result.config.log2n = (long)log2n;
+                result.config.thread_number = threadnumber[k];
+                result.config.chunksize = chunksize[l];
+
                 ctx->threadnumber = threadnumber[k];
                 ctx->chunksize = chunksize[l];
                 ctx->warmup_iterations = WARMUP_REPS;
                 ctx->work_iterations = WORK_REPS;
 
                 printf(
-                    "Strong Scaling %s with log2N=%u, "
-                    "threadnumber=%hu, chunksize=%hu\n",
-                    name,
-                    (unsigned int)log2n,
-                    threadnumber[k],
-                    chunksize[l]
+                    "Strong Scaling %s with log2N=%u, threadnumber=%hu, chunksize=%hu\n",
+                    name, (unsigned int)log2n, threadnumber[k], chunksize[l]
                 );
 
-                time = benchmark_routine(ctx, run);
+                // Popola result.time (mean, min, max, variance)
+                benchmark_routine(ctx, run, &result);
 
-                /* Initialize baseline on single-thread or first thread setting */
+                double current_time = result.time.mean;
+
+                // Calcolo delle metriche di parallelismo rispetto alla baseline
                 if (k == 0 || threadnumber[k] == 1) {
-                    baseline = time;
-                    speedup = 1.0;
-                    efficiency = 1.0;
-                    overhead = 0.0;
+                    baseline_time = current_time;
+                    result.metrics.speedup = 1.0;
+                    result.metrics.efficiency = 1.0;
+                    result.metrics.overhead = 0.0;
                 } else {
-                    speedup = (baseline > 0.0 && time > 0.0) ? (baseline / time) : 0.0;
-                    efficiency = (threadnumber[k] > 0) ? (speedup / (double)threadnumber[k]) : 0.0;
-                    overhead = time - (baseline / (double)threadnumber[k]);
+                    double threads_cnt = (double)threadnumber[k];
+
+                    result.metrics.speedup = (baseline_time > 0.0 && current_time > 0.0)
+                                            ? (baseline_time / current_time) : 0.0;
+                    result.metrics.efficiency = (threads_cnt > 0.0)
+                                               ? (result.metrics.speedup / threads_cnt) : 0.0;
+
+                    double raw_overhead = current_time - (baseline_time / threads_cnt);
+                    result.metrics.overhead = (raw_overhead > 0.0) ? raw_overhead : 0.0;
                 }
 
-                result.test_id = (int)i;
-                result.test_type = "Strong Scaling";
-                result.benchname = name;
-                result.log2n = (long)log2n;
-                result.threadnumber = threadnumber[k];
-                result.chunksize = chunksize[l];
-                result.time = time;
-                result.speedup = speedup;
-                result.efficiency = efficiency;
-                result.overhead = overhead;
-
                 if (!writer->operations.write(writer, &result)) {
-                    printf("Result writing problem.\n");
+                    printf("TestResult writing problem.\n");
                     destroy_collections(ctx);
                     return 1;
                 }
@@ -148,5 +135,6 @@ int strongScalingTest(ResultWriter *writer, WorkContext *ctx) {
         destroy_collections(ctx);
         writer->operations.flush(writer);
     }
+
     return 0;
 }

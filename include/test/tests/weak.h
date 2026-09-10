@@ -4,5 +4,5 @@
     #include "data/generator.h"
     #include "data/writers/writer.h"
 
-    int weakScalingTest(ResultWriter *writer, WorkContext *ctx);
+    int weakScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger);
 #endif /* WEAK_H */

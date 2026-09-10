@@ -1,22 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#define MKDIR(path) mkdir(path, 0755)
+
 #include "data/writers/utils.h"
 #include "config/file.h"
 
+/*
+ * Ricrea il comportamento di 'mkdir -p' in modo nativo e sicuro,
+ * evitando chiamate a system() e prevenendo la Command Injection.
+ */
 static void ensure_directories_exist(const char *filepath) {
     char temp[1024];
-    // Allocando 1050 byte per cmd, garantiamo lo spazio per "mkdir -p \" ... \"" + '\0'
-    char cmd[1050];
-
     snprintf(temp, sizeof(temp), "%s", filepath);
-    char *last_slash = strrchr(temp, '/');
 
-    if (last_slash != NULL) {
-        *last_slash = '\0'; // Separa la cartella dal nome file
-        snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", temp);
-        system(cmd);
+    char *last_slash = strrchr(temp, '/');
+    if (last_slash == NULL) {
+        return; // Nessuna cartella specificata nel percorso
     }
+
+    *last_slash = '\0'; // Separa la directory dal nome del file
+
+    // Scorriamo il percorso e creiamo ciascuna sottocartella se non esiste
+    for (char *p = temp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            MKDIR(temp); // Crea la directory intermedia (se esiste già, fallisce silenziosamente)
+            *p = '/';
+        }
+    }
+    MKDIR(temp); // Crea la directory finale
 }
 
 char *prepare_filepath(const char *filename, const char *extension) {
@@ -80,7 +96,7 @@ char *prepare_filepath(const char *filename, const char *extension) {
 
     full_path[offset] = '\0';
 
-    // 5. Garantisce la presenza fisica delle directory su Linux
+    // 5. Garantisce la presenza fisica delle directory in modo sicuro e nativo
     ensure_directories_exist(full_path);
 
     return full_path;

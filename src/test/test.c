@@ -13,11 +13,6 @@ void destroy_collections(WorkContext *ctx) {
         collection_destroy(ctx->input);
         ctx->input = NULL;
     }
-
-    if (ctx->output != NULL) {
-        collection_destroy(ctx->output);
-        ctx->output = NULL;
-    }
 }
 
 void cleanup_test_context(WorkContext *ctx, ResultWriter *writer) {
@@ -33,22 +28,55 @@ void cleanup_test_context(WorkContext *ctx, ResultWriter *writer) {
     }
 }
 
-double benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *)) {
-    double start;
-    double total = 0.0;
-    size_t i;
+void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *), TestResult *result) {
+    // Controllo di guardia per evitare divisioni per zero
+    if (ctx == NULL || result == NULL || ctx->work_iterations == 0) {
+        if (result != NULL) {
+            result->time = (SampleStats){ .mean = 0.0, .min = 0.0, .max = 0.0, .variance = 0.0 };
+        }
+        return;
+    }
 
-    for (i = 0; i < ctx->warmup_iterations; ++i) {
+    // Warmup
+    for (size_t i = 0; i < ctx->warmup_iterations; ++i) {
         run(ctx);
     }
 
-    for (i = 0; i < ctx->work_iterations; ++i) {
-        start = omp_get_wtime();
+    double min_time = 0.0;
+    double max_time = 0.0;
+    double mean = 0.0;
+    double M2 = 0.0; // Usato per l'algoritmo di Welford
+
+    for (size_t i = 0; i < ctx->work_iterations; ++i) {
+        double start = omp_get_wtime();
         run(ctx);
-        total += omp_get_wtime() - start;
+        double end = omp_get_wtime();
+
+        double elapsed = end - start;
+
+        // Min/Max
+        if (i == 0) {
+            min_time = elapsed;
+            max_time = elapsed;
+        } else {
+            if (elapsed < min_time) min_time = elapsed;
+            if (elapsed > max_time) max_time = elapsed;
+        }
+
+        // Algoritmo di Welford per Media e Varianza numericamente stabili
+        double delta = elapsed - mean;
+        mean += delta / (double)(i + 1);
+        double delta2 = elapsed - mean;
+        M2 += delta * delta2;
     }
 
-    return total / (double)ctx->work_iterations;
+    double count = (double)ctx->work_iterations;
+
+    result->time.mean = mean;
+    result->time.min = min_time;
+    result->time.max = max_time;
+    // Varianza di popolazione (per la varianza campionaria usa: M2 / (count - 1))
+    result->time.variance = M2 / count;
 }
 
 static const Test tests[] = {

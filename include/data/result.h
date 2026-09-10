@@ -1,17 +1,38 @@
-#ifndef RESULT_H
-#define RESULT_H
+#ifndef TEST_RESULT_H
+#define TEST_RESULT_H
+
+// Sotto-struct pulite e leggibili
+typedef struct {
+    int id;
+    const char *type;
+    const char *benchname;
+} TestMeta;
 
 typedef struct {
-    int test_id;
-    const char *test_type;
-    const char *benchname;
     long log2n;
-    int threadnumber;
+    int thread_number;
     int chunksize;
-    double time;
+} ExecutionConfig;
+
+typedef struct {
+    double mean;
+    double min;
+    double max;
+    double variance;
+} SampleStats;
+
+typedef struct {
     double speedup;
     double efficiency;
     double overhead;
-} Result;
+} ParallelMetrics;
 
-#endif /* RESULT_H */
+// Contenitore principale
+typedef struct {
+    TestMeta meta;
+    ExecutionConfig config;
+    SampleStats time;
+    ParallelMetrics metrics;
+} TestResult;
+
+#endif /* TEST_RESULT_H */
