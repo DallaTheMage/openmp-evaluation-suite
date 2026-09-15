@@ -12,4 +12,5 @@
     };
 
     Logger *create_logger(void);
+    void destroy_logger(Logger *logger);
 #endif /* LOGGER_H */

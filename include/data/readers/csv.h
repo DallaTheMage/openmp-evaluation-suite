@@ -3,4 +3,6 @@
     #include "data/readers/types.h"
 
     ResultReader *create_csv_reader(void);
+    void destroy_csv_reader(ResultReader *reader);
+
 #endif

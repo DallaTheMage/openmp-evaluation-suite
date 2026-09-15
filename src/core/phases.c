@@ -1,75 +1,133 @@
-#include "core/phases.h"
-#include "test/test.h"
-#include "data/writers/writer.h"
-#include "data/readers/reader.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-int run_test_phase(const char *raw_output_filename, Logger *logger) {
-    logger->log("=== STARTING TEST PHASE (RAW DATA COLLECTION) ===");
+#include "core/phases.h"
+#include "core/context.h"
+#include "config/sizes.h"
+#include "test/test.h"
+#include "data/generator.h"
+#include "data/writers/writer.h"
+#include "data/readers/reader.h"
 
-    ResultWriter *writer = create_writer();
-    WorkContext *ctx = malloc(sizeof(WorkContext));
-    if (!writer || !ctx) {
-        logger->error("Failed to allocate test context or writer.");
-        cleanup_test_context(ctx, writer, NULL);
+GeneralContext* preparation_phase(void) {
+    // Il contesto generale viene istanziato all'inizio.
+    // L'input può essere allocato subito oppure lasciato a NULL e gestito nei benchmark.
+    uint64_t real_size = (uint64_t)1 << MAX_PROBLEM_SIZE;
+    Collection *input = collection_create(MAX_PROBLEM_SIZE);
+
+    if (input) {
+        DataGenerator *generator = generator_random_create(0.0, (double)real_size);
+        if (generator) {
+            generator_fill(generator, input);
+            generator_destroy(generator);
+        }
+    }
+
+    GeneralContext *gen_ctx = create_context(input);
+    return gen_ctx;
+}
+
+int test_phase(GeneralContext *gen_ctx) {
+    if (!gen_ctx || !gen_ctx->file_ctx || !gen_ctx->file_ctx->writer) {
         return 1;
+    }
+
+    Logger *logger = gen_ctx->logger;
+    ResultWriter *writer = gen_ctx->file_ctx->writer;
+
+    if (logger && logger->log) {
+        logger->log("=== STARTING TEST PHASE (RAW DATA COLLECTION) ===");
     }
 
     size_t col_count = 0;
     const ColumnDesc *cols = obtain_raw_column_descs(&col_count);
 
-    writer->operations.clean(writer, raw_output_filename);
-    if (!writer->operations.open(writer, raw_output_filename, "w")) {
-        logger->error("Failed to open raw output file.");
-        cleanup_test_context(ctx, writer, NULL);
-        return 1;
-    }
-
-    writer->operations.write_header(writer, cols, col_count);
-
     const Test *tests = get_test_set();
     size_t num_tests = get_test_count();
 
     for (size_t i = 0; i < num_tests; ++i) {
-        logger->info(tests[i].testname, tests[i].run(writer, ctx, logger) == 0);
+        // Genera il percorso estraendo il nome esatto del test (es. "memory_stress", "weak_scaling")
+        // Risultato atteso: "output/<COMPILERNAME>/samples/<testname>.csv"
+        char *output_filename = writer->operations.prepare_filepath(COMPILERNAME, tests[i].name);
+        if (!output_filename) {
+            if (logger && logger->error) {
+                logger->error("Impossibile preparare il percorso per il file di output.");
+            }
+            continue;
+        }
+
+        // Prepara ed apre il file CSV specifico del test
+        writer->operations.clean(writer, output_filename);
+        if (!writer->operations.open(writer, output_filename, "w")) {
+            if (logger && logger->error) {
+                logger->error("Impossibile aprire il file di output per il test.");
+            }
+            free(output_filename);
+            continue;
+        }
+
+        // Scrive l'intestazione delle colonne CSV
+        writer->operations.write_header(writer, cols, col_count);
+
+        // Esegue il benchmark passando il contesto generale
+        int res = tests[i].run(gen_ctx);
+        if (logger && logger->info) {
+            logger->info(tests[i].name, res == 0);
+        }
         writer->operations.flush(writer);
+
+        // Chiude il file ed elimina la stringa allocata dinamicamente
+        writer->operations.close(writer);
+        free(output_filename);
     }
 
-    cleanup_test_context(ctx, writer, NULL);
-    logger->log("=== TEST PHASE COMPLETED SUCCESSFULLY ===");
+    if (logger && logger->log) {
+        logger->log("=== TEST PHASE COMPLETED SUCCESSFULLY ===");
+    }
     return 0;
 }
 
-int run_postprocess_phase(const char *raw_input_filename, const char *aggregated_output_filename, Logger *logger) {
-    logger->log("=== STARTING POSTPROCESS PHASE (AGGREGATION) ===");
+int postprocess_phase(GeneralContext *gen_ctx, const char *raw_input_filename) {
+    if (!gen_ctx || !gen_ctx->file_ctx || !gen_ctx->file_ctx->reader || !gen_ctx->file_ctx->writer) {
+        return 1;
+    }
 
-    ResultReader *reader = create_reader();
-    ResultWriter *writer = create_writer();
+    Logger *logger = gen_ctx->logger;
+    ResultReader *reader = gen_ctx->file_ctx->reader;
+    ResultWriter *writer = gen_ctx->file_ctx->writer;
+
+    if (logger && logger->log) {
+        logger->log("=== STARTING POSTPROCESS PHASE (AGGREGATION) ===");
+    }
 
     if (!reader->operations.open(reader, raw_input_filename)) {
-        logger->error("Failed to open raw CSV file for reading.");
-        free(reader); free(writer);
+        if (logger && logger->error) logger->error("Failed to open raw CSV file for reading.");
         return 1;
     }
 
-    writer->operations.clean(writer, aggregated_output_filename);
-    if (!writer->operations.open(writer, aggregated_output_filename, "w")) {
-        logger->error("Failed to open aggregated CSV file for writing.");
+    char *output_filename = writer->operations.prepare_filepath(COMPILERNAME, "aggregated_results");
+    if (!output_filename) {
+        if (logger && logger->error) logger->error("Failed to prepare aggregated filepath.");
         reader->operations.close(reader);
-        free(reader); free(writer);
         return 1;
     }
 
-    // Scrive l'header del file aggregato
+    writer->operations.clean(writer, output_filename);
+    if (!writer->operations.open(writer, output_filename, "w")) {
+        if (logger && logger->error) logger->error("Failed to open aggregated CSV file for writing.");
+        free(output_filename);
+        reader->operations.close(reader);
+        return 1;
+    }
+
     size_t agg_col_count = 0;
     const ColumnDesc *agg_cols = obtain_aggregated_column_descs(&agg_col_count);
     writer->operations.write_header(writer, agg_cols, agg_col_count);
 
     reader->operations.skip_header(reader);
 
-    RawSample sample;
+    RawSample sample = {0};
     AggregatedResult current_agg = {0};
 
     double baseline_time = 0.0;
@@ -77,7 +135,6 @@ int run_postprocess_phase(const char *raw_input_filename, const char *aggregated
     double mean = 0.0, M2 = 0.0, min_t = 0.0, max_t = 0.0;
 
     while (reader->operations.read_raw(reader, &sample)) {
-        // Rilevamento cambio di configurazione (gruppo di campioni)
         bool new_group = (count > 0) && (
             sample.config.thread_number != current_agg.config.thread_number ||
             sample.config.log2n != current_agg.config.log2n ||
@@ -86,7 +143,6 @@ int run_postprocess_phase(const char *raw_input_filename, const char *aggregated
         );
 
         if (new_group) {
-            // Finalizza il gruppo precedente
             current_agg.time.mean = mean;
             current_agg.time.min = min_t;
             current_agg.time.max = max_t;
@@ -106,13 +162,11 @@ int run_postprocess_phase(const char *raw_input_filename, const char *aggregated
 
             writer->operations.write_aggregated(writer, &current_agg);
 
-            // Reset accumulatore
             count = 0; mean = 0.0; M2 = 0.0;
             if (sample.meta.type) free((void*)sample.meta.type);
             if (sample.meta.benchname) free((void*)sample.meta.benchname);
         }
 
-        // Accumulo campioni (Welford)
         if (count == 0) {
             current_agg.meta = sample.meta;
             current_agg.config = sample.config;
@@ -130,7 +184,6 @@ int run_postprocess_phase(const char *raw_input_filename, const char *aggregated
         M2 += delta * delta2;
     }
 
-    // Scrittura dell'ultimo gruppo
     if (count > 0) {
         current_agg.time.mean = mean;
         current_agg.time.min = min_t;
@@ -155,8 +208,10 @@ int run_postprocess_phase(const char *raw_input_filename, const char *aggregated
 
     reader->operations.close(reader);
     writer->operations.close(writer);
-    free(reader); free(writer);
+    free(output_filename);
 
-    logger->log("=== POSTPROCESS PHASE COMPLETED SUCCESSFULLY ===");
+    if (logger && logger->log) {
+        logger->log("=== POSTPROCESS PHASE COMPLETED SUCCESSFULLY ===");
+    }
     return 0;
 }

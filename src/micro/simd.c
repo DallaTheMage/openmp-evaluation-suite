@@ -4,16 +4,8 @@
 #include "config/schedule.h"
 #include "core/context.h"
 #include "micro/microroutines.h"
+#include "micro/arithmetic.h"
 #include "micro/simd.h"
-
-static double arithmetic_step(double value)
-{
-#if DATATYPE_IS_FLOATING
-    return value * (double)1.000001 + (double)0.000001;
-#else
-    return value * (double)2 + (double)1;
-#endif
-}
 
 void routine_simd(WorkContext *ctx)
 {

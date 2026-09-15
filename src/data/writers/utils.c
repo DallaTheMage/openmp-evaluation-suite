@@ -6,8 +6,10 @@
 
 #include "data/writers/utils.h"
 
-// Creazione ricorsiva delle cartelle in C99 / Linux
+// Creazione ricorsiva delle cartelle in C99 / POSIX
 static void create_dir_recursive(const char *path) {
+    if (!path || !*path) return;
+
     char temp[512];
     snprintf(temp, sizeof(temp), "%s", path);
     size_t len = strlen(temp);
@@ -23,13 +25,14 @@ static void create_dir_recursive(const char *path) {
     mkdir(temp, 0755);
 }
 
-// Genera direttamente output/[compiler_name]/samples/[test_name].csv
+// Genera il percorso: output/[compiler_name]/samples/[test_name].csv
 char *prepare_filepath(const char *compiler_name, const char *test_name) {
     if (!compiler_name || !test_name) return NULL;
 
     char dir_path[512];
     snprintf(dir_path, sizeof(dir_path), "output/%s/samples", compiler_name);
 
+    // Crea la gerarchia di directory se non esiste già
     create_dir_recursive(dir_path);
 
     char full_path[1024];

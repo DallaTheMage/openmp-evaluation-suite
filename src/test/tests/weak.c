@@ -24,8 +24,14 @@ static uint32_t get_log2_u16(unsigned short v) {
     return log2_val;
 }
 
-int weakScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger) {
-    if (!ctx || !writer) return 1;
+int weakScalingTest(GeneralContext *gen_ctx) {
+    if (!gen_ctx || !gen_ctx->work_ctx || !gen_ctx->file_ctx || !gen_ctx->file_ctx->writer) {
+        return 1;
+    }
+
+    WorkContext *w_ctx = gen_ctx->work_ctx;
+    ResultWriter *writer = gen_ctx->file_ctx->writer;
+    Logger *logger = gen_ctx->logger;
 
 #ifdef WEAK_THREADS
     unsigned short threadnumber[] = WEAK_THREADS;
@@ -44,30 +50,43 @@ int weakScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger) {
     size_t numThreads = ARRAY_SIZE(threadnumber);
     size_t numChunks = ARRAY_SIZE(chunksize);
 
-    uint32_t base_log2n = WEAK_LOG2_N_PER_THREAD;
+    uint32_t base_log2n = WEAK_SCALING_SIZE;
+    char log_buffer[256];
 
     for (size_t i = 0; i < numRoutines; ++i) {
         for (size_t l = 0; l < numChunks; ++l) {
             for (size_t k = 0; k < numThreads; ++k) {
+                destroy_collections(w_ctx);
+
                 uint32_t scaled_log2n = base_log2n + get_log2_u16(threadnumber[k]);
                 uint64_t real_size = (uint64_t)1 << scaled_log2n;
 
-                ctx->threadnumber = threadnumber[k];
-                ctx->chunksize = chunksize[l];
-                ctx->warmup_iterations = WARMUP_REPS;
-                ctx->work_iterations = WORK_REPS;
+                w_ctx->threadnumber = threadnumber[k];
+                w_ctx->chunksize = chunksize[l];
+                w_ctx->warmup_iterations = WARMUP_REPS;
+                w_ctx->work_iterations = WORK_REPS;
 
-                ctx->input = collection_create((size_t)scaled_log2n);
-                if (!ctx->input) {
-                    logger->error("Collection creation problem.");
+                w_ctx->input = collection_create((size_t)scaled_log2n);
+                if (!w_ctx->input || (uint64_t)w_ctx->input->size != real_size) {
+                    if (logger && logger->error) {
+                        snprintf(log_buffer, sizeof(log_buffer),
+                                 "OOM o dimensione errata per log2N: %u (Attesi: %lu, Allocati: %lu)",
+                                 scaled_log2n,
+                                 (unsigned long)real_size,
+                                 (unsigned long)(w_ctx->input ? w_ctx->input->size : 0));
+                        logger->error(log_buffer);
+                    }
+                    destroy_collections(w_ctx);
                     return 1;
                 }
 
                 DataGenerator *generator = generator_random_create(0.0, (double)real_size);
-                if (!generator || !generator_fill(generator, ctx->input)) {
-                    logger->error("Collection generation problem.");
+                if (!generator || !generator_fill(generator, w_ctx->input)) {
+                    if (logger && logger->error) {
+                        logger->error("Data generator problem.");
+                    }
                     if (generator) generator_destroy(generator);
-                    destroy_collections(ctx);
+                    destroy_collections(w_ctx);
                     return 1;
                 }
                 generator_destroy(generator);
@@ -81,9 +100,20 @@ int weakScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger) {
                 sample.config.thread_number = threadnumber[k];
                 sample.config.chunksize = chunksize[l];
 
-                benchmark_routine(ctx, microroutines[i].run, writer, &sample);
+                if (logger && logger->log) {
+                    snprintf(log_buffer, sizeof(log_buffer),
+                             "[%s] Routine: %s | log2N: %ld | Threads: %u | Chunk: %u",
+                             sample.meta.type,
+                             sample.meta.benchname,
+                             sample.config.log2n,
+                             sample.config.thread_number,
+                             sample.config.chunksize);
+                    logger->log(log_buffer);
+                }
 
-                destroy_collections(ctx);
+                benchmark_routine(w_ctx, microroutines[i].run, writer, &sample);
+
+                destroy_collections(w_ctx);
             }
         }
         writer->operations.flush(writer);

@@ -10,8 +10,8 @@
 typedef struct Test Test;
 
 struct Test {
-    const char *testname;
-    int (*run)(ResultWriter *writer, WorkContext *ctx, Logger *logger);
+    const char *name;
+    int (*run)(GeneralContext *ctx);
 };
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))

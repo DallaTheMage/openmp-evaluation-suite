@@ -69,3 +69,15 @@ ResultWriter *create_csv_writer(void) {
 
     return writer;
 }
+
+void destroy_csv_writer(ResultWriter *writer) {
+    if (writer == NULL) return;
+
+    // Chiude il file se è ancora aperto prima di deallocare
+    if (writer->file != NULL) {
+        fclose(writer->file);
+        writer->file = NULL;
+    }
+
+    free(writer);
+}

@@ -6,6 +6,6 @@
 #include "core/logger.h"
 #include "data/writers/writer.h"
 
-int weakScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger);
+int weakScalingTest(GeneralContext *ctx);
 
 #endif /* WEAK_H */

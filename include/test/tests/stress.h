@@ -6,6 +6,6 @@
 #include "core/logger.h"
 #include "data/writers/writer.h"
 
-int stressTest(ResultWriter *writer, WorkContext *ctx, Logger *logger);
+int stressTest(GeneralContext *ctx);
 
 #endif /* STRESS_H */

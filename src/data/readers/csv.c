@@ -52,3 +52,14 @@ ResultReader *create_csv_reader(void) {
 
     return reader;
 }
+
+void destroy_csv_reader(ResultReader *reader) {
+    if (reader == NULL) return;
+
+    if (reader->file != NULL) {
+        fclose(reader->file);
+        reader->file = NULL;
+    }
+
+    free(reader);
+}

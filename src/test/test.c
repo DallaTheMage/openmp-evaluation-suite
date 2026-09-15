@@ -1,32 +1,19 @@
 #include <stdlib.h>
 #include <omp.h>
+
+#include "core/context.h"
+#include "data/collection.h"
+#include "core/logger.h"
 #include "test/test.h"
 #include "test/tests/stress.h"
 #include "test/tests/strong.h"
 #include "test/tests/weak.h"
-#include "data/collection.h"
-#include "core/logger.h"
 
 void destroy_collections(WorkContext *ctx) {
     if (ctx == NULL) return;
     if (ctx->input != NULL) {
         collection_destroy(ctx->input);
         ctx->input = NULL;
-    }
-}
-
-void cleanup_test_context(WorkContext *ctx, ResultWriter *writer, Logger *logger) {
-    destroy_collections(ctx);
-
-    if (writer != NULL) {
-        writer->operations.close(writer);
-        free(writer);
-    }
-    if (ctx != NULL) {
-        free(ctx);
-    }
-    if (logger != NULL) {
-        free(logger);
     }
 }
 
@@ -56,9 +43,9 @@ void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *),
 }
 
 static const Test tests[] = {
-    { "Memory Stress", stressTest },
-    { "Weak Scaling", weakScalingTest },
-    { "Strong Scaling", strongScalingTest }
+    { "memory_stress", stressTest },
+    { "weak_scaling", weakScalingTest },
+    { "strong_scaling", strongScalingTest }
 };
 
 const Test *get_test_set(void) {

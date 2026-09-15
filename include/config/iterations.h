@@ -1,11 +1,11 @@
 #ifndef ITERATIONS_H
 #define ITERATIONS_H
     #ifndef WARMUP_REPS
-        #define WARMUP_REPS        8
+        #define WARMUP_REPS        0
     #endif /* WARMUP_REPS */
 
     #ifndef WORK_REPS
-        #define WORK_REPS      15
+        #define WORK_REPS      1
     #endif /* WORK_REPS */
 
     #ifndef SLOWDOWN_REPS

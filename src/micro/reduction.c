@@ -44,17 +44,17 @@ void routine_scan_inclusive(WorkContext *ctx)
     }
 
     const double *in = ctx->input->data;
-    size_t size = ctx->input->size;
+    int64_t size = (int64_t)ctx->input->size;
     int threadnumber = ctx->threadnumber;
 
-    double running_sum = (double)0;
+    double running_sum = 0.0;
 
     #pragma omp parallel for \
         num_threads(threadnumber) \
         default(none) \
         shared(in, size) \
         reduction(inscan, +:running_sum)
-    for (size_t i = 0; i < size; ++i) {
+    for (int64_t i = 0; i < size; ++i) {
         running_sum += in[i];
 
         #pragma omp scan inclusive(running_sum)
@@ -85,7 +85,7 @@ void routine_critical_reduction(WorkContext *ctx)
         num_threads(threadnumber) \
         schedule(CHOSEN_SCHEDULE, chunksize) \
         default(none) \
-        shared(in, size, global_sum)
+        shared(in, size, global_sum, chunksize) // <--- Aggiunto chunksize
     for (size_t i = 0; i < size; ++i) {
         #pragma omp critical
         global_sum += in[i];
@@ -116,7 +116,7 @@ void routine_atomic_reduction(WorkContext *ctx)
         num_threads(threadnumber) \
         schedule(CHOSEN_SCHEDULE, chunksize) \
         default(none) \
-        shared(in, size, global_sum)
+        shared(in, size, global_sum, chunksize) // <--- Aggiunto chunksize
     for (size_t i = 0; i < size; ++i) {
         #pragma omp atomic
         global_sum += in[i];

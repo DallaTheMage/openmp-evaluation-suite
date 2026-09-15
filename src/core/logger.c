@@ -36,3 +36,11 @@ Logger *create_logger(void) {
 
     return logger;
 }
+
+void destroy_logger(Logger *logger) {
+    if (logger == NULL) {
+        return;
+    }
+
+    free(logger);
+}

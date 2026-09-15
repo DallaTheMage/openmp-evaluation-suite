@@ -62,9 +62,6 @@ void routine_matrix_col_worst(WorkContext *ctx)
             double val = in[idx];
 
             val = arithmetic_step(val);
-            val = arithmetic_step(val);
-            val = arithmetic_step(val);
-            val = arithmetic_step(val);
 
             volatile double dummy = val;
             (void)dummy;
@@ -98,9 +95,6 @@ void routine_matrix_collapse(WorkContext *ctx)
             const size_t idx = r * cols + c;
             double val = in[idx];
 
-            val = arithmetic_step(val);
-            val = arithmetic_step(val);
-            val = arithmetic_step(val);
             val = arithmetic_step(val);
 
             volatile double dummy = val;

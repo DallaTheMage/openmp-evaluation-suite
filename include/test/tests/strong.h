@@ -6,6 +6,6 @@
 #include "core/logger.h"
 #include "data/writers/writer.h"
 
-int strongScalingTest(ResultWriter *writer, WorkContext *ctx, Logger *logger);
+int strongScalingTest(GeneralContext *ctx);
 
 #endif /* STRONG_H */
