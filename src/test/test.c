@@ -1,39 +1,38 @@
 #include <stdlib.h>
 #include <omp.h>
 #include "test/test.h"
-#include "data/collection.h"
-#include "test/tests/weak.h"
-#include "test/tests/strong.h"
 #include "test/tests/stress.h"
+#include "test/tests/strong.h"
+#include "test/tests/weak.h"
+#include "data/collection.h"
+#include "core/logger.h"
 
 void destroy_collections(WorkContext *ctx) {
     if (ctx == NULL) return;
-
     if (ctx->input != NULL) {
         collection_destroy(ctx->input);
         ctx->input = NULL;
     }
 }
 
-void cleanup_test_context(WorkContext *ctx, ResultWriter *writer) {
+void cleanup_test_context(WorkContext *ctx, ResultWriter *writer, Logger *logger) {
     destroy_collections(ctx);
 
     if (writer != NULL) {
         writer->operations.close(writer);
         free(writer);
     }
-
     if (ctx != NULL) {
         free(ctx);
     }
+    if (logger != NULL) {
+        free(logger);
+    }
 }
 
-void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *), TestResult *result) {
-    // Controllo di guardia per evitare divisioni per zero
-    if (ctx == NULL || result == NULL || ctx->work_iterations == 0) {
-        if (result != NULL) {
-            result->time = (SampleStats){ .mean = 0.0, .min = 0.0, .max = 0.0, .variance = 0.0 };
-        }
+void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *),
+                       ResultWriter *writer, RawSample *base_sample) {
+    if (ctx == NULL || writer == NULL || base_sample == NULL || ctx->work_iterations == 0) {
         return;
     }
 
@@ -42,47 +41,24 @@ void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *), TestResult 
         run(ctx);
     }
 
-    double min_time = 0.0;
-    double max_time = 0.0;
-    double mean = 0.0;
-    double M2 = 0.0; // Usato per l'algoritmo di Welford
-
+    // Esecuzione e campionamento dei dati grezzi
     for (size_t i = 0; i < ctx->work_iterations; ++i) {
         double start = omp_get_wtime();
         run(ctx);
         double end = omp_get_wtime();
 
-        double elapsed = end - start;
+        base_sample->run_id = (int)i;
+        base_sample->elapsed_time = end - start;
 
-        // Min/Max
-        if (i == 0) {
-            min_time = elapsed;
-            max_time = elapsed;
-        } else {
-            if (elapsed < min_time) min_time = elapsed;
-            if (elapsed > max_time) max_time = elapsed;
-        }
-
-        // Algoritmo di Welford per Media e Varianza numericamente stabili
-        double delta = elapsed - mean;
-        mean += delta / (double)(i + 1);
-        double delta2 = elapsed - mean;
-        M2 += delta * delta2;
+        // Scrittura immediata del campione grezzo nel CSV
+        writer->operations.write_raw(writer, base_sample);
     }
-
-    double count = (double)ctx->work_iterations;
-
-    result->time.mean = mean;
-    result->time.min = min_time;
-    result->time.max = max_time;
-    // Varianza di popolazione (per la varianza campionaria usa: M2 / (count - 1))
-    result->time.variance = M2 / count;
 }
 
 static const Test tests[] = {
-    { "Stress Test", stressTest },
-    { "Weak Scaling Test", weakScalingTest },
-    { "Strong Scaling Test", strongScalingTest }
+    { "Memory Stress", stressTest },
+    { "Weak Scaling", weakScalingTest },
+    { "Strong Scaling", strongScalingTest }
 };
 
 const Test *get_test_set(void) {

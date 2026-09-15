@@ -1,23 +1,29 @@
 #ifndef TEST_H
 #define TEST_H
-    #include "core/context.h"
-    #include "core/logger.h"
-    #include "data/writers/writer.h"
 
-    typedef struct Test Test;
+#include <stddef.h>
+#include "core/context.h"
+#include "core/logger.h"
+#include "data/writers/writer.h"
+#include "data/result.h"
 
-    struct Test {
-        const char *testname;
-        int (*run)(ResultWriter *writer, WorkContext *ctx, Logger *logger);
-    };
+typedef struct Test Test;
 
-    #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+struct Test {
+    const char *testname;
+    int (*run)(ResultWriter *writer, WorkContext *ctx, Logger *logger);
+};
 
-    void destroy_collections(WorkContext *ctx);
-    void cleanup_test_context(WorkContext *ctx, ResultWriter *writer);
-    void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *), TestResult *result);
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-    const Test *get_test_set(void);
-    size_t get_test_count(void);
+void destroy_collections(WorkContext *ctx);
+void cleanup_test_context(WorkContext *ctx, ResultWriter *writer, Logger *logger);
+
+// Nuova firma: scrive direttamente i campioni grezzi tramite il writer
+void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *),
+                       ResultWriter *writer, RawSample *base_sample);
+
+const Test *get_test_set(void);
+size_t get_test_count(void);
 
 #endif /* TEST_H */

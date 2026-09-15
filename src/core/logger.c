@@ -24,7 +24,7 @@ static void log_error(const char *message) {
     return;
 }
 
-Logger *create_logger() {
+Logger *create_logger(void) {
     Logger *logger = (Logger *)malloc(sizeof(Logger));
     if (logger == NULL) {
         return NULL;

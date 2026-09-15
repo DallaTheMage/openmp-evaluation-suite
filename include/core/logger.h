@@ -11,5 +11,5 @@
         void (*error)(const char *message);
     };
 
-    Logger *create_logger();
+    Logger *create_logger(void);
 #endif /* LOGGER_H */
