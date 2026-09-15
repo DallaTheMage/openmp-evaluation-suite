@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include <math.h>
 #include "core/utils.h"
 #include "data/collection.h"
 
@@ -107,4 +107,15 @@ void collection_destroy(Collection *collection) {
     }
 
     free(collection);
+}
+
+void collection_update_matrix_dimensions(Collection *col) {
+    if (col == NULL || col->size == 0) return;
+
+    // Trattando il dataset come una matrice quadrata N x N
+    // N = sqrt(size)
+    size_t dim = (size_t)sqrt((double)col->size);
+
+    col->rows = dim;
+    col->columns = dim;
 }

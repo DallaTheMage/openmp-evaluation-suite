@@ -1,6 +1,6 @@
 #ifndef THREAD_CONFIG_H
 #define THREAD_CONFIG_H
-    #define CUSTOM_THREAD_NUMBERS 2, 4
+    #define CUSTOM_THREAD_NUMBERS 8
     #ifndef CUSTOM_THREAD_NUMBERS
         #define STRESS_THREADS { 1 }
     #else

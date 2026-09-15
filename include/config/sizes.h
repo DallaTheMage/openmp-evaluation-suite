@@ -2,7 +2,7 @@
 #define CONFIG_SIZES_H
 
    #ifndef MAX_PROBLEM_SIZE
-      #define MAX_PROBLEM_SIZE 24U
+      #define MAX_PROBLEM_SIZE 26U
    #endif
 
    #ifndef WORK_SIZE_SLICES

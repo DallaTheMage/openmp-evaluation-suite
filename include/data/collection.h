@@ -41,4 +41,6 @@ void collection_destroy(
     Collection *collection
 );
 
+void collection_update_matrix_dimensions(Collection *col);
+
 #endif /* DATA_COLLECTION_H */

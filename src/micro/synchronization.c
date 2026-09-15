@@ -13,7 +13,7 @@
 
 void routine_sections(WorkContext *ctx)
 {
-    if (ctx == NULL || ctx->input == NULL) {
+    if (ctx == NULL || ctx->input == NULL || ctx->input->size == 0) {
         return;
     }
 
@@ -21,6 +21,15 @@ void routine_sections(WorkContext *ctx)
     size_t size = ctx->input->size;
     size_t quarter = size / 4;
     int threadnumber = ctx->threadnumber;
+
+    // Se size < 4, fall-back sequenziale semplice per evitare bounds errati
+    if (size < 4) {
+        for (size_t i = 0; i < size; ++i) {
+            volatile double dummy = arithmetic_step(in[i]);
+            (void)dummy;
+        }
+        return;
+    }
 
     #pragma omp parallel \
         num_threads(threadnumber) \
@@ -55,6 +64,7 @@ void routine_sections(WorkContext *ctx)
 
             #pragma omp section
             {
+                // Garantisce che tutti gli elementi fino a 'size' vengano elaborati
                 for (size_t i = 3 * quarter; i < size; ++i) {
                     volatile double dummy = arithmetic_step(in[i]);
                     (void)dummy;

@@ -10,11 +10,9 @@
 #include "test/tests/weak.h"
 
 void destroy_collections(WorkContext *ctx) {
-    if (ctx == NULL) return;
-    if (ctx->input != NULL) {
-        collection_destroy(ctx->input);
-        ctx->input = NULL;
-    }
+    // Non fa nulla durante i test intermedi per evitare deallocazioni futili.
+    // La liberazione della memoria avverrà centralizzata in destroy_context().
+    (void)ctx;
 }
 
 void benchmark_routine(WorkContext *ctx, void (*run)(WorkContext *),
