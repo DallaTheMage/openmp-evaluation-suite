@@ -3,7 +3,7 @@
 
     #include "core/Analyzer.h"
     #include "core/TestPlan.h"
-    #include "kernels/KernelRegistry.h"
+    #include "kernels/registry.h"
     #include "profiling/Profiler.h"
 
     RawSampleSet dispatch_test_plan(

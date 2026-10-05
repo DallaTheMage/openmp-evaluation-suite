@@ -6,7 +6,7 @@
     #include <stdbool.h>
 
     #include "core/TestPlan.h"
-    #include "kernels/KernelRegistry.h"
+    #include "kernels/registry.h"
     #include "profiling/Profiler.h"
 
     typedef struct RawSample {
@@ -65,9 +65,9 @@
 
     bool analyzer_compute_scaling(
         const AggregatedSample *baseline,
-        const TestPoint        *baseline_point,
+        const TestCase         *baseline_point,
         const AggregatedSample *scaled,
-        const TestPoint        *scaled_point,
+        const TestCase         *scaled_point,
         ScalingMetrics         *out_metrics
     );
 

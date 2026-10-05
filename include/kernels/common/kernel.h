@@ -1,8 +1,6 @@
 #ifndef KERNELS_COMMON_KERNEL_H
 #define KERNELS_COMMON_KERNEL_H
 
-#include <stdint.h>
-
 #include "data/DataView.h"
 #include "core/TestPlan.h"
 #include "profiling/Profiler.h"
