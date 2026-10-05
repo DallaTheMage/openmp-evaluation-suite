@@ -78,8 +78,8 @@ CC_COMPILER="${CC:-${SELECTED_CC:-gcc}}"
 echo "[+] Compilatore selezionato: $CC_COMPILER"
 echo "[+] Macro precompilatore finali: $EXTRA_CFLAGS"
 
-# Invocazione del Makefile con le CFLAGS aggiornate[cite: 23]
-make CC="$CC_COMPILER" CFLAGS="-g -Wall -Wextra -Wpedantic -std=c99 -Iinclude -Isrc/microroutines -fopenmp -MMD -MP $EXTRA_CFLAGS"
+# Invocazione del Makefile
+make CC="$CC_COMPILER" CFLAGS="-Wall -Wextra -Wpedantic -std=c99 -Iinclude -Isrc/microroutines -fopenmp -MMD -MP $EXTRA_CFLAGS"
 
 if [ $? -eq 0 ]; then
     echo "[+] Compilazione completata! Eseguibile: build/$CC_COMPILER/main"

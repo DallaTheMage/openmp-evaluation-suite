@@ -1,84 +1,61 @@
-#ifndef DATA_GENERATOR_H
-#define DATA_GENERATOR_H
+#ifndef GENERATOR_H
+#define GENERATOR_H
 
 #include <stdint.h>
+#include <stddef.h>
 
-#include "data/collection.h"
-#include "data/rng.h"
-
-
-typedef struct DataGenerator DataGenerator;
-
-
+/**
+ * @brief Stato del generatore xoshiro256+.
+ * Dimensione fisica: 256 bit (32 byte).
+ */
 typedef struct {
-
-    int (*init)(
-        DataGenerator *generator
-    );
-
-    int (*fill)(
-        DataGenerator *generator,
-        Collection *collection
-    );
-
-    void (*clean)(
-        DataGenerator *generator
-    );
-
-} DataGeneratorOperations;
+    uint64_t s[4];
+} xoshiro256_state;
 
 
-struct DataGenerator {
-
-    const char *name;
-
-    void *config;
-
-    DataGeneratorOperations operations;
-};
-
-
-/*
- * Generic API
+/**
+ * @brief Fa avanzare lo stato del generatore di 2^128 passi.
+ * Utile in ambienti paralleli (OpenMP/MPI) per assegnare sottosequenze
+ * non sovrapposte a thread o nodi diversi.
+ *
+ * @param state Pointer allo stato da fare avanzare.
  */
+void generator_jump(xoshiro256_state *state);
 
-int generator_init(
-    DataGenerator *generator
-);
-
-int generator_fill(
-    DataGenerator *generator,
-    Collection *collection
-);
-
-void generator_destroy(
-    DataGenerator *generator
-);
-
-
-/*
- * Generic factory
+/**
+ * @brief Genera un singolo numero double uniforme nell'intervallo [0.0, 1.0).
+ *
+ * @param state Pointer allo stato del generatore.
+ * @return double Valore generato con 53 bit di precisione.
  */
+static inline double generator_next_double(xoshiro256_state *state) {
+    uint64_t *s = state->s;
 
-DataGenerator *generator_random_create(
-    double min,
-    double max
-);
+    // Calcolo del risultato (xoshiro256+ usa la somma s[0] + s[3])
+    const uint64_t result = s[0] + s[3];
 
+    // Transizione di stato
+    const uint64_t t = s[1] << 17;
 
-/*
- * Concrete generators
+    s[2] ^= s[0];
+    s[3] ^= s[1];
+    s[1] ^= s[2];
+    s[0] ^= s[3];
+
+    s[2] ^= t;
+    s[3] = (s[3] << 45) | (s[3] >> (64 - 45)); // rotl 45
+
+    // Estrazione dei 53 bit di mantissa e conversione floating point
+    return (result >> 11) * 0x1p-53;
+}
+
+/**
+ * @brief Riempie un array/pool di memoria contigua con valori double in [0.0, 1.0).
+ *
+ * @param seed  Seme di generazione.
+ * @param pool  Puntatore al buffer di memoria da riempire.
+ * @param count Numero di elementi double da generare.
  */
+void generator_fill_pool(uint64_t seed, double *restrict pool, size_t count);
 
-DataGenerator *generator_xoshiro256_create(
-    double min,
-    double max
-);
-
-DataGenerator *generator_splitmix64_create(
-    double min,
-    double max
-);
-
-
-#endif /* DATA_GENERATOR_H */
+#endif /* GENERATOR_H */

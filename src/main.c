@@ -1,46 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "core/phases.h"
-#include "core/context.h"
-#include "core/logger.h"
+#include "core/Configuration.h"
+#include "core/ScalingPoint.h"
+#include "data/DataBuffer.h"
+#include "data/DataView.h"
 
-int main(int argc, char *argv[]) {
-    // Parametro opzionale per il path del file raw da leggere durante il postprocess
-    const char *raw_file = (argc > 1) ? argv[1] : "raw_results.csv";
+int main(void) {
+    /* 1. Caricamento configurazione */
+    Configuration config = load_configuration();
 
-    // Phase 1: Preparation & Context Allocation
-    // Inizializza l'intero grafo di esecuzione (WorkContext, FileContext, Logger, Reader/Writer)
-    GeneralContext *gen_ctx = preparation_phase();
-    if (!gen_ctx) {
-        fprintf(stderr, "Fatal: Impossibile inizializzare il GeneralContext.\n");
+    /* 2. Allocazione del DataBuffer principale */
+    DataBuffer *buffer = create_data_buffer(&config);
+    if (!buffer) {
+        destroy_configuration(&config);
         return EXIT_FAILURE;
     }
 
-    // Phase 2: Test & Data Collection
-    if (test_phase(gen_ctx) != 0) {
-        if (gen_ctx->logger && gen_ctx->logger->error) {
-            gen_ctx->logger->error("Execution aborted due to errors in Test Phase.");
-        }
-        destroy_context(gen_ctx);
+    /* 3. Generazione della suite di esperimenti */
+    ExperimentSuite *suite = generate_full_scale_suite(buffer, &config);
+    if (!suite) {
+        destroy_data_buffer(buffer);
+        destroy_configuration(&config);
         return EXIT_FAILURE;
     }
 
-    // Phase 3: Post-Processing & Statistical Aggregation
-    if (postprocess_phase(gen_ctx, raw_file) != 0) {
-        if (gen_ctx->logger && gen_ctx->logger->error) {
-            gen_ctx->logger->error("Execution aborted due to errors in Postprocess Phase.");
-        }
-        destroy_context(gen_ctx);
-        return EXIT_FAILURE;
+    printf("=== Avvio Sweep Completo (%lu punti) ===\n", suite->points.count);
+    for (size_t i = 0; i < suite->points.count; i++) {
+        ScalingPoint *pt = &suite->points.data[i];
+        printf("[Punto %3lu] Window Size: %lu elems | Layouts: %lu\n",
+               i,
+               pt->window_size,
+               pt->layouts.count);
     }
 
-    // Phase 4: Termination & Cleanup Centralizzato
-    if (gen_ctx->logger && gen_ctx->logger->log) {
-        gen_ctx->logger->log("All benchmark phases executed successfully.");
-    }
-
-    // Libera l'intero contesto (WorkContext, FileContext, Reader/Writer, Logger e gen_ctx)
-    destroy_context(gen_ctx);
+    /* 4. Pulizia delle risorse */
+    destroy_experiment_suite(suite);
+    destroy_data_buffer(buffer);
+    destroy_configuration(&config);
 
     return EXIT_SUCCESS;
 }
