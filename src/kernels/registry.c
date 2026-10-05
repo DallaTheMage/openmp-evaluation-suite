@@ -1,5 +1,21 @@
-#include "kernels/KernelRegistry.h"
+#include "kernels/registry.h"
 #include "config/openmp.h"
+
+#include "kernels/common/kernel.h"
+#include "kernels/worksharing/loop.h"
+#include "kernels/worksharing/collapse.h"
+#include "kernels/worksharing/sections.h"
+#include "kernels/vectorization/simd.h"
+#include "kernels/synchronization/master_masked.h"
+#include "kernels/synchronization/atomic.h"
+#include "kernels/synchronization/critical.h"
+#include "kernels/synchronization/ordered.h"
+#include "kernels/tasking/taskloop.h"
+#include "kernels/tasking/task.h"
+#include "kernels/reduction/reduction.h"
+#include "kernels/algorithms/native_scan.h"
+#include "kernels/algorithms/two_pass_scan.h"
+
 
 const KernelFunc KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT] = {
     [VIEW_2D] = {

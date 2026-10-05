@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #include "core/Configuration.h"
-#include "kernels/types.h"
+#include "kernels/common/types.h"
 #include "data/DataView.h"
 
 typedef struct DataBuffer DataBuffer;

@@ -1,0 +1,61 @@
+#include "kernels/sections.h"
+#include "profiling/Profiler.h"
+
+#if OPENMP_HAS_2_0
+
+void kernel_2d_sections(DataView *view,
+                        const TestCase *test_case,
+                        Profiler *profiler,
+                        PerformanceMetric *metric) {
+
+    const uint16_t num_threads = test_case->num_threads;
+
+    double *restrict pool =
+        view->buffer->pool;
+
+    const uint64_t rows =
+        view->meta.v2d.rows;
+
+    const uint64_t cols =
+        view->meta.v2d.cols;
+
+    const uint64_t mid =
+        rows / 2;
+
+    profiler_start(profiler);
+
+    #pragma omp parallel num_threads(num_threads) \
+        default(none) shared(pool, rows, cols, mid)
+    {
+        #pragma omp sections
+        {
+            #pragma omp section
+            {
+                for (uint64_t r = 0; r < mid; ++r) {
+                    const uint64_t offset = r * cols;
+
+                    for (uint64_t c = 0; c < cols; ++c) {
+                        pool[offset + c] =
+                            pool[offset + c] * 2.0 + 1.0;
+                    }
+                }
+            }
+
+            #pragma omp section
+            {
+                for (uint64_t r = mid; r < rows; ++r) {
+                    const uint64_t offset = r * cols;
+
+                    for (uint64_t c = 0; c < cols; ++c) {
+                        pool[offset + c] =
+                            pool[offset + c] * 2.0 + 1.0;
+                    }
+                }
+            }
+        }
+    }
+
+    profiler_stop(profiler, metric);
+}
+
+#endif

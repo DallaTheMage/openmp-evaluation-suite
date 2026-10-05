@@ -1,7 +1,7 @@
 #ifndef CORE_KERNEL_REGISTRY_H
 #define CORE_KERNEL_REGISTRY_H
 
-#include "kernels/types.h"
+#include "kernels/common/types.h"
 #include "data/DataView.h"
 #include "core/TestPlan.h"
 #include "profiling/Profiler.h"
