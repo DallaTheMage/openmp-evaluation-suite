@@ -1,6 +1,7 @@
 *.d
 *.o
 *.csv
+*.json
 main
 build/
 backup.*
