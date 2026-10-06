@@ -21,15 +21,15 @@
  * @file Configuration.h
  * @brief Central configuration contract for the benchmark suite.
  *
- * This header defines the immutable-at-runtime description of a benchmark
- * configuration:
+ * This header defines the runtime description of a benchmark configuration:
  *
  * (+) Compiler and OpenMP build metadata;
  * (+) Problem and execution parameters;
  * (+) Benchmark repetition parameters;
  * (+) Memory allocation parameters;
  * (+) DataView shape parameters;
- * (+) Metrics derived from the configured problem size.
+ * (+) Metrics derived from the configured problem size;
+ * (+) Per-thread workload used by proportional scaling.
  *
  * The configuration does not contain OpenMP scheduling state.
  * The OpenMP schedule is a compile-time property of a benchmark build and
@@ -57,7 +57,7 @@
 
 
 /* ========================================================================= */
-/* Configuration-owned dynamic arrays                                       */
+/* Configuration-owned dynamic arrays                                        */
 /* ========================================================================= */
 
 /**
@@ -83,7 +83,7 @@ typedef struct {
 
 
 /* ========================================================================= */
-/* DataView shape configuration                                             */
+/* DataView shape configuration                                              */
 /* ========================================================================= */
 
 /**
@@ -129,14 +129,6 @@ typedef struct {
 
 
 /**
- * @brief Configuration parameters for a compressed sparse row view.
- */
-typedef struct {
-    double density;
-} ViewCSRConfig;
-
-
-/**
  * @brief Shape-specific configuration.
  *
  * VIEW_1D does not require additional shape parameters.
@@ -146,7 +138,6 @@ typedef struct {
 typedef union {
     ViewShape2DConfig    v2d;
     ViewShape3DConfig    v3d;
-    ViewCSRConfig        csr;
     ViewShapeAoSConfig   aos;
     ViewShapeSoAConfig   soa;
     ViewShapeAoSoAConfig aosoa;
@@ -251,9 +242,6 @@ typedef struct {
 typedef struct {
     /**
      * @brief Required alignment in bytes.
-     *
-     * size_t is used because allocation APIs represent alignment-related
-     * quantities using size_t-compatible types.
      */
     size_t alignment;
 } MemoryConfig;
@@ -264,10 +252,10 @@ typedef struct {
 /* ========================================================================= */
 
 /**
- * @brief Values derived from the configured problem size.
+ * @brief Values derived from the global benchmark configuration.
  *
- * These values depend only on the global problem size. Quantities that
- * depend on a particular thread count or DataView window do not belong here.
+ * These values describe the global benchmark data pool and the configured
+ * per-thread workload used by proportional scaling.
  */
 typedef struct {
     /**
@@ -279,6 +267,16 @@ typedef struct {
      * @brief Total size of the benchmark data pool in bytes.
      */
     uint64_t problem_size_bytes;
+
+    /**
+     * @brief Number of elements assigned to one thread in proportional
+     *        scaling.
+     *
+     * For N threads, the proportional workload is:
+     *
+     *     size_per_thread * N
+     */
+    uint64_t size_per_thread;
 } DerivedMetrics;
 
 
@@ -298,10 +296,10 @@ typedef struct {
  * All other members are stored directly inside the structure.
  */
 typedef struct {
-    BuildConfig     build;
-    ExecutionConfig execution;
-    BenchmarkConfig benchmark;
-    MemoryConfig    memory;
+    BuildConfig      build;
+    ExecutionConfig  execution;
+    BenchmarkConfig  benchmark;
+    MemoryConfig     memory;
 
     /**
      * @brief Shape parameters indexed by ViewType.

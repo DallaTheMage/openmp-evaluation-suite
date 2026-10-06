@@ -57,11 +57,6 @@ typedef enum {
     VIEW_3D,
 
     /**
-     * @brief Compressed Sparse Row view.
-     */
-    VIEW_CSR,
-
-    /**
      * @brief Array-of-Structures view.
      */
     VIEW_AOS,

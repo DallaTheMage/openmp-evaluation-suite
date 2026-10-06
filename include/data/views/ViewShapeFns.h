@@ -72,25 +72,14 @@ void shape_2d_recompute(DataView *view);
  *
  * @param view DataView whose metadata must be recomputed.
  *
+ * @param view DataView whose metadata must be recomputed.
+ *
  * @pre view must not be NULL.
  * @pre view->type must be VIEW_3D.
  *
  * @note Intended for setup/binding operations, never for a kernel hot loop.
  */
 void shape_3d_recompute(DataView *view);
-
-
-/**
- * @brief Recomputes metadata for a CSR view.
- *
- * @param view DataView whose metadata must be recomputed.
- *
- * @pre view must not be NULL.
- * @pre view->type must be VIEW_CSR.
- *
- * @note Intended for setup/binding operations, never for a kernel hot loop.
- */
-void shape_csr_recompute(DataView *view);
 
 
 /**
@@ -172,20 +161,6 @@ bool shape_2d_validate(const DataView *view);
  * @note Intended for correctness checks and debugging, not benchmarking.
  */
 bool shape_3d_validate(const DataView *view);
-
-
-/**
- * @brief Validates metadata for a CSR view.
- *
- * @param view DataView to validate.
- *
- * @return true if the view metadata is consistent, false otherwise.
- *
- * @pre view must not be NULL.
- *
- * @note Intended for correctness checks and debugging, not benchmarking.
- */
-bool shape_csr_validate(const DataView *view);
 
 
 /**

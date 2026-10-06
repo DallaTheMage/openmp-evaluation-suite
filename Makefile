@@ -1,7 +1,7 @@
 # Consente di sovrascrivere CC da riga di comando (es. make CC=clang)
 CC ?= gcc
 
-CFLAGS  := -g -Wall -Wextra -Wpedantic -std=c99 -Iinclude -Isrc/microroutines -fopenmp
+CFLAGS  := -g -Wall -Wextra -Wpedantic -std=c99 -D_GNU_SOURCE -Iinclude -Isrc/microroutines -fopenmp
 # File di dipendenza automatica (.d) per intercettare le modifiche ai file .h
 CFLAGS  += -MMD -MP
 

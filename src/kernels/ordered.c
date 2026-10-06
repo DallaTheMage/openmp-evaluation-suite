@@ -1,5 +1,7 @@
-#include "kernels/ordered.h"
+#include "kernels/synchronization/ordered.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_2_0
 
@@ -29,7 +31,7 @@ void kernel_2d_ordered(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         ordered \
         default(none) \
-        shared(pool, rows, cols, ordered_sum)
+        shared(pool, rows, cols, chunk, ordered_sum)
     for (uint64_t r = 0; r < rows; ++r) {
 
         const uint64_t offset =

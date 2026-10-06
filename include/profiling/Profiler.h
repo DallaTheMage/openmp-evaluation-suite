@@ -41,7 +41,9 @@
  * start and stop as close as possible to the OpenMP region being evaluated.
  *
  * The profiler owns its hardware-counter and RAPL state, but does not own
- * the PerformanceMetric object supplied to profiler_stop().
+ * the PerformanceMetric object supplied to profiler_stop(). Hardware-counter
+ * and energy backends are optional: wall-clock timing remains available when
+ * a backend is unsupported or inaccessible.
  *
  * This interface is intentionally independent of the benchmark plan and
  * kernel registry.
@@ -124,12 +126,14 @@ typedef struct Profiler {
 /**
  * @brief Initialize a performance profiler.
  *
- * This function initializes the hardware-counter and RAPL backends and
- * prepares the profiler for measurement.
+ * This function initializes the optional hardware-counter and RAPL backends
+ * and prepares the profiler for measurement. Backend initialization failures
+ * do not prevent wall-clock measurements from being collected.
  *
  * @param p Profiler instance to initialize.
  *
- * @return 0 on success, non-zero on failure.
+ * @return 0 when the profiler state is initialized, non-zero only when
+ *         the input pointer is invalid.
  *
  * @pre p != NULL
  *
@@ -141,12 +145,14 @@ int profiler_init(Profiler *p);
 /**
  * @brief Start one performance measurement interval.
  *
- * This function starts wall-clock, hardware-counter and energy
- * measurements as close as possible to the benchmark region.
+ * This function starts wall-clock measurement and, when available, the
+ * hardware-counter and energy backends as close as possible to the benchmark
+ * region.
  *
  * @param p Initialized profiler.
  *
- * @return 0 on success, non-zero on failure.
+ * @return 0 on success, non-zero when the profiler is NULL or already
+ *         running.
  *
  * @pre p != NULL
  * @pre profiler_init(p) has completed successfully.
@@ -161,12 +167,13 @@ int profiler_start(Profiler *p);
  *
  * This function stops all active measurement backends and stores the
  * resulting measurements and derived metrics in the supplied output
- * structure.
+ * structure. Unavailable optional backends produce zero-valued metrics.
  *
  * @param p Initialized and running profiler.
  * @param metric Output structure receiving the measurement results.
  *
- * @return 0 on success, non-zero on failure.
+ * @return 0 on success, non-zero when the profiler state or output pointer
+ *         is invalid.
  *
  * @pre p != NULL
  * @pre metric != NULL

@@ -34,34 +34,34 @@
  * and profiling layers.
  */
 
-#ifndef GENERATOR_H
-#define GENERATOR_H
+#ifndef DATA_GENERATOR_H
+#define DATA_GENERATOR_H
 
 #include <stdint.h>
 #include <stddef.h>
 
 /**
- * @brief Stato del generatore xoshiro256+.
- * Dimensione fisica: 256 bit (32 byte).
+ * @brief State of the xoshiro256+ pseudo-random generator.
+ * The state consists of four 64-bit words (256 bits).
  */
 typedef struct {
     uint64_t s[4];
 } xoshiro256_state;
 
 /**
- * @brief Fa avanzare lo stato del generatore di 2^128 passi.
- * Utile in ambienti paralleli (OpenMP/MPI) per assegnare sottosequenze
- * non sovrapposte a thread o nodi diversi.
+ * @brief Advance the generator state by 2^128 steps.
+ * This is useful in parallel environments (OpenMP/MPI) to assign
+ * non-overlapping subsequences to different threads or nodes.
  *
- * @param state Pointer allo stato da fare avanzare.
+ * @param state Generator state to advance.
  */
 void generator_jump(xoshiro256_state *state);
 
 /**
- * @brief Genera un singolo numero double uniforme nell'intervallo [0.0, 1.0).
+ * @brief Generate one uniform double in the interval [0.0, 1.0).
  *
- * @param state Pointer allo stato del generatore.
- * @return double Valore generato con 53 bit di precisione.
+ * @param state Generator state.
+ * @return A generated value with 53 bits of precision.
  */
 static inline double generator_next_double(xoshiro256_state *state) {
     uint64_t *s = state->s;
@@ -85,12 +85,12 @@ static inline double generator_next_double(xoshiro256_state *state) {
 }
 
 /**
- * @brief Riempie un array/pool di memoria contigua con valori double in [0.0, 1.0).
+ * @brief Fill a contiguous memory region with doubles in [0.0, 1.0).
  *
- * @param seed  Seme di generazione.
+ * @param seed Deterministic generator seed.
  * @param pool  Puntatore al buffer di memoria da riempire.
- * @param count Numero di elementi double da generare.
+ * @param count Number of double elements to generate.
  */
 void generator_fill_pool(uint64_t seed, double *restrict pool, size_t count);
 
-#endif /* GENERATOR_H */
+#endif /* DATA_GENERATOR_H */

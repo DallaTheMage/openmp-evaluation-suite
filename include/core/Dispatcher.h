@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -72,8 +72,37 @@
 
 #include "core/Analyzer.h"
 #include "core/TestPlan.h"
-#include "kernels/registry.h"
 #include "profiling/Profiler.h"
+
+
+/**
+ * @brief Result codes returned by the dispatcher.
+ *
+ * The dispatcher reports setup and orchestration failures explicitly so the
+ * caller can distinguish an invalid invocation from a failed execution.
+ * Kernel implementations themselves currently expose a void return type;
+ * therefore the dispatcher can only detect failures visible through the
+ * profiler state and its own validation.
+ */
+typedef enum DispatchStatus {
+    /** Dispatch completed successfully. */
+    DISPATCH_OK = 0,
+
+    /** One or more input arguments are invalid. */
+    DISPATCH_INVALID_ARGUMENT = 1,
+
+    /** The output sample array size would overflow size_t. */
+    DISPATCH_SIZE_OVERFLOW = 2,
+
+    /** Allocation of the output sample array failed. */
+    DISPATCH_ALLOCATION_FAILURE = 3,
+
+    /** A required kernel/view implementation is unavailable. */
+    DISPATCH_KERNEL_UNAVAILABLE = 4,
+
+    /** A kernel returned while its profiler measurement was still active. */
+    DISPATCH_PROFILER_FAILURE = 5
+} DispatchStatus;
 
 
 /**
@@ -119,9 +148,7 @@
  *     On success, ownership is transferred to the caller.
  *
  * @return
- *     0 on success.
- *     A non-zero value on invalid input, allocation failure, unavailable
- *     kernel, or profiler failure.
+ *     A DispatchStatus value. DISPATCH_OK indicates success.
  *
  * @pre plan != NULL.
  * @pre profiler != NULL.
@@ -137,7 +164,7 @@
  * @note The caller owns the returned RawSampleSet and must release it with
  *       dispatch_destroy_samples().
  */
-int dispatch_test_plan(
+DispatchStatus dispatch_test_plan(
     const TestPlan *plan,
     Profiler       *profiler,
     uint32_t        warmup_reps,

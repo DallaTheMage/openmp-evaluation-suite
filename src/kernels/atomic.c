@@ -1,5 +1,7 @@
-#include "kernels/atomic.h"
+#include "kernels/synchronization/atomic.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_3_1
 
@@ -32,7 +34,7 @@ void kernel_2d_atomic(DataView *view,
     #pragma omp parallel for \
         num_threads(num_threads) \
         schedule(CHOSEN_SCHEDULE, chunk) \
-        default(none) shared(pool, rows, cols, sum)
+        default(none) shared(pool, rows, cols, chunk, sum)
     for (uint64_t r = 0; r < rows; ++r) {
 
         const uint64_t offset =
@@ -65,7 +67,7 @@ void kernel_3d_atomic(DataView *view,
         view->buffer->pool;
 
     const uint64_t rows =
-        view->meta.v3d.rows;
+        view->meta.v3d.height;
 
     const uint64_t cols =
         view->meta.v3d.cols;
@@ -81,7 +83,7 @@ void kernel_3d_atomic(DataView *view,
         num_threads(num_threads) \
         schedule(CHOSEN_SCHEDULE, chunk) \
         default(none) \
-        shared(pool, rows, cols, depth, sum)
+        shared(pool, rows, cols, depth, chunk, sum)
     for (uint64_t r = 0; r < rows; ++r) {
 
         for (uint64_t c = 0; c < cols; ++c) {

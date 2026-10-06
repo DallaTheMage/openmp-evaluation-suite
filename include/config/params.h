@@ -42,7 +42,7 @@
 
 
 /* ========================================================================= */
-/* Benchmark repetitions                                                    */
+/* Benchmark repetitions                                                     */
 /* ========================================================================= */
 
 /**
@@ -70,7 +70,7 @@
 
 
 /* ========================================================================= */
-/* OpenMP scheduling                                                        */
+/* OpenMP scheduling                                                         */
 /* ========================================================================= */
 
 /**
@@ -95,17 +95,14 @@
 
 
 /*
- * CHOSEN_SCHEDULE is intentionally the complete argument of the OpenMP
- * schedule(...) clause.
+ * CHOSEN_SCHEDULE contains only the scheduling policy token. Kernels append
+ * the test-case chunk explicitly so every supported schedule uses the same
+ * interface:
  *
- * Therefore kernels can always write:
+ *     schedule(CHOSEN_SCHEDULE, chunk)
  *
- *     #pragma omp parallel for schedule(CHOSEN_SCHEDULE)
- *
- * without knowing which scheduling policy was selected.
- *
- * For dynamic/guided scheduling, chunk_size is the runtime value of the
- * current test case. The scheduling policy itself remains compile-time.
+ * The scheduling policy remains a compile-time property while chunk remains
+ * a per-test execution parameter.
  */
 
 #if CHOSEN_SCHEDULE_ID == SCHED_STATIC
@@ -114,11 +111,11 @@
 
 #elif CHOSEN_SCHEDULE_ID == SCHED_DYNAMIC
 
-    #define CHOSEN_SCHEDULE dynamic, chunk_size
+    #define CHOSEN_SCHEDULE dynamic
 
 #elif CHOSEN_SCHEDULE_ID == SCHED_GUIDED
 
-    #define CHOSEN_SCHEDULE guided, chunk_size
+    #define CHOSEN_SCHEDULE guided
 
 #else
 
@@ -128,7 +125,7 @@
 
 
 /* ========================================================================= */
-/* Schedule metadata                                                        */
+/* Schedule metadata                                                         */
 /* ========================================================================= */
 
 /**
@@ -154,7 +151,7 @@
 
 
 /* ========================================================================= */
-/* Compiler / toolchain metadata                                            */
+/* Compiler / toolchain metadata                                             */
 /* ========================================================================= */
 
 /**
@@ -190,7 +187,7 @@
 
 
 /* ========================================================================= */
-/* Thread and problem-size configuration                                    */
+/* Thread and problem-size configuration                                     */
 /* ========================================================================= */
 
 /**
@@ -207,7 +204,28 @@
  * The actual number of elements is 2^PROBLEM_LOG2_SIZE.
  */
 #ifndef PROBLEM_LOG2_SIZE
-    #define PROBLEM_LOG2_SIZE 28U
+    #define PROBLEM_LOG2_SIZE 24U
+#endif
+
+
+/**
+ * @brief Number of elements assigned to each thread in proportional
+ *        scaling experiments.
+ *
+ * The total logical workload for N threads is:
+ *
+ *     SIZE_PER_THREAD * N
+ *
+ * The value is expressed in number of double-precision elements.
+ *
+ * The default value is consistent with the default problem size and
+ * thread list:
+ *
+ *     2^25 elements/thread
+ *     2^28 elements at 8 threads
+ */
+#ifndef SIZE_PER_THREAD
+    #define SIZE_PER_THREAD UINT64_C(33554432)
 #endif
 
 
@@ -220,7 +238,7 @@
 
 
 /* ========================================================================= */
-/* Window configuration                                                     */
+/* Window configuration                                                      */
 /* ========================================================================= */
 
 /**
@@ -229,7 +247,7 @@
  * Each value N represents a window of 2^N elements.
  */
 #ifndef WINDOWS_LOG2_LIST
-    #define WINDOWS_LOG2_LIST 28U, 26U, 24U, 22U
+    #define WINDOWS_LOG2_LIST 24U, 22U
 #endif
 
 
@@ -240,33 +258,12 @@
  * size, such as dynamic and guided scheduling.
  */
 #ifndef CHUNK_SIZE_LIST
-    #define CHUNK_SIZE_LIST 32U, 64U, 128U
+    #define CHUNK_SIZE_LIST 32U, 64U
 #endif
 
 
 /* ========================================================================= */
-/* CSR configuration                                                        */
-/* ========================================================================= */
-
-/**
- * @brief Fraction of elements represented by the CSR structure.
- *
- * Examples:
- *
- *     1.0  -> 100%
- *     0.1  -> 10%
- *     0.01 -> 1%
- *
- * The actual number of non-zero entries is derived from the current
- * DataView/window size.
- */
-#ifndef CSR_DENSITY
-    #define CSR_DENSITY 0.01
-#endif
-
-
-/* ========================================================================= */
-/* DataView shape configuration                                             */
+/* DataView shape configuration                                              */
 /* ========================================================================= */
 
 /**
@@ -329,7 +326,7 @@
 
 
 /* ========================================================================= */
-/* Compile-time validation                                                  */
+/* Compile-time validation                                                    */
 /* ========================================================================= */
 
 #if PROBLEM_LOG2_SIZE >= 64U
@@ -339,6 +336,11 @@
 
 #if MEMORY_ALIGNMENT == 0U
     #error "MEMORY_ALIGNMENT must be greater than zero"
+#endif
+
+
+#if SIZE_PER_THREAD == 0U
+    #error "SIZE_PER_THREAD must be greater than zero"
 #endif
 
 
@@ -378,7 +380,7 @@
 
 
 /* ========================================================================= */
-/* Utilities                                                                */
+/* Utilities                                                                 */
 /* ========================================================================= */
 
 /**
@@ -417,7 +419,7 @@ window_size_from_log2(uint32_t log2)
 
 
 /* ========================================================================= */
-/* Materialized compile-time lists                                         */
+/* Materialized compile-time lists                                           */
 /* ========================================================================= */
 
 static const uint32_t CONFIG_WINDOW_LOG2[] = {

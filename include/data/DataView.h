@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2026
  *
- * This file is part of the OpenMP Benchmark Suite.
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
  *
  * The OpenMP Benchmark Suite is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -25,8 +25,9 @@
  * A DataView provides a lightweight description of how a region of a
  * DataBuffer must be interpreted by a benchmark kernel.
  *
- * DataView objects do not own the underlying DataBuffer or CSR topology.
- * Referenced objects must remain alive for the entire lifetime of the view.
+ * DataView objects do not own the underlying DataBuffer.
+ * The referenced DataBuffer must remain alive for the entire lifetime
+ * of the view.
  */
 
 #ifndef DATA_DATAVIEW_H
@@ -57,6 +58,8 @@ typedef struct {
 
 /**
  * @brief Metadata describing a one-dimensional view.
+ *
+ * All fields are derived from the logical DataView window.
  */
 typedef struct {
     uint64_t length;
@@ -65,6 +68,9 @@ typedef struct {
 
 /**
  * @brief Metadata describing a two-dimensional view.
+ *
+ * cols is a layout parameter while rows is derived from the logical
+ * DataView window.
  */
 typedef struct {
     uint64_t rows;
@@ -74,6 +80,9 @@ typedef struct {
 
 /**
  * @brief Metadata describing a three-dimensional view.
+ *
+ * depth and cols are layout parameters while height is derived from
+ * the logical DataView window.
  */
 typedef struct {
     uint64_t height;
@@ -84,6 +93,9 @@ typedef struct {
 
 /**
  * @brief Metadata describing an Array-of-Structures view.
+ *
+ * struct_size is a layout parameter while num_structs is derived from
+ * the logical DataView window.
  */
 typedef struct {
     uint64_t num_structs;
@@ -93,6 +105,9 @@ typedef struct {
 
 /**
  * @brief Metadata describing a Structure-of-Arrays view.
+ *
+ * num_fields is a layout parameter while field_length is derived from
+ * the logical DataView window.
  */
 typedef struct {
     uint64_t num_fields;
@@ -102,6 +117,9 @@ typedef struct {
 
 /**
  * @brief Metadata describing an Array-of-Structures-of-Arrays view.
+ *
+ * vector_length and num_fields are layout parameters while num_blocks
+ * is derived from the logical DataView window.
  */
 typedef struct {
     uint64_t num_blocks;
@@ -111,31 +129,12 @@ typedef struct {
 
 
 /**
- * @brief Metadata describing a Compressed Sparse Row view.
- *
- * The CSR topology is referenced but not owned by the DataView.
- */
-typedef struct {
-    uint64_t nrows;
-    uint64_t ncols;
-    uint64_t nnz;
-
-    /**
-     * @brief Non-owning pointer to the CSR row-pointer array.
-     */
-    const uint64_t *row_ptr;
-
-    /**
-     * @brief Non-owning pointer to the CSR column-index array.
-     */
-    const uint64_t *col_ind;
-} ViewCSRMetadata;
-
-
-/**
  * @brief Layout-specific metadata associated with a DataView.
  *
  * Only the member corresponding to DataView::type is valid.
+ *
+ * The metadata combines configuration parameters with quantities derived
+ * from the logical DataView window.
  */
 typedef union {
     View1DMetadata     v1d;
@@ -144,18 +143,15 @@ typedef union {
     ViewAoSMetadata    aos;
     ViewSoAMetadata    soa;
     ViewAoSoAMetadata  aosoa;
-    ViewCSRMetadata    csr;
 } ViewMetadata;
 
 
 /**
  * @brief Runtime descriptor used to construct a DataView.
  *
- * The descriptor contains the parameters required to initialize the
- * metadata associated with a specific view type.
- *
- * CSR views additionally reference externally managed topology arrays.
- * This descriptor does not take ownership of any referenced memory.
+ * The descriptor contains only the parameters that define the selected
+ * layout. Quantities derived from the logical window are computed by
+ * the view-shape functions.
  *
  * Only the member corresponding to the requested ViewType is valid.
  */
@@ -171,7 +167,6 @@ typedef union {
      * @brief Parameters for a two-dimensional view.
      */
     struct {
-        uint64_t rows;
         uint64_t cols;
     } v2d;
 
@@ -179,7 +174,6 @@ typedef union {
      * @brief Parameters for a three-dimensional view.
      */
     struct {
-        uint64_t height;
         uint64_t depth;
         uint64_t cols;
     } v3d;
@@ -188,7 +182,6 @@ typedef union {
      * @brief Parameters for an Array-of-Structures view.
      */
     struct {
-        uint64_t num_structs;
         uint64_t struct_size;
     } aos;
 
@@ -197,29 +190,15 @@ typedef union {
      */
     struct {
         uint64_t num_fields;
-        uint64_t field_length;
     } soa;
 
     /**
      * @brief Parameters for an Array-of-Structures-of-Arrays view.
      */
     struct {
-        uint64_t num_blocks;
         uint64_t vector_length;
         uint64_t num_fields;
     } aosoa;
-
-    /**
-     * @brief Parameters for a Compressed Sparse Row view.
-     */
-    struct {
-        uint64_t nrows;
-        uint64_t ncols;
-        uint64_t nnz;
-
-        const uint64_t *row_ptr;
-        const uint64_t *col_ind;
-    } csr;
 } ViewCreateConfig;
 
 
@@ -230,12 +209,10 @@ typedef union {
  * required to interpret that window according to a specific layout.
  *
  * Ownership:
- * - the DataBuffer is not owned;
- * - CSR row_ptr is not owned;
- * - CSR col_ind is not owned.
+ * - the DataBuffer is not owned.
  *
- * All referenced objects must remain alive for the entire lifetime of
- * the DataView.
+ * The referenced DataBuffer must remain alive for the entire lifetime
+ * of the DataView.
  */
 typedef struct {
     DataBuffer  *buffer;
@@ -257,14 +234,14 @@ typedef struct {
  * @param offset Offset of the logical window in double elements.
  * @param size Number of double elements covered by the logical window.
  *
- * @return An initialized DataView.
+ * @return An initialized DataView. A zero-initialized DataView is returned
+ *         if the input arguments are invalid.
  *
  * @pre buffer must not be NULL.
  * @pre config must not be NULL.
- * @pre offset + size must not exceed the DataBuffer capacity.
+ * @pre offset and size must describe a region contained in buffer.
  *
- * @warning The returned DataView does not take ownership of buffer or
- *          any CSR topology referenced by config.
+ * @warning The returned DataView does not take ownership of buffer.
  *
  * @note The function does not allocate storage for the DataView itself.
  */

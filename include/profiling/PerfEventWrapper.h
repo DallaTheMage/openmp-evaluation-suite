@@ -54,8 +54,8 @@
  * This helper provides the raw system-call interface used by the
  * higher-level hardware-counter implementation.
  *
- * The function is kept as a small inline wrapper so that no additional
- * abstraction or dispatch overhead is introduced in the profiling path.
+ * The wrapper is used only while opening counters during setup; benchmark
+ * hot paths do not invoke it.
  *
  * @param hw_event
  *     Pointer to the perf_event_attr structure describing the event.
@@ -81,23 +81,13 @@
  *
  * @pre hw_event != NULL.
  */
-static inline int sys_perf_event_open(
+int sys_perf_event_open(
     struct perf_event_attr *hw_event,
     pid_t                   pid,
     int                     cpu,
     int                     group_fd,
     unsigned long           flags
-)
-{
-    return (int)syscall(
-        __NR_perf_event_open,
-        hw_event,
-        pid,
-        cpu,
-        group_fd,
-        flags
-    );
-}
+);
 
 
 /**

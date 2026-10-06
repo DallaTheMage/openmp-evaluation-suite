@@ -1,7 +1,10 @@
-#include "kernels/scan.h"
+#include "kernels/scan/two_pass.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #include <stdlib.h>
+#include <omp.h>
 
 #if OPENMP_HAS_TWO_PASS_SCAN
 
@@ -13,7 +16,6 @@
 static void run_twopass_omp(double *restrict pool,
                             uint64_t total,
                             uint16_t num_threads,
-                            const TestCase *test_case,
                             Profiler *profiler,
                             PerformanceMetric *metric) {
 
@@ -43,33 +45,25 @@ static void run_twopass_omp(double *restrict pool,
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, offsets)
     {
-        const int tid =
-            omp_get_thread_num();
+        const uint64_t tid =
+            (uint64_t)omp_get_thread_num();
 
-        const int nth =
-            omp_get_num_threads();
+        const uint64_t nth =
+            (uint64_t)omp_get_num_threads();
 
         const uint64_t items_per_thread =
-            total / (uint64_t)nth;
+            total / nth;
 
         const uint64_t remainder =
-            total % (uint64_t)nth;
+            total % nth;
 
         const uint64_t start =
-            (uint64_t)tid * items_per_thread +
-            (uint64_t)(
-                tid < (int)remainder
-                    ? tid
-                    : remainder
-            );
+            tid * items_per_thread +
+            (tid < remainder ? tid : remainder);
 
         const uint64_t count =
             items_per_thread +
-            (uint64_t)(
-                tid < (int)remainder
-                    ? 1
-                    : 0
-            );
+            (tid < remainder ? UINT64_C(1) : UINT64_C(0));
 
         const uint64_t end =
             start + count;
@@ -122,7 +116,7 @@ static void run_twopass_omp(double *restrict pool,
         {
             double running = 0.0;
 
-            for (int t = 0; t < nth; ++t) {
+            for (uint64_t t = 0U; t < nth; ++t) {
 
                 const double tmp =
                     offsets[t];
@@ -176,7 +170,6 @@ void kernel_2d_two_pass_scan(DataView *view,
         view->buffer->pool,
         total,
         test_case->num_threads,
-        test_case,
         profiler,
         metric
     );
@@ -193,7 +186,7 @@ void kernel_3d_two_pass_scan(DataView *view,
                              PerformanceMetric *metric) {
 
     const uint64_t total =
-        view->meta.v3d.rows *
+        view->meta.v3d.height *
         view->meta.v3d.cols *
         view->meta.v3d.depth;
 
@@ -201,7 +194,6 @@ void kernel_3d_two_pass_scan(DataView *view,
         view->buffer->pool,
         total,
         test_case->num_threads,
-        test_case,
         profiler,
         metric
     );
@@ -218,14 +210,13 @@ void kernel_aos_two_pass_scan(DataView *view,
                               PerformanceMetric *metric) {
 
     const uint64_t total =
-        view->meta.aos.num_elements *
+        view->meta.aos.num_structs *
         view->meta.aos.struct_size;
 
     run_twopass_omp(
         view->buffer->pool,
         total,
         test_case->num_threads,
-        test_case,
         profiler,
         metric
     );
@@ -242,14 +233,13 @@ void kernel_soa_two_pass_scan(DataView *view,
                               PerformanceMetric *metric) {
 
     const uint64_t total =
-        view->meta.soa.num_elements *
+        view->meta.soa.field_length *
         view->meta.soa.num_fields;
 
     run_twopass_omp(
         view->buffer->pool,
         total,
         test_case->num_threads,
-        test_case,
         profiler,
         metric
     );
@@ -273,7 +263,7 @@ void kernel_aosoa_two_pass_scan(DataView *view,
     }
 
     const uint64_t total =
-        (view->meta.aosoa.num_elements / vl) *
+        view->meta.aosoa.num_blocks *
         view->meta.aosoa.num_fields *
         vl;
 
@@ -281,40 +271,9 @@ void kernel_aosoa_two_pass_scan(DataView *view,
         view->buffer->pool,
         total,
         test_case->num_threads,
-        test_case,
         profiler,
         metric
     );
 }
-
-
-/* ============================================================================
- * VIEW_CSR
- * ========================================================================== */
-
-void kernel_csr_two_pass_scan(DataView *view,
-                              const TestCase *test_case,
-                              Profiler *profiler,
-                              PerformanceMetric *metric) {
-
-    if (!view->meta.csr.row_ptr) {
-        return;
-    }
-
-    const uint64_t total =
-        view->meta.csr.row_ptr[
-            view->meta.csr.nrows
-        ];
-
-    run_twopass_omp(
-        view->buffer->pool,
-        total,
-        test_case->num_threads,
-        test_case,
-        profiler,
-        metric
-    );
-}
-
 
 #endif /* OPENMP_HAS_TWO_PASS_SCAN */

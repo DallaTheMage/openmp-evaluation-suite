@@ -59,17 +59,20 @@
 
 #include "core/Configuration.h"
 #include "data/DataView.h"
-#include "kernels/common/types.h"
+#include "kernels/common/KernelType.h"
+
 
 /**
  * @brief Opaque identifier for a complete test set.
  */
 typedef uint64_t TestSetUID;
 
+
 /**
  * @brief Opaque identifier for an individual test case.
  */
 typedef uint64_t TestCaseUID;
+
 
 /**
  * @brief One concrete benchmark execution configuration.
@@ -78,14 +81,15 @@ typedef uint64_t TestCaseUID;
  * execution.
  *
  * The chunk size is relevant to compile-time schedules such as dynamic and
- * guided. For schedules where the chunk size has no effect, it may still be
- * present in the plan as part of the common test-case representation.
+ * guided. For schedules where the chunk size has no effect, it may still
+ * be present in the plan as part of the common test-case representation.
  */
 typedef struct TestCase {
     TestCaseUID uid;
     uint32_t num_threads;
     uint64_t chunk_size;
 } TestCase;
+
 
 /**
  * @brief Dynamically sized array of test cases.
@@ -94,6 +98,7 @@ typedef struct TestCaseArray {
     TestCase *data;
     size_t count;
 } TestCaseArray;
+
 
 /**
  * @brief All test cases associated with one kernel.
@@ -106,6 +111,7 @@ typedef struct KernelTestGroup {
     TestCaseArray cases;
 } KernelTestGroup;
 
+
 /**
  * @brief Dynamically sized array of kernel test groups.
  */
@@ -113,6 +119,7 @@ typedef struct KernelTestGroupArray {
     KernelTestGroup *data;
     size_t count;
 } KernelTestGroupArray;
+
 
 /**
  * @brief Benchmark executions associated with one DataView.
@@ -126,6 +133,7 @@ typedef struct TestSet {
     KernelTestGroupArray kernels;
 } TestSet;
 
+
 /**
  * @brief Complete benchmark execution plan.
  *
@@ -137,12 +145,17 @@ typedef struct TestPlan {
     size_t count;
 } TestPlan;
 
+
 /**
  * @brief Generate the proportional-scale benchmark plan.
  *
- * The generated plan follows the configured proportional workload strategy
- * and includes only kernel/view combinations reported as available by the
- * kernel registry.
+ * The generated plan keeps the configured workload per thread constant.
+ * For N threads, the logical workload is:
+ *
+ *     size_per_thread * N
+ *
+ * The plan includes only kernel/view combinations reported as available by
+ * the kernel registry.
  *
  * @param buffer DataBuffer from which the DataViews are built.
  * @param config Immutable benchmark configuration.
@@ -159,6 +172,7 @@ TestPlan *generate_proportional_test_plan(
     DataBuffer *buffer,
     const Configuration *config
 );
+
 
 /**
  * @brief Generate the full-scale benchmark plan.
@@ -183,6 +197,7 @@ TestPlan *generate_full_scale_test_plan(
     const Configuration *config
 );
 
+
 /**
  * @brief Validate the structural integrity of a test plan.
  *
@@ -201,6 +216,7 @@ TestPlan *generate_full_scale_test_plan(
  */
 bool validate_test_plan(const TestPlan *plan);
 
+
 /**
  * @brief Destroy a test plan and all memory owned by it.
  *
@@ -209,5 +225,6 @@ bool validate_test_plan(const TestPlan *plan);
  * @param plan Test plan to destroy.
  */
 void destroy_test_plan(TestPlan *plan);
+
 
 #endif /* CORE_TEST_PLAN_H */

@@ -1,5 +1,7 @@
-#include "kernels/master.h"
+#include "kernels/synchronization/master_masked.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_5_1
 

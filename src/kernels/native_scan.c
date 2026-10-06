@@ -1,5 +1,7 @@
-#include "kernels/scan.h"
+#include "kernels/scan/native.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_NATIVE_SCAN
 
@@ -62,7 +64,7 @@ void kernel_3d_native_scan(DataView *view,
         view->buffer->pool;
 
     const uint64_t total =
-        view->meta.v3d.rows *
+        view->meta.v3d.height *
         view->meta.v3d.cols *
         view->meta.v3d.depth;
 
@@ -105,7 +107,7 @@ void kernel_aos_native_scan(DataView *view,
         view->buffer->pool;
 
     const uint64_t total =
-        view->meta.aos.num_elements *
+        view->meta.aos.num_structs *
         view->meta.aos.struct_size;
 
     double sum = 0.0;
@@ -147,7 +149,7 @@ void kernel_soa_native_scan(DataView *view,
         view->buffer->pool;
 
     const uint64_t total =
-        view->meta.soa.num_elements *
+        view->meta.soa.field_length *
         view->meta.soa.num_fields;
 
     double sum = 0.0;
@@ -196,7 +198,7 @@ void kernel_aosoa_native_scan(DataView *view,
     }
 
     const uint64_t total =
-        (view->meta.aosoa.num_elements / vl) *
+        view->meta.aosoa.num_blocks *
         view->meta.aosoa.num_fields *
         vl;
 
@@ -221,53 +223,5 @@ void kernel_aosoa_native_scan(DataView *view,
 
     profiler_stop(profiler, metric);
 }
-
-
-/* ============================================================================
- * VIEW_CSR
- * ========================================================================== */
-
-void kernel_csr_native_scan(DataView *view,
-                            const TestCase *test_case,
-                            Profiler *profiler,
-                            PerformanceMetric *metric) {
-
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
-
-    if (!view->meta.csr.row_ptr) {
-        return;
-    }
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t total =
-        view->meta.csr.row_ptr[
-            view->meta.csr.nrows
-        ];
-
-    double sum = 0.0;
-
-    profiler_start(profiler);
-
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, total, chunk) \
-        reduction(inscan, +:sum)
-    {
-        #pragma omp for schedule(static, chunk)
-        for (uint64_t i = 0; i < total; ++i) {
-
-            sum += pool[i];
-
-            #pragma omp scan inclusive(sum)
-
-            pool[i] = sum;
-        }
-    }
-
-    profiler_stop(profiler, metric);
-}
-
 
 #endif /* OPENMP_HAS_NATIVE_SCAN */

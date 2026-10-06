@@ -1,4 +1,4 @@
-#include "data/generator.h"
+#include "data/Generator.h"
 
 static uint64_t splitmix64_next(uint64_t *sm_state) {
     uint64_t z = (*sm_state += 0x9e3779b97f4a7c15ULL);

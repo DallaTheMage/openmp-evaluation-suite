@@ -1,5 +1,7 @@
-#include "kernels/sync.h"
+#include "kernels/synchronization/sync.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_2_0
 
@@ -71,7 +73,7 @@ void kernel_3d_sync(DataView *view,
 
     double *restrict pool = view->buffer->pool;
 
-    const uint64_t rows  = view->meta.v3d.rows;
+    const uint64_t rows  = view->meta.v3d.height;
     const uint64_t cols  = view->meta.v3d.cols;
     const uint64_t depth = view->meta.v3d.depth;
 

@@ -22,6 +22,8 @@ static double read_energy_uj(int fd) {
 int rapl_power_init(RaplPower *rapl) {
     if (!rapl) return -1;
     memset(rapl, 0, sizeof(RaplPower));
+    rapl->fd_pkg = -1;
+    rapl->fd_dram = -1;
 
     rapl->fd_pkg = open(RAPL_PKG_PATH, O_RDONLY);
     if (rapl->fd_pkg < 0) {

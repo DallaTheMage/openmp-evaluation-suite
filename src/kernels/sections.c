@@ -1,5 +1,7 @@
-#include "kernels/sections.h"
+#include "kernels/worksharing/sections.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_2_0
 

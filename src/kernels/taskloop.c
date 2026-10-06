@@ -1,5 +1,7 @@
-#include "kernels/taskloop.h"
+#include "kernels/tasking/taskloop.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_TASKLOOP
 
@@ -59,7 +61,7 @@ void kernel_3d_taskloop(DataView *view,
 
     double *restrict pool = view->buffer->pool;
 
-    const uint64_t rows  = view->meta.v3d.rows;
+    const uint64_t rows  = view->meta.v3d.height;
     const uint64_t cols  = view->meta.v3d.cols;
     const uint64_t depth = view->meta.v3d.depth;
 
@@ -105,7 +107,7 @@ void kernel_aos_taskloop(DataView *view,
     double *restrict pool = view->buffer->pool;
 
     const uint64_t num_elems =
-        view->meta.aos.num_elements;
+        view->meta.aos.num_structs;
 
     const uint64_t struct_size =
         view->meta.aos.struct_size;
@@ -149,7 +151,7 @@ void kernel_soa_taskloop(DataView *view,
     double *restrict pool = view->buffer->pool;
 
     const uint64_t num_elems =
-        view->meta.soa.num_elements;
+        view->meta.soa.field_length;
 
     const uint64_t num_fields =
         view->meta.soa.num_fields;
@@ -193,7 +195,7 @@ void kernel_aosoa_taskloop(DataView *view,
     double *restrict pool = view->buffer->pool;
 
     const uint64_t num_elems =
-        view->meta.aosoa.num_elements;
+        view->meta.aosoa.num_blocks;
 
     const uint64_t num_fields =
         view->meta.aosoa.num_fields;
@@ -201,8 +203,7 @@ void kernel_aosoa_taskloop(DataView *view,
     const uint64_t vl =
         view->meta.aosoa.vector_length;
 
-    const uint64_t num_tiles =
-        (vl > 0) ? (num_elems / vl) : 0;
+    const uint64_t num_tiles = num_elems;
 
     const uint64_t tile_size =
         num_fields * vl;
@@ -235,62 +236,5 @@ void kernel_aosoa_taskloop(DataView *view,
 
     profiler_stop(profiler, metric);
 }
-
-
-/* ============================================================================
- * VIEW_CSR
- * ========================================================================== */
-
-void kernel_csr_taskloop(DataView *view,
-                         const TestCase *test_case,
-                         Profiler *profiler,
-                         PerformanceMetric *metric) {
-
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool = view->buffer->pool;
-
-    const uint64_t nrows =
-        view->meta.csr.nrows;
-
-    const uint64_t *restrict row_ptr =
-        view->meta.csr.row_ptr;
-
-    const uint64_t *restrict col_ind =
-        view->meta.csr.col_ind;
-
-    profiler_start(profiler);
-
-    #pragma omp parallel num_threads(num_threads)
-    {
-        #pragma omp single
-        {
-            #pragma omp taskloop grainsize(chunk)
-            for (uint64_t r = 0; r < nrows; ++r) {
-
-                const uint64_t start =
-                    row_ptr[r];
-
-                const uint64_t end =
-                    row_ptr[r + 1];
-
-                for (uint64_t idx = start;
-                     idx < end;
-                     ++idx) {
-
-                    const uint64_t col =
-                        col_ind[idx];
-
-                    pool[idx] =
-                        pool[idx] * 2.0 + pool[col];
-                }
-            }
-        }
-    }
-
-    profiler_stop(profiler, metric);
-}
-
 
 #endif /* OPENMP_HAS_TASKLOOP */

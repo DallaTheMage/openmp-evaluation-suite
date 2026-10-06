@@ -1,5 +1,7 @@
-#include "kernels/collapse.h"
+#include "kernels/worksharing/collapse.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_3_0
 
@@ -63,7 +65,7 @@ void kernel_3d_collapse(DataView *view,
         view->buffer->pool;
 
     const uint64_t rows =
-        view->meta.v3d.rows;
+        view->meta.v3d.height;
 
     const uint64_t cols =
         view->meta.v3d.cols;

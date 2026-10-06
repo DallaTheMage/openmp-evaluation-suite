@@ -54,7 +54,7 @@
 #include <stdint.h>
 
 #include "core/TestPlan.h"
-#include "kernels/registry.h"
+#include "kernels/KernelRegistry.h"
 #include "profiling/Profiler.h"
 
 
@@ -141,10 +141,13 @@ typedef struct AggregatedSample {
  *
  *     baseline_time / scaled_time
  *
- * Efficiency is defined relative to the number of threads of the two
- * corresponding test cases.
+ * Efficiency is defined relative to the thread-count ratio:
  *
- * Overhead is expressed in seconds.
+ *     speedup / (scaled_threads / baseline_threads)
+ *
+ * Overhead is the measured scaled time minus the ideal scaled time derived
+ * from the baseline measurement and thread-count ratio. It is expressed in
+ * seconds.
  */
 typedef struct ScalingMetrics {
     double speedup;
@@ -175,6 +178,7 @@ typedef struct ScalingMetrics {
  *     NULL on invalid input or allocation failure.
  *
  * @pre If @p sample_count is greater than zero, @p samples must not be NULL.
+ * @pre Samples are grouped contiguously by test set, test case and kernel.
  * @pre @p out_count must not be NULL.
  *
  * @post On success, @p out_count contains the number of aggregated

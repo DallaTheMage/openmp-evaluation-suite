@@ -1,5 +1,7 @@
-#include "kernels/task.h"
+#include "kernels/tasking/task.h"
+#include "config/openmp.h"
 #include "profiling/Profiler.h"
+#include "core/TestPlan.h"
 
 #if OPENMP_HAS_3_0
 
@@ -84,7 +86,7 @@ void kernel_3d_task(DataView *view,
         view->buffer->pool;
 
     const uint64_t rows =
-        view->meta.v3d.rows;
+        view->meta.v3d.height;
 
     const uint64_t cols =
         view->meta.v3d.cols;
@@ -156,7 +158,7 @@ void kernel_aos_task(DataView *view,
         view->buffer->pool;
 
     const uint64_t num_elems =
-        view->meta.aos.num_elements;
+        view->meta.aos.num_structs;
 
     const uint64_t struct_size =
         view->meta.aos.struct_size;
@@ -220,7 +222,7 @@ void kernel_soa_task(DataView *view,
         view->buffer->pool;
 
     const uint64_t num_elems =
-        view->meta.soa.num_elements;
+        view->meta.soa.field_length;
 
     const uint64_t num_fields =
         view->meta.soa.num_fields;
@@ -284,7 +286,7 @@ void kernel_aosoa_task(DataView *view,
         view->buffer->pool;
 
     const uint64_t num_elems =
-        view->meta.aosoa.num_elements;
+        view->meta.aosoa.num_blocks;
 
     const uint64_t num_fields =
         view->meta.aosoa.num_fields;
@@ -296,8 +298,7 @@ void kernel_aosoa_task(DataView *view,
         return;
     }
 
-    const uint64_t num_tiles =
-        num_elems / vl;
+    const uint64_t num_tiles = num_elems;
 
     const uint64_t tile_size =
         num_fields * vl;
@@ -352,79 +353,5 @@ void kernel_aosoa_task(DataView *view,
 
     profiler_stop(profiler, metric);
 }
-
-
-/* ============================================================================
- * VIEW_CSR
- * ========================================================================== */
-
-void kernel_csr_task(DataView *view,
-                     const TestCase *test_case,
-                     Profiler *profiler,
-                     PerformanceMetric *metric) {
-
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t nrows =
-        view->meta.csr.nrows;
-
-    const uint64_t *restrict row_ptr =
-        view->meta.csr.row_ptr;
-
-    const uint64_t *restrict col_ind =
-        view->meta.csr.col_ind;
-
-    profiler_start(profiler);
-
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, nrows, row_ptr, col_ind, chunk)
-    {
-        #pragma omp single
-        {
-            for (uint64_t begin = 0;
-                 begin < nrows;
-                 begin += chunk) {
-
-                const uint64_t end =
-                    (begin + chunk < nrows)
-                        ? begin + chunk
-                        : nrows;
-
-                #pragma omp task firstprivate(begin, end) \
-                    shared(pool, row_ptr, col_ind)
-                {
-                    for (uint64_t r = begin;
-                         r < end;
-                         ++r) {
-
-                        const uint64_t start =
-                            row_ptr[r];
-
-                        const uint64_t row_end =
-                            row_ptr[r + 1];
-
-                        for (uint64_t idx = start;
-                             idx < row_end;
-                             ++idx) {
-
-                            const uint64_t col =
-                                col_ind[idx];
-
-                            pool[idx] =
-                                pool[idx] * 2.0 + pool[col];
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    profiler_stop(profiler, metric);
-}
-
 
 #endif /* OPENMP_HAS_3_0 */
