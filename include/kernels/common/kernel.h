@@ -19,13 +19,17 @@
 
 /**
  * @file Kernel.h
- * @brief Generic interface implemented by benchmark kernels.
+ * @brief Generic benchmark kernel function.
  *
- * This header defines the minimal execution contract shared by all
- * benchmark kernels.
+ * Executes one benchmark kernel invocation on the supplied DataView.
+ * The kernel receives the test-case execution parameters and a profiler
+ * used to measure the benchmark region.
  *
- * Kernel implementations operate on a DataView, a test case configuration,
- * and interact with the profiler and performance metrics layer.
+ * On successful execution, the kernel stores the collected performance
+ * measurements in the supplied PerformanceMetric structure.
+ *
+ * The OpenMP schedule is a compile-time property of the benchmark build
+ * and is not selected through this interface.
  */
 
 #ifndef KERNELS_COMMON_KERNEL_H

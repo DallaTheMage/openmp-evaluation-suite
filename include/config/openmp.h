@@ -1,3 +1,46 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file openmp.h
+ * @brief Compile-time OpenMP version and feature detection.
+ *
+ * This header centralizes compile-time detection of the OpenMP version
+ * supported by the compiler and exposes feature capability macros used
+ * throughout the benchmark suite.
+ *
+ * The detected capabilities describe language and directive support
+ * available to the current compilation unit. They are intentionally kept
+ * separate from runtime configuration.
+ *
+ * OpenMP scheduling is selected at compile time through the configuration
+ * provided by config/params.h. This header exposes the resulting schedule
+ * capabilities but does not modify the OpenMP runtime state.
+ *
+ * The feature macros defined here are intended to keep benchmark code
+ * compiler-agnostic while allowing individual kernels to be conditionally
+ * compiled when a required OpenMP feature is unavailable.
+ *
+ * @note Some OpenMP features may require additional compiler-specific
+ *       checks even when the corresponding OpenMP version is available.
+ */
+
 #ifndef OPENMP_CONFIG_H
 #define OPENMP_CONFIG_H
 

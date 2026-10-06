@@ -1,3 +1,39 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file compilers.h
+ * @brief Compile-time compiler identification and metadata.
+ *
+ * This header detects the compiler used to build the benchmark suite and
+ * exposes normalized compiler metadata through preprocessor macros.
+ *
+ * The detection order accounts for compilers that define compatibility
+ * macros belonging to another compiler family. More specific compiler
+ * identification macros must therefore be checked before generic
+ * compatibility macros.
+ *
+ * The resulting metadata is used by the benchmark configuration and output
+ * layers to identify the compiler associated with a benchmark build.
+ *
+ * No runtime compiler detection is performed by this header.
+ */
 #ifndef CONFIG_COMPILERS_H
 #define CONFIG_COMPILERS_H
 
