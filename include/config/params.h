@@ -1,22 +1,69 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file params.h
+ * @brief Compile-time configuration for benchmark builds.
+ *
+ * This header is the single source of compile-time benchmark parameters.
+ *
+ * The configuration is intentionally divided from the runtime
+ * Configuration object:
+ *
+ * - this file selects the benchmark variant at compile time;
+ * - Configuration materializes those values for runtime components;
+ * - kernels consume the selected OpenMP schedule through CHOSEN_SCHEDULE.
+ *
+ * OpenMP scheduling is deliberately resolved at compile time.
+ * The benchmark does not use omp_set_schedule() or schedule(runtime).
+ */
+
 #ifndef CONFIG_PARAMS_H
 #define CONFIG_PARAMS_H
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
 
 
 /* ========================================================================= */
 /* Benchmark repetitions                                                    */
 /* ========================================================================= */
 
+/**
+ * @brief Number of warm-up executions.
+ */
 #ifndef WARMUP_REPS
     #define WARMUP_REPS 0U
 #endif
 
+
+/**
+ * @brief Number of measured executions.
+ */
 #ifndef WORK_REPS
     #define WORK_REPS 1U
 #endif
 
+
+/**
+ * @brief Optional work amplification factor.
+ */
 #ifndef SLOWDOWN_FACTOR
     #define SLOWDOWN_FACTOR 0U
 #endif
@@ -26,14 +73,40 @@
 /* OpenMP scheduling                                                        */
 /* ========================================================================= */
 
+/**
+ * @brief Compile-time identifiers for supported OpenMP schedules.
+ *
+ * These identifiers are metadata used by the build configuration and
+ * capability logic. They are not runtime scheduling state.
+ */
 #define SCHED_STATIC   1U
 #define SCHED_DYNAMIC  2U
 #define SCHED_GUIDED   3U
-#define SCHED_RUNTIME  4U
 
+
+/**
+ * @brief Selected OpenMP scheduling variant.
+ *
+ * The default benchmark variant uses static scheduling.
+ */
 #ifndef CHOSEN_SCHEDULE_ID
     #define CHOSEN_SCHEDULE_ID SCHED_STATIC
 #endif
+
+
+/*
+ * CHOSEN_SCHEDULE is intentionally the complete argument of the OpenMP
+ * schedule(...) clause.
+ *
+ * Therefore kernels can always write:
+ *
+ *     #pragma omp parallel for schedule(CHOSEN_SCHEDULE)
+ *
+ * without knowing which scheduling policy was selected.
+ *
+ * For dynamic/guided scheduling, chunk_size is the runtime value of the
+ * current test case. The scheduling policy itself remains compile-time.
+ */
 
 #if CHOSEN_SCHEDULE_ID == SCHED_STATIC
 
@@ -41,61 +114,106 @@
 
 #elif CHOSEN_SCHEDULE_ID == SCHED_DYNAMIC
 
-    #define CHOSEN_SCHEDULE dynamic
+    #define CHOSEN_SCHEDULE dynamic, chunk_size
 
 #elif CHOSEN_SCHEDULE_ID == SCHED_GUIDED
 
-    #define CHOSEN_SCHEDULE guided
-
-#elif CHOSEN_SCHEDULE_ID == SCHED_RUNTIME
-
-    #define CHOSEN_SCHEDULE runtime
+    #define CHOSEN_SCHEDULE guided, chunk_size
 
 #else
 
-    #error "CHOSEN_SCHEDULE_ID non valido"
+    #error "Invalid CHOSEN_SCHEDULE_ID"
 
 #endif
 
-#define STRINGIFY2(x) #x
-#define STRINGIFY(x)  STRINGIFY2(x)
 
-#define CHOSEN_SCHEDULE_STR STRINGIFY(CHOSEN_SCHEDULE)
+/* ========================================================================= */
+/* Schedule metadata                                                        */
+/* ========================================================================= */
+
+/**
+ * @brief Convert a preprocessor token sequence to a string literal.
+ */
+#define OES_STRINGIFY_IMPL(x) #x
+#define OES_STRINGIFY(x)      OES_STRINGIFY_IMPL(x)
+
+
+#if CHOSEN_SCHEDULE_ID == SCHED_STATIC
+
+    #define CHOSEN_SCHEDULE_NAME "static"
+
+#elif CHOSEN_SCHEDULE_ID == SCHED_DYNAMIC
+
+    #define CHOSEN_SCHEDULE_NAME "dynamic"
+
+#elif CHOSEN_SCHEDULE_ID == SCHED_GUIDED
+
+    #define CHOSEN_SCHEDULE_NAME "guided"
+
+#endif
 
 
 /* ========================================================================= */
 /* Compiler / toolchain metadata                                            */
 /* ========================================================================= */
 
+/**
+ * @brief Compiler family supplied by the build system.
+ */
 #ifndef OES_COMPILER_NAME
-    #define OES_COMPILER_NAME ""
+    #define OES_COMPILER_NAME "unknown"
 #endif
 
+
+/**
+ * @brief Compiler version supplied by the build system.
+ */
 #ifndef OES_COMPILER_VERSION
-    #define OES_COMPILER_VERSION ""
+    #define OES_COMPILER_VERSION "unknown"
 #endif
 
+
+/**
+ * @brief Compiler flags supplied by the build system.
+ */
 #ifndef OES_COMPILER_FLAGS
-    #define OES_COMPILER_FLAGS ""
+    #define OES_COMPILER_FLAGS "unknown"
 #endif
 
+
+/**
+ * @brief OpenMP runtime implementation supplied by the build system.
+ */
 #ifndef OES_OPENMP_RUNTIME
-    #define OES_OPENMP_RUNTIME ""
+    #define OES_OPENMP_RUNTIME "unknown"
 #endif
 
 
 /* ========================================================================= */
-/* Thread & problem size                                                    */
+/* Thread and problem-size configuration                                    */
 /* ========================================================================= */
 
+/**
+ * @brief Comma-separated list of thread counts to benchmark.
+ */
 #ifndef THREAD_LIST
     #define THREAD_LIST 1U, 2U, 4U, 8U
 #endif
 
+
+/**
+ * @brief Base-2 logarithm of the benchmark problem size.
+ *
+ * The actual number of elements is 2^PROBLEM_LOG2_SIZE.
+ */
 #ifndef PROBLEM_LOG2_SIZE
     #define PROBLEM_LOG2_SIZE 28U
 #endif
 
+
+/**
+ * @brief Alignment requested for benchmark data allocations.
+ */
 #ifndef MEMORY_ALIGNMENT
     #define MEMORY_ALIGNMENT 16U
 #endif
@@ -105,10 +223,22 @@
 /* Window configuration                                                     */
 /* ========================================================================= */
 
+/**
+ * @brief Comma-separated list of window sizes expressed as log2 values.
+ *
+ * Each value N represents a window of 2^N elements.
+ */
 #ifndef WINDOWS_LOG2_LIST
     #define WINDOWS_LOG2_LIST 28U, 26U, 24U, 22U
 #endif
 
+
+/**
+ * @brief Comma-separated list of chunk sizes.
+ *
+ * These values are relevant to scheduling variants that accept a chunk
+ * size, such as dynamic and guided scheduling.
+ */
 #ifndef CHUNK_SIZE_LIST
     #define CHUNK_SIZE_LIST 32U, 64U, 128U
 #endif
@@ -118,15 +248,17 @@
 /* CSR configuration                                                        */
 /* ========================================================================= */
 
-/*
- * Fraction of elements represented by the CSR.
+/**
+ * @brief Fraction of elements represented by the CSR structure.
+ *
+ * Examples:
  *
  *     1.0  -> 100%
  *     0.1  -> 10%
  *     0.01 -> 1%
  *
- * The actual number of non-zero entries is derived from the
- * current window size.
+ * The actual number of non-zero entries is derived from the current
+ * DataView/window size.
  */
 #ifndef CSR_DENSITY
     #define CSR_DENSITY 0.01
@@ -134,40 +266,63 @@
 
 
 /* ========================================================================= */
-/* View shape configuration                                                 */
+/* DataView shape configuration                                             */
 /* ========================================================================= */
 
+/**
+ * @brief Number of columns for two-dimensional views.
+ */
 #ifndef CONFIG_VIEW_2D_COLS
     #define CONFIG_VIEW_2D_COLS \
-        (UINT64_C(1) << ((PROBLEM_LOG2_SIZE) / 2U))
+        (UINT64_C(1) << (PROBLEM_LOG2_SIZE / 2U))
 #endif
 
 
+/**
+ * @brief Depth of three-dimensional views.
+ */
 #ifndef CONFIG_VIEW_3D_DEPTH
     #define CONFIG_VIEW_3D_DEPTH \
-        (UINT64_C(1) << ((PROBLEM_LOG2_SIZE) / 3U))
+        (UINT64_C(1) << (PROBLEM_LOG2_SIZE / 3U))
 #endif
 
+
+/**
+ * @brief Number of columns for three-dimensional views.
+ */
 #ifndef CONFIG_VIEW_3D_COLS
     #define CONFIG_VIEW_3D_COLS \
-        (UINT64_C(1) << ((PROBLEM_LOG2_SIZE) / 3U))
+        (UINT64_C(1) << (PROBLEM_LOG2_SIZE / 3U))
 #endif
 
 
+/**
+ * @brief Size in bytes of an AoS structure.
+ */
 #ifndef CONFIG_VIEW_AOS_STRUCT_SIZE
     #define CONFIG_VIEW_AOS_STRUCT_SIZE 4ULL
 #endif
 
 
+/**
+ * @brief Number of fields in an SoA view.
+ */
 #ifndef CONFIG_VIEW_SOA_NUM_FIELDS
     #define CONFIG_VIEW_SOA_NUM_FIELDS 4ULL
 #endif
 
 
+/**
+ * @brief Vector length of an AoSoA view.
+ */
 #ifndef CONFIG_VIEW_AOSOA_VECTOR_LEN
     #define CONFIG_VIEW_AOSOA_VECTOR_LEN 8ULL
 #endif
 
+
+/**
+ * @brief Number of fields in an AoSoA view.
+ */
 #ifndef CONFIG_VIEW_AOSOA_NUM_FIELDS
     #define CONFIG_VIEW_AOSOA_NUM_FIELDS 4ULL
 #endif
@@ -178,35 +333,47 @@
 /* ========================================================================= */
 
 #if PROBLEM_LOG2_SIZE >= 64U
-    #error "PROBLEM_LOG2_SIZE deve essere < 64"
+    #error "PROBLEM_LOG2_SIZE must be less than 64"
 #endif
+
+
+#if MEMORY_ALIGNMENT == 0U
+    #error "MEMORY_ALIGNMENT must be greater than zero"
+#endif
+
 
 #if CONFIG_VIEW_2D_COLS == 0
-    #error "[Config Error] CONFIG_VIEW_2D_COLS deve essere > 0"
+    #error "CONFIG_VIEW_2D_COLS must be greater than zero"
 #endif
+
 
 #if CONFIG_VIEW_3D_DEPTH == 0
-    #error "[Config Error] CONFIG_VIEW_3D_DEPTH deve essere > 0"
+    #error "CONFIG_VIEW_3D_DEPTH must be greater than zero"
 #endif
+
 
 #if CONFIG_VIEW_3D_COLS == 0
-    #error "[Config Error] CONFIG_VIEW_3D_COLS deve essere > 0"
+    #error "CONFIG_VIEW_3D_COLS must be greater than zero"
 #endif
+
 
 #if CONFIG_VIEW_AOS_STRUCT_SIZE == 0
-    #error "[Config Error] CONFIG_VIEW_AOS_STRUCT_SIZE deve essere > 0"
+    #error "CONFIG_VIEW_AOS_STRUCT_SIZE must be greater than zero"
 #endif
+
 
 #if CONFIG_VIEW_SOA_NUM_FIELDS == 0
-    #error "[Config Error] CONFIG_VIEW_SOA_NUM_FIELDS deve essere > 0"
+    #error "CONFIG_VIEW_SOA_NUM_FIELDS must be greater than zero"
 #endif
+
 
 #if CONFIG_VIEW_AOSOA_VECTOR_LEN == 0
-    #error "[Config Error] CONFIG_VIEW_AOSOA_VECTOR_LEN deve essere > 0"
+    #error "CONFIG_VIEW_AOSOA_VECTOR_LEN must be greater than zero"
 #endif
 
+
 #if CONFIG_VIEW_AOSOA_NUM_FIELDS == 0
-    #error "[Config Error] CONFIG_VIEW_AOSOA_NUM_FIELDS deve essere > 0"
+    #error "CONFIG_VIEW_AOSOA_NUM_FIELDS must be greater than zero"
 #endif
 
 
@@ -214,29 +381,44 @@
 /* Utilities                                                                */
 /* ========================================================================= */
 
+/**
+ * @brief Number of elements in a statically defined array.
+ */
 #ifndef ARRAY_SIZE
-    #define ARRAY_SIZE(arr) \
-        (sizeof(arr) / sizeof((arr)[0]))
+    #define ARRAY_SIZE(array) \
+        (sizeof(array) / sizeof((array)[0]))
 #endif
 
+
+/**
+ * @brief Default deterministic seed for generated benchmark data.
+ */
 #ifndef GENERATION_SEED
-    #define GENERATION_SEED 12345ULL
+    #define GENERATION_SEED UINT64_C(12345)
 #endif
 
 
-/* ========================================================================= */
-/* Runtime conversion helpers                                               */
-/* ========================================================================= */
-
-static inline uint64_t window_size_from_log2(uint32_t log2)
+/**
+ * @brief Convert a log2 window size to its actual element count.
+ *
+ * @param log2 Base-2 logarithm of the desired window size.
+ *
+ * @return 2^log2, or zero if log2 is outside the uint64_t range.
+ */
+static inline uint64_t
+window_size_from_log2(uint32_t log2)
 {
     if (log2 >= 64U) {
-        return 0ULL;
+        return UINT64_C(0);
     }
 
     return UINT64_C(1) << log2;
 }
 
+
+/* ========================================================================= */
+/* Materialized compile-time lists                                         */
+/* ========================================================================= */
 
 static const uint32_t CONFIG_WINDOW_LOG2[] = {
     WINDOWS_LOG2_LIST

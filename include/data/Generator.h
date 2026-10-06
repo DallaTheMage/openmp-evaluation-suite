@@ -12,7 +12,7 @@ typedef struct {
     uint64_t s[4];
 } xoshiro256_state;
 
-
+/* Optional Struct */
 typedef struct Generator {
     xoshiro256_state state;
     void (*init)(xoshiro256_state *state, uint64_t seed);

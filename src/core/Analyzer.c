@@ -1,7 +1,7 @@
-#include "core/Analyzer.h"
-#include "utils/welford.h"
 
 #include <stdlib.h>
+#include "core/Analyzer.h"
+#include "utils/welford.h"
 
 bool analyzer_same_test_case(
 const RawSample *a,

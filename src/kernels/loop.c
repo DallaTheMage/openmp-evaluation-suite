@@ -1,4 +1,4 @@
-#include "kernels/loop.h"
+#include "kernels/worksharing/loop.h"
 #include "profiling/Profiler.h"
 
 #if OPENMP_HAS_2_0

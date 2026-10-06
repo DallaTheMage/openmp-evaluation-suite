@@ -1,78 +1,175 @@
-#ifndef CORE_FILE_MANAGER_H
-#define CORE_FILE_MANAGER_H
-
-#include <stdio.h>
-
-#include "core/Configuration.h"
-
-
-/* ========================================================================= */
-/* --- FileManager -------------------------------------------------------- */
-/* ========================================================================= */
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 /**
- * Gestisce il filesystem associato a una singola run di O.E.S.
+ * @file FileManager.h
+ * @brief Filesystem and CSV-file management for benchmark output.
  *
- * La struttura delle directory viene derivata dalla Configuration:
+ * FileManager owns the output-path state associated with one benchmark run.
+ *
+ * The directory hierarchy is:
  *
  *     <base_dir>/
  *         <compiler_name>/
  *             <schedule>/
  *                 <test_name>/
  *
- * FileManager non possiede la Configuration e non ne modifica
- * alcun campo.
+ * The compiler and schedule names are copied into the FileManager during
+ * construction. The manager therefore does not depend on the lifetime of
+ * the Configuration object used to create it.
+ *
+ * The OpenMP scheduling policy is a compile-time property of the benchmark
+ * build. FileManager only records its textual name as output metadata; it
+ * never changes or queries the OpenMP runtime scheduling state.
+ *
+ * FileManager is intentionally independent from the benchmark analysis
+ * subsystem. It does not know about RawSample, AggregatedSample or
+ * statistical results.
+ *
+ * The manager is not thread-safe. It is intended to be used by the
+ * benchmark control thread.
+ */
+
+#ifndef CORE_FILE_MANAGER_H
+#define CORE_FILE_MANAGER_H
+
+#include <stdio.h>
+
+
+/**
+ * @brief Maximum length of a FileManager base directory.
+ */
+#define FILE_MANAGER_BASE_DIR_MAX 256U
+
+
+/**
+ * @brief Maximum length of a compiler name stored by FileManager.
+ */
+#define FILE_MANAGER_COMPILER_NAME_MAX 32U
+
+
+/**
+ * @brief Maximum length of an OpenMP schedule name stored by FileManager.
+ */
+#define FILE_MANAGER_SCHEDULE_NAME_MAX 32U
+
+
+/**
+ * @brief Maximum length of a benchmark test name.
+ */
+#define FILE_MANAGER_TEST_NAME_MAX 64U
+
+
+/**
+ * @brief File manager state for one benchmark output hierarchy.
+ *
+ * FileManager owns all strings stored in this structure.
+ *
+ * No pointer in this structure refers to Configuration or other external
+ * benchmark state.
  */
 typedef struct FileManager {
-
-    char base_dir[256];
-
-    char test_name[64];
-
-    const Configuration *config;
-
+    char base_dir[FILE_MANAGER_BASE_DIR_MAX];
+    char compiler_name[FILE_MANAGER_COMPILER_NAME_MAX];
+    char schedule_name[FILE_MANAGER_SCHEDULE_NAME_MAX];
+    char test_name[FILE_MANAGER_TEST_NAME_MAX];
 } FileManager;
 
 
-/* ========================================================================= */
-/* --- Lifecycle ---------------------------------------------------------- */
-/* ========================================================================= */
-
 /**
- * Crea un FileManager associato alla Configuration fornita.
+ * @brief Create a FileManager for one benchmark build.
  *
- * base_dir può essere NULL; in tal caso viene utilizzato "./output".
+ * The function copies the supplied path and metadata strings into the
+ * returned object.
  *
- * La Configuration deve rimanere valida per tutta la vita del
- * FileManager.
+ * If @p base_dir is NULL, "./output" is used.
+ *
+ * The compiler and schedule names are copied and therefore do not need
+ * to remain valid after this function returns.
+ *
+ * No directory is created by this function. Directory creation is
+ * performed when a test is selected with set_current_test().
+ *
+ * @param base_dir
+ *     Root directory for benchmark output. May be NULL.
+ *
+ * @param compiler_name
+ *     Compiler name to include in the output hierarchy.
+ *
+ * @param schedule_name
+ *     Compile-time OpenMP schedule name to include in the output hierarchy.
+ *
+ * @return
+ *     Newly allocated FileManager on success.
+ *     NULL on invalid input or allocation failure.
+ *
+ * @pre compiler_name != NULL.
+ * @pre schedule_name != NULL.
+ *
+ * @note The returned object is owned by the caller.
  */
 FileManager *create_file_manager(
     const char *base_dir,
-    const Configuration *config
+    const char *compiler_name,
+    const char *schedule_name
 );
 
 
 /**
- * Distrugge il FileManager.
+ * @brief Destroy a FileManager.
  *
- * La Configuration non viene liberata.
+ * All resources owned by the manager are released.
+ *
+ * @param manager
+ *     FileManager to destroy.
+ *
+ * @note Passing NULL is allowed and has no effect.
  */
 void destroy_file_manager(
     FileManager *manager
 );
 
 
-/* ========================================================================= */
-/* --- Test context ------------------------------------------------------- */
-/* ========================================================================= */
-
 /**
- * Imposta il test corrente e crea automaticamente la struttura
- * di directory necessaria.
+ * @brief Select the current benchmark test and create its output directory.
  *
- * Il percorso risultante è:
+ * The resulting directory is:
  *
- *     <base_dir>/<compiler_name>/<schedule>/<test_name>/
+ *     <base_dir>/<compiler_name>/<schedule_name>/<test_name>/
+ *
+ * If the directory hierarchy already exists, this function succeeds.
+ *
+ * @param manager
+ *     FileManager whose current test is being changed.
+ *
+ * @param test_name
+ *     Name of the benchmark test.
+ *
+ * @return
+ *     0 on success.
+ *     Non-zero on invalid input, invalid path components or filesystem
+ *     failure.
+ *
+ * @pre manager != NULL.
+ * @pre test_name != NULL.
+ *
+ * @post On success, manager->test_name contains the selected test name.
  */
 int set_current_test(
     FileManager *manager,
@@ -80,26 +177,38 @@ int set_current_test(
 );
 
 
-/* ========================================================================= */
-/* --- CSV files ---------------------------------------------------------- */
-/* ========================================================================= */
-
 /**
- * Apre un CSV appartenente al test corrente.
+ * @brief Open a CSV file in the current test directory.
  *
- * Esempio:
+ * The supplied filename identifies the CSV file relative to the current
+ * test directory.
  *
- *     open_csv_file(manager, "raw_samples")
+ * The ".csv" extension is added by the implementation when necessary.
  *
- * apre:
+ * Files are opened in write mode and therefore existing contents are
+ * replaced.
  *
- *     <base_dir>/<compiler>/<schedule>/<test>/raw_samples.csv
+ * @param manager
+ *     FileManager with a selected current test.
  *
- * Il file viene aperto in modalità "w".
+ * @param filename
+ *     CSV filename without a directory component.
+ *
+ * @return
+ *     Open FILE stream on success.
+ *     NULL on invalid input, missing current test or filesystem failure.
+ *
+ * @pre manager != NULL.
+ * @pre filename != NULL.
+ * @pre set_current_test() must have completed successfully.
+ *
+ * @note The caller owns the returned FILE stream and must close it with
+ *       fclose().
  */
 FILE *open_csv_file(
     FileManager *manager,
     const char *filename
 );
+
 
 #endif /* CORE_FILE_MANAGER_H */
