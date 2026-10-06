@@ -28,13 +28,13 @@
  *
  *     TestPlan
  *         |
- *         +-- TestSet
+ *         +---TestSet
  *               |
- *               +-- DataView
+ *               +---DataView
  *               |
- *               +-- KernelTestGroup
+ *               +---KernelTestGroup
  *                       |
- *                       +-- TestCase
+ *                       +---TestCase
  *
  * Kernel availability is determined by the static kernel registry. The
  * test-plan generator must not duplicate OpenMP capability checks or

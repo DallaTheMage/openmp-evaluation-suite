@@ -24,12 +24,12 @@
  * This header defines the immutable-at-runtime description of a benchmark
  * configuration:
  *
- * - compiler and OpenMP build metadata;
- * - problem and execution parameters;
- * - benchmark repetition parameters;
- * - memory allocation parameters;
- * - DataView shape parameters;
- * - metrics derived from the configured problem size.
+ * (+) Compiler and OpenMP build metadata;
+ * (+) Problem and execution parameters;
+ * (+) Benchmark repetition parameters;
+ * (+) Memory allocation parameters;
+ * (+) DataView shape parameters;
+ * (+) Metrics derived from the configured problem size.
  *
  * The configuration does not contain OpenMP scheduling state.
  * The OpenMP schedule is a compile-time property of a benchmark build and

@@ -30,16 +30,16 @@
  *
  * The analysis pipeline is:
  *
- *     RawSample
- *         |
- *         v
- *     RawSampleSet
- *         |
- *         v
- *     analyzer_aggregate_samples()
- *         |
- *         v
- *     AggregatedSample
+ *         RawSample
+ *             |
+ *             v
+ *         RawSampleSet
+ *             |
+ *             v
+ *  analyzer_aggregate_samples()
+ *             |
+ *             v
+ *       AggregatedSample
  *
  * Statistical accumulation is delegated to the statistics subsystem.
  * The analyzer is responsible for identifying samples belonging to the

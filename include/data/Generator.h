@@ -12,14 +12,6 @@ typedef struct {
     uint64_t s[4];
 } xoshiro256_state;
 
-/* Optional Struct */
-typedef struct Generator {
-    xoshiro256_state state;
-    void (*init)(xoshiro256_state *state, uint64_t seed);
-    void (*jump)(xoshiro256_state *state);
-    void (*next)(xoshiro256_state *state);
-} Generator;
-
 /**
  * @brief Fa avanzare lo stato del generatore di 2^128 passi.
  * Utile in ambienti paralleli (OpenMP/MPI) per assegnare sottosequenze
@@ -64,9 +56,5 @@ static inline double generator_next_double(xoshiro256_state *state) {
  * @param count Numero di elementi double da generare.
  */
 void generator_fill_pool(uint64_t seed, double *restrict pool, size_t count);
-
-
-Generator *generator_create(uint64_t seed);
-void generator_destroy(Generator *generator);
 
 #endif /* GENERATOR_H */

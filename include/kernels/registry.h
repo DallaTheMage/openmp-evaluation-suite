@@ -46,7 +46,7 @@
 #include <stdbool.h>
 
 #include "data/views/ViewType.h"
-#include "kernels/common/Kernel.h"
+#include "kernels/common/kernel.h"
 #include "kernels/common/types.h"
 
 

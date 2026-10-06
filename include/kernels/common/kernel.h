@@ -24,9 +24,8 @@
  * This header defines the minimal execution contract shared by all
  * benchmark kernels.
  *
- * Kernel implementations operate on a DataView and an execution
- * configuration. Performance measurement is intentionally handled outside
- * the kernel interface by the dispatcher/profiler layer.
+ * Kernel implementations operate on a DataView, a test case configuration,
+ * and interact with the profiler and performance metrics layer.
  */
 
 #ifndef KERNELS_COMMON_KERNEL_H
@@ -38,29 +37,20 @@
 
 
 /**
- * @brief Execution parameters supplied to a kernel.
- *
- * This structure contains only parameters that affect kernel execution.
- * Benchmark infrastructure such as profiling and result storage does not
- * belong here.
- */
-typedef struct KernelExecution {
-    uint32_t num_threads;
-    uint64_t chunk_size;
-} KernelExecution;
-
-
-/**
  * @brief Generic benchmark kernel function.
  *
- * A kernel operates on the supplied DataView using the specified execution
- * parameters.
+ * A kernel operates on the supplied DataView using the specified test case
+ * configuration, while recording metrics through the profiler.
  *
  * @param view DataView processed by the kernel.
- * @param execution Execution parameters for this invocation.
+ * @param test_case Test case configuration and execution parameters for this invocation.
+ * @param profiler Profiler instance used for performance tracking.
+ * @param metric Performance metric container for results.
  *
  * @pre view must not be NULL.
- * @pre execution must not be NULL.
+ * @pre test_case must not be NULL.
+ * @pre profiler must not be NULL.
+ * @pre metric must not be NULL.
  *
  * @note The selected OpenMP schedule is a compile-time property of the
  *       benchmark build and is not supplied through this interface.
