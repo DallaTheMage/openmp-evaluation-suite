@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -25,9 +25,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "config/params.h"
 #include "core/Analyzer.h"
 #include "core/Configuration.h"
 #include "core/Dispatcher.h"
+#include "core/FileManager.h"
+#include "core/ResultsWriter.h"
 #include "core/TestPlan.h"
 #include "data/DataBuffer.h"
 #include "data/Generator.h"
@@ -37,19 +40,24 @@
 int main(void)
 {
     Configuration config = load_configuration();
+
     DataBuffer *buffer = NULL;
     TestPlan *plan = NULL;
-    Profiler profiler;
+    FileManager *file_manager = NULL;
+
+    Profiler profiler = {0};
     RawSampleSet samples = {0};
+
     size_t aggregated_count = 0U;
     AggregatedSample *aggregated = NULL;
-    int exit_code = EXIT_FAILURE;
-    int profiler_initialized = 0;
 
-    printf("[Main] Configuration loaded successfully\n");
+    int profiler_initialized = 0;
+    int exit_code = EXIT_FAILURE;
+
+    printf("[benchmark] configuration loaded\n");
 
     printf(
-        "[Main] Allocating data buffer (%llu elements)\n",
+        "[benchmark] allocating data buffer (%llu elements)\n",
         (unsigned long long) config.derived.problem_size_elements
     );
 
@@ -58,10 +66,8 @@ int main(void)
         config.memory.alignment
     );
 
-    if (buffer == NULL) {
-        fprintf(stderr, "error: unable to allocate benchmark data buffer\n");
-    } else {
-        printf("[Main] Filling data buffer\n");
+    if (buffer != NULL) {
+        printf("[benchmark] filling data buffer\n");
 
         generator_fill_pool(
             config.benchmark.generation_seed,
@@ -69,26 +75,61 @@ int main(void)
             buffer->element_count
         );
 
-        printf("[Main] Generating test plan\n");
+        printf("[benchmark] generating test plan\n");
 
-        plan = generate_full_scale_test_plan(buffer, &config);
+        plan = generate_full_scale_test_plan(
+            buffer,
+            &config
+        );
+    }
 
-        if (plan == NULL || !validate_test_plan(plan)) {
-            fprintf(stderr, "error: unable to create a valid test plan\n");
+    if (buffer == NULL ||
+        plan == NULL ||
+        !validate_test_plan(plan)) {
+        fprintf(
+            stderr,
+            "error: unable to create benchmark input or test plan\n"
+        );
+    } else {
+        printf(
+            "[benchmark] test plan ready: %zu test sets\n",
+            plan->count
+        );
+
+        file_manager = create_file_manager(
+            "./output",
+            config.build.compiler_name,
+            CHOSEN_SCHEDULE_NAME
+        );
+
+        if (file_manager == NULL ||
+            set_current_test(
+                file_manager,
+                "full_scale"
+            ) != 0) {
+            fprintf(
+                stderr,
+                "error: unable to initialize output directory\n"
+            );
         } else {
             printf(
-                "[Main] Test plan ready: %zu test sets\n",
-                plan->count
+                "[benchmark] output directory: "
+                "./output/%s/%s/full_scale\n",
+                config.build.compiler_name,
+                CHOSEN_SCHEDULE_NAME
             );
 
-            printf("[Main] Initializing profiler\n");
+            printf("[benchmark] initializing profiler\n");
 
             if (profiler_init(&profiler) != 0) {
-                fprintf(stderr, "error: unable to initialize profiler\n");
+                fprintf(
+                    stderr,
+                    "error: unable to initialize profiler\n"
+                );
             } else {
                 profiler_initialized = 1;
 
-                printf("[Main] Starting dispatch\n");
+                printf("[benchmark] starting dispatch\n");
 
                 if (dispatch_test_plan(
                         plan,
@@ -96,10 +137,13 @@ int main(void)
                         config.benchmark.warmup_reps,
                         config.benchmark.work_reps,
                         &samples) != DISPATCH_OK) {
-                    fprintf(stderr, "error: benchmark dispatch failed\n");
+                    fprintf(
+                        stderr,
+                        "error: benchmark dispatch failed\n"
+                    );
                 } else {
-                    printf("[Main] Dispatch completed\n");
-                    printf("[Main] Aggregating results\n");
+                    printf("[benchmark] dispatch completed\n");
+                    printf("[benchmark] aggregating results\n");
 
                     aggregated = analyzer_aggregate_samples(
                         samples.samples,
@@ -114,13 +158,31 @@ int main(void)
                         );
                     } else {
                         printf(
-                            "[Main] Completed: %zu raw samples, "
+                            "[benchmark] completed: "
+                            "%zu raw samples, "
                             "%zu aggregated experiments\n",
                             samples.count,
                             aggregated_count
                         );
 
-                        exit_code = EXIT_SUCCESS;
+                        if (write_benchmark_results(
+                                file_manager,
+                                plan,
+                                &samples,
+                                aggregated,
+                                aggregated_count) != 0) {
+                            fprintf(
+                                stderr,
+                                "error: unable to write benchmark "
+                                "output files\n"
+                            );
+                        } else {
+                            printf(
+                                "[benchmark] results written successfully\n"
+                            );
+
+                            exit_code = EXIT_SUCCESS;
+                        }
                     }
                 }
             }
@@ -128,12 +190,14 @@ int main(void)
     }
 
     free(aggregated);
+
     dispatch_destroy_samples(&samples);
 
     if (profiler_initialized) {
         profiler_cleanup(&profiler);
     }
 
+    destroy_file_manager(file_manager);
     destroy_test_plan(plan);
     destroy_data_buffer(buffer);
     destroy_configuration(&config);
