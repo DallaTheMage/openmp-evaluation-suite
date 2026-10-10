@@ -68,10 +68,10 @@
  * profiler. No statistical aggregation is performed at this level.
  */
 typedef struct RawSample {
-    TestSetUID       test_set_id;
-    TestCaseUID      test_case_id;
-    KernelType       kernel;
-    uint32_t         run_id;
+    TestSetUID        test_set_id;
+    TestCaseUID       test_case_id;
+    KernelType        kernel;
+    uint32_t          run_id;
     PerformanceMetric metric;
 } RawSample;
 
@@ -148,6 +148,22 @@ typedef struct AggregatedSample {
  * Overhead is the measured scaled time minus the ideal scaled time derived
  * from the baseline measurement and thread-count ratio. It is expressed in
  * seconds.
+ */
+typedef enum ScalingMode {
+    SCALING_STRONG = 0,
+    SCALING_WEAK = 1
+} ScalingMode;
+
+
+/**
+ * @brief Metrics computed for one scaling comparison.
+ *
+ * For strong scaling, speedup is the conventional baseline/scaled time
+ * ratio and efficiency is speedup divided by the thread-count ratio.
+ *
+ * For weak scaling, speedup is a work-normalized speedup and efficiency is
+ * the baseline time divided by the scaled time. This keeps efficiency equal
+ * to one for ideal weak scaling while still exposing a normalized speedup.
  */
 typedef struct ScalingMetrics {
     double speedup;
@@ -228,6 +244,44 @@ bool analyzer_compute_scaling(
     const TestCase         *baseline_point,
     const AggregatedSample *scaled,
     const TestCase         *scaled_point,
+    ScalingMetrics         *out_metrics
+);
+
+
+/**
+ * @brief Compute weak-scaling metrics between two proportional experiments.
+ *
+ * The workload is expected to increase with the thread count. The workload
+ * ratio is supplied explicitly in elements so the analyzer does not depend
+ * on a particular DataView representation.
+ *
+ * Work-normalized speedup is:
+ *
+ *     (scaled_work / baseline_work) * (baseline_time / scaled_time)
+ *
+ * Weak-scaling efficiency is:
+ *
+ *     baseline_time / scaled_time
+ *
+ * Overhead is the increase in wall-clock time relative to the baseline.
+ *
+ * @param baseline Baseline aggregated measurement.
+ * @param baseline_point Baseline test case.
+ * @param baseline_work Number of logical workload elements at baseline.
+ * @param scaled Scaled aggregated measurement.
+ * @param scaled_point Scaled test case.
+ * @param scaled_work Number of logical workload elements at scale point.
+ * @param out_metrics Destination for the computed metrics.
+ *
+ * @return true when the metrics can be computed, false otherwise.
+ */
+bool analyzer_compute_weak_scaling(
+    const AggregatedSample *baseline,
+    const TestCase         *baseline_point,
+    uint64_t                baseline_work,
+    const AggregatedSample *scaled,
+    const TestCase         *scaled_point,
+    uint64_t                scaled_work,
     ScalingMetrics         *out_metrics
 );
 

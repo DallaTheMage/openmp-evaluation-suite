@@ -156,6 +156,7 @@ static void finalize_group(
     }
 }
 
+
 bool analyzer_same_test_case(
     const RawSample *a,
     const RawSample *b
@@ -254,6 +255,7 @@ AggregatedSample *analyzer_aggregate_samples(
     return result;
 }
 
+
 bool analyzer_compute_scaling(
     const AggregatedSample *baseline,
     const TestCase *baseline_point,
@@ -299,6 +301,51 @@ bool analyzer_compute_scaling(
     out_metrics->efficiency = out_metrics->speedup / thread_ratio;
     out_metrics->overhead_sec =
         scaled_time - (baseline_time / thread_ratio);
+
+    return true;
+}
+
+
+bool analyzer_compute_weak_scaling(
+    const AggregatedSample *baseline,
+    const TestCase *baseline_point,
+    uint64_t baseline_work,
+    const AggregatedSample *scaled,
+    const TestCase *scaled_point,
+    uint64_t scaled_work,
+    ScalingMetrics *out_metrics
+)
+{
+    const double baseline_time =
+        baseline != NULL ? baseline->wall_time_sec.mean : 0.0;
+    const double scaled_time =
+        scaled != NULL ? scaled->wall_time_sec.mean : 0.0;
+    double work_ratio;
+
+    if (baseline == NULL ||
+        baseline_point == NULL ||
+        scaled == NULL ||
+        scaled_point == NULL ||
+        out_metrics == NULL ||
+        baseline_work == UINT64_C(0) ||
+        scaled_work == UINT64_C(0) ||
+        baseline_point->num_threads == 0U ||
+        scaled_point->num_threads == 0U ||
+        scaled_point->num_threads <= baseline_point->num_threads ||
+        baseline->kernel != scaled->kernel ||
+        baseline_time <= 0.0 ||
+        scaled_time <= 0.0) {
+        return false;
+    }
+
+    work_ratio = (double)scaled_work / (double)baseline_work;
+    if (work_ratio <= 0.0) {
+        return false;
+    }
+
+    out_metrics->efficiency = baseline_time / scaled_time;
+    out_metrics->speedup = work_ratio * out_metrics->efficiency;
+    out_metrics->overhead_sec = scaled_time - baseline_time;
 
     return true;
 }

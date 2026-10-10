@@ -2,6 +2,7 @@
 *.o
 *.csv
 *.json
+*.md
 main
 build/
 backup.*

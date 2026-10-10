@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -37,113 +37,78 @@
 #include "profiling/Profiler.h"
 
 
-int main(void)
-{
-    Configuration config = load_configuration();
-
-    DataBuffer *buffer = NULL;
+/**
+ * @brief Execute one benchmark suite and write its results.
+ *
+ * The function owns all per-suite execution state. This is important when
+ * more than one suite is enabled: the profiler, samples, aggregated results
+ * and output directory are reset between full-scale and proportional runs.
+ *
+ * @param buffer Shared initialized benchmark data buffer.
+ * @param config Runtime benchmark configuration.
+ * @param test_name Output-directory name and logical suite name.
+ * @param scaling_mode Scaling metric type written to scaling.csv.
+ * @param proportional Non-zero to generate the proportional test plan.
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+static int run_benchmark_suite(
+    DataBuffer *buffer,
+    const Configuration *config,
+    const char *test_name,
+    ScalingMode scaling_mode,
+    int proportional
+) {
     TestPlan *plan = NULL;
     FileManager *file_manager = NULL;
-
     Profiler profiler = {0};
     RawSampleSet samples = {0};
-
-    size_t aggregated_count = 0U;
     AggregatedSample *aggregated = NULL;
-
+    size_t aggregated_count = 0U;
     int profiler_initialized = 0;
-    int exit_code = EXIT_FAILURE;
+    int result = -1;
 
-    printf("[benchmark] configuration loaded\n");
+    printf("[Main] Starting suite: %s\n", test_name);
 
-    printf(
-        "[benchmark] allocating data buffer (%llu elements)\n",
-        (unsigned long long) config.derived.problem_size_elements
-    );
-
-    buffer = create_data_buffer(
-        (size_t) config.derived.problem_size_elements,
-        config.memory.alignment
-    );
-
-    if (buffer != NULL) {
-        printf("[benchmark] filling data buffer\n");
-
-        generator_fill_pool(
-            config.benchmark.generation_seed,
-            buffer->pool,
-            buffer->element_count
-        );
-
-        printf("[benchmark] generating test plan\n");
-
-        plan = generate_full_scale_test_plan(
-            buffer,
-            &config
-        );
+    if (proportional) {
+        plan = generate_proportional_test_plan(buffer, config);
+    } else {
+        plan = generate_full_scale_test_plan(buffer, config);
     }
 
-    if (buffer == NULL ||
-        plan == NULL ||
-        !validate_test_plan(plan)) {
+    if (plan == NULL || !validate_test_plan(plan)) {
         fprintf(
             stderr,
-            "error: unable to create benchmark input or test plan\n"
+            "[Error] Unable to create valid %s test plan\n",
+            test_name
         );
     } else {
-        printf(
-            "[benchmark] test plan ready: %zu test sets\n",
-            plan->count
-        );
-
-        file_manager = create_file_manager(
-            "./output",
-            config.build.compiler_name,
-            CHOSEN_SCHEDULE_NAME
-        );
-
-        if (file_manager == NULL ||
-            set_current_test(
-                file_manager,
-                "full_scale"
-            ) != 0) {
-            fprintf(
-                stderr,
-                "error: unable to initialize output directory\n"
-            );
+        printf("[Main] %s test plan ready: %zu test sets\n", test_name, plan->count);
+        file_manager = create_file_manager("./output", config->build.compiler_name, CHOSEN_SCHEDULE_NAME);
+        if (file_manager == NULL || set_current_test(file_manager, test_name) != 0) {
+            fprintf(stderr,"[Error] Unable to initialize output directory for %s\n",test_name);
         } else {
-            printf(
-                "[benchmark] output directory: "
-                "./output/%s/%s/full_scale\n",
-                config.build.compiler_name,
-                CHOSEN_SCHEDULE_NAME
+            printf("[Main] Output directory: ./output/%s/%s/%s\n",
+                config->build.compiler_name,
+                CHOSEN_SCHEDULE_NAME,
+                test_name
             );
-
-            printf("[benchmark] initializing profiler\n");
-
+            printf("[Main] initializing profiler for %s\n", test_name);
             if (profiler_init(&profiler) != 0) {
-                fprintf(
-                    stderr,
-                    "error: unable to initialize profiler\n"
-                );
+                fprintf(stderr,"[Error] Unable to initialize profiler for %s\n",test_name);
             } else {
                 profiler_initialized = 1;
-
-                printf("[benchmark] starting dispatch\n");
-
+                printf("[Main] dispatching %s suite\n", test_name);
                 if (dispatch_test_plan(
                         plan,
                         &profiler,
-                        config.benchmark.warmup_reps,
-                        config.benchmark.work_reps,
+                        config->benchmark.warmup_reps,
+                        config->benchmark.work_reps,
                         &samples) != DISPATCH_OK) {
-                    fprintf(
-                        stderr,
-                        "error: benchmark dispatch failed\n"
-                    );
+
+                    fprintf(stderr,"[Error] Benchmark dispatch failed for %s\n",test_name);
                 } else {
-                    printf("[benchmark] dispatch completed\n");
-                    printf("[benchmark] aggregating results\n");
+                    printf("[Main] dispatch completed for %s\n",test_name);
 
                     aggregated = analyzer_aggregate_samples(
                         samples.samples,
@@ -154,13 +119,13 @@ int main(void)
                     if (aggregated == NULL) {
                         fprintf(
                             stderr,
-                            "error: benchmark analysis failed\n"
+                            "[Error] Benchmark analysis failed for %s\n",
+                            test_name
                         );
                     } else {
-                        printf(
-                            "[benchmark] completed: "
-                            "%zu raw samples, "
+                        printf("[Main] %s: %zu raw samples, "
                             "%zu aggregated experiments\n",
+                            test_name,
                             samples.count,
                             aggregated_count
                         );
@@ -170,18 +135,19 @@ int main(void)
                                 plan,
                                 &samples,
                                 aggregated,
-                                aggregated_count) != 0) {
+                                aggregated_count,
+                                scaling_mode) != 0) {
                             fprintf(
                                 stderr,
-                                "error: unable to write benchmark "
-                                "output files\n"
+                                "[Error] Unable to write %s output files\n",
+                                test_name
                             );
                         } else {
                             printf(
-                                "[benchmark] results written successfully\n"
+                                "[Main] %s results written successfully\n",
+                                test_name
                             );
-
-                            exit_code = EXIT_SUCCESS;
+                            result = 0;
                         }
                     }
                 }
@@ -190,15 +156,77 @@ int main(void)
     }
 
     free(aggregated);
-
     dispatch_destroy_samples(&samples);
-
     if (profiler_initialized) {
         profiler_cleanup(&profiler);
     }
-
     destroy_file_manager(file_manager);
     destroy_test_plan(plan);
+
+    return result;
+}
+
+int main(void) {
+    Configuration config = load_configuration();
+    DataBuffer *buffer = NULL;
+    int exit_code = EXIT_FAILURE;
+    int full_scale_failed = 0;
+    int proportional_failed = 0;
+
+    printf("[Main] configuration loaded\n");
+    printf(
+        "[Main] allocating data buffer (%llu elements)\n",
+        (unsigned long long) config.derived.problem_size_elements
+    );
+
+    buffer = create_data_buffer(
+        (size_t) config.derived.problem_size_elements,
+        config.memory.alignment
+    );
+
+    if (buffer == NULL) {
+        fprintf(stderr, "[Error] unable to allocate benchmark data buffer\n");
+    } else {
+        printf("[Main] Filling data buffer\n");
+        generator_fill_pool(
+            config.benchmark.generation_seed,
+            buffer->pool,
+            buffer->element_count
+        );
+
+#if RUN_FULL_SCALE
+        full_scale_failed = run_benchmark_suite(
+            buffer,
+            &config,
+            "full_scale",
+            SCALING_STRONG,
+            0
+        ) != 0;
+#endif
+
+#if RUN_PROPORTIONAL
+        proportional_failed = run_benchmark_suite(
+            buffer,
+            &config,
+            "proportional",
+            SCALING_WEAK,
+            1
+        ) != 0;
+#endif
+
+        if (!full_scale_failed && !proportional_failed) {
+            exit_code = EXIT_SUCCESS;
+        }
+    }
+
+    if (full_scale_failed) {
+        fprintf(stderr, "[Error] full-scale suite failed\n");
+    }
+
+    if (proportional_failed) {
+        fprintf(stderr, "[Error] proportional suite failed\n");
+    }
+
     destroy_data_buffer(buffer);
     destroy_configuration(&config);
 

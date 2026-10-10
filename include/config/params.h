@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -49,7 +49,7 @@
  * @brief Number of warm-up executions.
  */
 #ifndef WARMUP_REPS
-    #define WARMUP_REPS 2U
+    #define WARMUP_REPS 0U
 #endif
 
 
@@ -57,7 +57,7 @@
  * @brief Number of measured executions.
  */
 #ifndef WORK_REPS
-    #define WORK_REPS 2U
+    #define WORK_REPS 1U
 #endif
 
 
@@ -151,6 +151,47 @@
 
 
 /* ========================================================================= */
+/* Benchmark suite selection                                                 */
+/* ========================================================================= */
+
+/**
+ * @brief Enable the fixed-workload full-scale benchmark suite.
+ *
+ * Set to 1 to execute the full-scale test plan. Set to 0 to skip it.
+ * This flag is independent from RUN_PROPORTIONAL.
+ */
+#ifndef RUN_FULL_SCALE
+    #define RUN_FULL_SCALE 1
+#endif
+
+
+/**
+ * @brief Enable the proportional/weak-scaling benchmark suite.
+ *
+ * Set to 1 to execute the proportional test plan. Set to 0 to skip it.
+ * This flag is independent from RUN_FULL_SCALE.
+ */
+#ifndef RUN_PROPORTIONAL
+    #define RUN_PROPORTIONAL 1
+#endif
+
+
+#if (RUN_FULL_SCALE != 0) && (RUN_FULL_SCALE != 1)
+    #error "RUN_FULL_SCALE must be 0 or 1"
+#endif
+
+
+#if (RUN_PROPORTIONAL != 0) && (RUN_PROPORTIONAL != 1)
+    #error "RUN_PROPORTIONAL must be 0 or 1"
+#endif
+
+
+#if (RUN_FULL_SCALE == 0) && (RUN_PROPORTIONAL == 0)
+    #error "At least one benchmark suite must be enabled"
+#endif
+
+
+/* ========================================================================= */
 /* Compiler / toolchain metadata                                             */
 /* ========================================================================= */
 
@@ -194,7 +235,7 @@
  * @brief Comma-separated list of thread counts to benchmark.
  */
 #ifndef THREAD_LIST
-    #define THREAD_LIST 1U, 2U, 4U, 8U
+    #define THREAD_LIST 1U, 2U
 #endif
 
 
@@ -204,7 +245,7 @@
  * The actual number of elements is 2^PROBLEM_LOG2_SIZE.
  */
 #ifndef PROBLEM_LOG2_SIZE
-    #define PROBLEM_LOG2_SIZE 22U
+    #define PROBLEM_LOG2_SIZE 28U
 #endif
 
 
@@ -247,7 +288,7 @@
  * Each value N represents a window of 2^N elements.
  */
 #ifndef WINDOWS_LOG2_LIST
-    #define WINDOWS_LOG2_LIST 22U
+    #define WINDOWS_LOG2_LIST 28U, 26U
 #endif
 
 
@@ -258,7 +299,7 @@
  * size, such as dynamic and guided scheduling.
  */
 #ifndef CHUNK_SIZE_LIST
-    #define CHUNK_SIZE_LIST 32U, 64U
+    #define CHUNK_SIZE_LIST 32U
 #endif
 
 

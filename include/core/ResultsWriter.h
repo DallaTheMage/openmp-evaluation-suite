@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -32,10 +32,18 @@
  *     test_plan.csv
  *     raw_samples.csv
  *     aggregated_samples.csv
+ *     scaling.csv
  *
  * The test-plan file contains the configuration identifiers required to
  * interpret raw and aggregated samples. Measurement files can therefore
  * remain compact and use stable numeric test-set and test-case identifiers.
+ *
+ * scaling.csv contains either strong- or weak-scaling results depending on
+ * the selected ScalingMode. Strong scaling compares fixed-workload runs
+ * against a one-thread baseline. Weak scaling compares proportional
+ * workloads against the smallest available thread count for the same view,
+ * kernel and chunk size. Speedup, efficiency and overhead are derived from
+ * aggregated wall-clock measurements.
  *
  * The writer is intended to be called after benchmark execution has
  * completed. It is not part of the benchmark hot path and is not
@@ -55,7 +63,7 @@
 /**
  * @brief Write the complete benchmark result set to CSV files.
  *
- * The function creates or replaces the three CSV files associated with the
+ * The function creates or replaces the four CSV files associated with the
  * current FileManager test directory.
  *
  * @param manager
@@ -73,6 +81,9 @@
  * @param aggregated_count
  *     Number of elements in @p aggregated.
  *
+ * @param scaling_mode
+ *     Selects strong-scaling or weak-scaling output for scaling.csv.
+ *
  * @return
  *     0 on success, non-zero on invalid input or an I/O error.
  *
@@ -87,7 +98,8 @@ int write_benchmark_results(
     const TestPlan *plan,
     const RawSampleSet *samples,
     const AggregatedSample *aggregated,
-    size_t aggregated_count
+    size_t aggregated_count,
+    ScalingMode scaling_mode
 );
 
 
