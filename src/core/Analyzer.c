@@ -21,11 +21,8 @@
  * @file Analyzer.c
  * @brief Analysis and aggregation of benchmark measurements.
  */
-
-#include "core/Analyzer.h"
-
 #include <stdlib.h>
-
+#include "core/Analyzer.h"
 #include "core/Statistics.h"
 
 
@@ -61,31 +58,25 @@ static void group_accumulator_init(GroupAccumulator *acc)
     statistics_init(&acc->energy_dram_joules);
 }
 
-
-static void group_accumulator_update(
-    GroupAccumulator *acc,
-    const PerformanceMetric *metric
-)
-{
+static void group_accumulator_update(GroupAccumulator *acc, const PerformanceMetric *metric) {
     if (acc == NULL || metric == NULL) {
         return;
     }
 
-    statistics_update(&acc->wall_time_sec, metric->wall_time_sec);
-    statistics_update(&acc->cycles, (double) metric->cycles);
-    statistics_update(&acc->instructions, (double) metric->instructions);
-    statistics_update(&acc->l1d_misses, (double) metric->l1d_misses);
-    statistics_update(&acc->llc_misses, (double) metric->llc_misses);
-    statistics_update(&acc->ipc, metric->ipc);
-    statistics_update(&acc->l1d_miss_ratio, metric->l1d_miss_ratio);
-    statistics_update(&acc->llc_miss_ratio, metric->llc_miss_ratio);
-    statistics_update(&acc->energy_pkg_joules, metric->energy_pkg_joules);
+    statistics_update(&acc->wall_time_sec     , metric->wall_time_sec);
+    statistics_update(&acc->cycles            , (double)metric->cycles);
+    statistics_update(&acc->instructions      , (double)metric->instructions);
+    statistics_update(&acc->l1d_misses        , (double)metric->l1d_misses);
+    statistics_update(&acc->llc_misses        , (double)metric->llc_misses);
+    statistics_update(&acc->ipc               , metric->ipc);
+    statistics_update(&acc->l1d_miss_ratio    , metric->l1d_miss_ratio);
+    statistics_update(&acc->llc_miss_ratio    , metric->llc_miss_ratio);
+    statistics_update(&acc->energy_pkg_joules , metric->energy_pkg_joules);
     statistics_update(&acc->energy_dram_joules, metric->energy_dram_joules);
 }
 
 
-static Metrics statistics_to_metrics(const StatisticsResult *result)
-{
+static Metrics statistics_to_metrics(const StatisticsResult *result) {
     Metrics metrics = {0.0, 0.0, 0.0, 0.0};
 
     if (result != NULL) {
@@ -99,69 +90,60 @@ static Metrics statistics_to_metrics(const StatisticsResult *result)
 }
 
 
-static void finalize_group(
-    AggregatedSample *dst,
-    const RawSample *sample,
-    const GroupAccumulator *acc
-)
-{
+static void finalize_group(AggregatedSample *dst, const RawSample *sample, const GroupAccumulator *acc) {
     if (dst == NULL || sample == NULL || acc == NULL) {
         return;
     }
 
-    dst->test_set_id = sample->test_set_id;
+    dst->test_set_id  = sample->test_set_id;
     dst->test_case_id = sample->test_case_id;
-    dst->kernel = sample->kernel;
-    dst->total_runs = acc->wall_time_sec.count;
+    dst->kernel       = sample->kernel;
+    dst->total_runs   = acc->wall_time_sec.count;
 
     {
         const StatisticsResult result = statistics_finalize(&acc->wall_time_sec);
-        dst->wall_time_sec = statistics_to_metrics(&result);
+        dst->wall_time_sec            = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->cycles);
-        dst->cycles = statistics_to_metrics(&result);
+        dst->cycles                   = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->instructions);
-        dst->instructions = statistics_to_metrics(&result);
+        dst->instructions             = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->l1d_misses);
-        dst->l1d_misses = statistics_to_metrics(&result);
+        dst->l1d_misses               = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->llc_misses);
-        dst->llc_misses = statistics_to_metrics(&result);
+        dst->llc_misses               = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->ipc);
-        dst->ipc = statistics_to_metrics(&result);
+        dst->ipc                      = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->l1d_miss_ratio);
-        dst->l1d_miss_ratio = statistics_to_metrics(&result);
+        dst->l1d_miss_ratio           = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->llc_miss_ratio);
-        dst->llc_miss_ratio = statistics_to_metrics(&result);
+        dst->llc_miss_ratio           = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->energy_pkg_joules);
-        dst->energy_pkg_joules = statistics_to_metrics(&result);
+        dst->energy_pkg_joules        = statistics_to_metrics(&result);
     }
     {
         const StatisticsResult result = statistics_finalize(&acc->energy_dram_joules);
-        dst->energy_dram_joules = statistics_to_metrics(&result);
+        dst->energy_dram_joules       = statistics_to_metrics(&result);
     }
 }
 
 
-bool analyzer_same_test_case(
-    const RawSample *a,
-    const RawSample *b
-)
-{
+bool analyzer_same_test_case(const RawSample *a, const RawSample *b) {
     return a != NULL &&
            b != NULL &&
            a->test_set_id == b->test_set_id &&
@@ -169,21 +151,12 @@ bool analyzer_same_test_case(
 }
 
 
-bool analyzer_same_experiment(
-    const RawSample *a,
-    const RawSample *b
-)
-{
-    return analyzer_same_test_case(a, b) &&
-           a->kernel == b->kernel;
+bool analyzer_same_experiment(const RawSample *a, const RawSample *b) {
+    return analyzer_same_test_case(a, b) && (a->kernel == b->kernel);
 }
 
 
-bool analyzer_same_experiment_aggregate(
-    const AggregatedSample *a,
-    const AggregatedSample *b
-)
-{
+bool analyzer_same_experiment_aggregate(const AggregatedSample *a, const AggregatedSample *b) {
     return a != NULL &&
            b != NULL &&
            a->test_set_id == b->test_set_id &&
@@ -192,12 +165,7 @@ bool analyzer_same_experiment_aggregate(
 }
 
 
-AggregatedSample *analyzer_aggregate_samples(
-    const RawSample *samples,
-    size_t sample_count,
-    size_t *out_count
-)
-{
+AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sample_count,size_t *out_count) {
     AggregatedSample *result;
     size_t group_count;
     size_t group_index;
@@ -208,7 +176,6 @@ AggregatedSample *analyzer_aggregate_samples(
     }
 
     *out_count = 0U;
-
     if (samples == NULL || sample_count == 0U) {
         return NULL;
     }
@@ -227,10 +194,8 @@ AggregatedSample *analyzer_aggregate_samples(
 
     group_index = 0U;
     group_accumulator_init(&accumulator);
-
     for (size_t i = 0U; i < sample_count; ++i) {
         const RawSample *sample = &samples[i];
-
         if (i != 0U &&
             !analyzer_same_experiment(&samples[i - 1U], sample)) {
             finalize_group(
@@ -241,16 +206,10 @@ AggregatedSample *analyzer_aggregate_samples(
             ++group_index;
             group_accumulator_init(&accumulator);
         }
-
         group_accumulator_update(&accumulator, &sample->metric);
     }
 
-    finalize_group(
-        &result[group_index],
-        &samples[sample_count - 1U],
-        &accumulator
-    );
-
+    finalize_group(&result[group_index], &samples[sample_count - 1U], &accumulator);
     *out_count = group_count;
     return result;
 }
@@ -262,8 +221,7 @@ bool analyzer_compute_scaling(
     const AggregatedSample *scaled,
     const TestCase *scaled_point,
     ScalingMetrics *out_metrics
-)
-{
+) {
     double baseline_time;
     double scaled_time;
     double thread_ratio;
@@ -286,22 +244,19 @@ bool analyzer_compute_scaling(
     }
 
     baseline_time = baseline->wall_time_sec.mean;
-    scaled_time = scaled->wall_time_sec.mean;
+    scaled_time   = scaled->wall_time_sec.mean;
+
     if (baseline_time <= 0.0 || scaled_time <= 0.0) {
         return false;
     }
 
-    thread_ratio = (double) scaled_point->num_threads /
-                   (double) baseline_point->num_threads;
+    thread_ratio = (double) scaled_point->num_threads / (double) baseline_point->num_threads;
     if (thread_ratio <= 0.0) {
         return false;
     }
-
-    out_metrics->speedup = baseline_time / scaled_time;
-    out_metrics->efficiency = out_metrics->speedup / thread_ratio;
-    out_metrics->overhead_sec =
-        scaled_time - (baseline_time / thread_ratio);
-
+    out_metrics->speedup      = baseline_time / scaled_time;
+    out_metrics->efficiency   = out_metrics->speedup / thread_ratio;
+    out_metrics->overhead_sec = scaled_time - (baseline_time / thread_ratio);
     return true;
 }
 
@@ -314,12 +269,9 @@ bool analyzer_compute_weak_scaling(
     const TestCase *scaled_point,
     uint64_t scaled_work,
     ScalingMetrics *out_metrics
-)
-{
-    const double baseline_time =
-        baseline != NULL ? baseline->wall_time_sec.mean : 0.0;
-    const double scaled_time =
-        scaled != NULL ? scaled->wall_time_sec.mean : 0.0;
+) {
+    const double baseline_time = baseline != NULL ? baseline->wall_time_sec.mean : 0.0;
+    const double scaled_time   = scaled != NULL ? scaled->wall_time_sec.mean : 0.0;
     double work_ratio;
 
     if (baseline == NULL ||

@@ -49,7 +49,7 @@
  * @brief Number of warm-up executions.
  */
 #ifndef WARMUP_REPS
-    #define WARMUP_REPS 0U
+    #define WARMUP_REPS 3U
 #endif
 
 
@@ -57,7 +57,7 @@
  * @brief Number of measured executions.
  */
 #ifndef WORK_REPS
-    #define WORK_REPS 1U
+    #define WORK_REPS 5U
 #endif
 
 
@@ -245,7 +245,7 @@
  * The actual number of elements is 2^PROBLEM_LOG2_SIZE.
  */
 #ifndef PROBLEM_LOG2_SIZE
-    #define PROBLEM_LOG2_SIZE 28U
+    #define PROBLEM_LOG2_SIZE 24U
 #endif
 
 
@@ -266,7 +266,7 @@
  *     2^28 elements at 8 threads
  */
 #ifndef SIZE_PER_THREAD
-    #define SIZE_PER_THREAD UINT64_C(33554432)
+    #define SIZE_PER_THREAD UINT64_C(1024)
 #endif
 
 
@@ -288,7 +288,7 @@
  * Each value N represents a window of 2^N elements.
  */
 #ifndef WINDOWS_LOG2_LIST
-    #define WINDOWS_LOG2_LIST 28U, 26U
+    #define WINDOWS_LOG2_LIST 20U
 #endif
 
 

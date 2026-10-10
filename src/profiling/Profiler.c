@@ -22,10 +22,10 @@
  * @brief Performance measurement coordination for benchmark executions.
  */
 
-#include "profiling/Profiler.h"
 
 #include <omp.h>
 #include <string.h>
+#include "profiling/Profiler.h"
 
 
 int profiler_init(Profiler *p)

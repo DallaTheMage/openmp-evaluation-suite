@@ -53,19 +53,14 @@
  *
  * @return Non-zero if the alignment is valid, zero otherwise.
  */
-static int is_valid_alignment(size_t alignment)
-{
+static int is_valid_alignment(size_t alignment) {
     if (alignment < sizeof(void *)) {
         return 0;
     }
-
-    /*
-     * A power of two has exactly one bit set.
-     */
+    /* A power of two has exactly one bit set. */
     if ((alignment & (alignment - 1U)) != 0U) {
         return 0;
     }
-
     return 1;
 }
 
@@ -74,11 +69,7 @@ static int is_valid_alignment(size_t alignment)
 /* --- Lifecycle ---------------------------------------------------------- */
 /* ========================================================================= */
 
-DataBuffer *create_data_buffer(
-    size_t element_count,
-    size_t alignment
-)
-{
+DataBuffer *create_data_buffer(size_t element_count, size_t alignment) {
     DataBuffer *buffer;
     size_t allocation_size;
 
@@ -86,9 +77,7 @@ DataBuffer *create_data_buffer(
         return NULL;
     }
 
-    /*
-     * Protect the multiplication below from wrapping around size_t.
-     */
+    /* Protect the multiplication below from wrapping around size_t. */
     if (element_count > SIZE_MAX / sizeof(double)) {
         return NULL;
     }
@@ -110,29 +99,20 @@ DataBuffer *create_data_buffer(
     if (element_count == 0U) {
         return buffer;
     }
-
     allocation_size = element_count * sizeof(double);
-
-    if (posix_memalign(
-            (void **)&buffer->pool,
-            alignment,
-            allocation_size) != 0) {
+    if (posix_memalign((void **)&buffer->pool, alignment, allocation_size) != 0) {
         free(buffer);
         return NULL;
     }
-
     return buffer;
 }
 
 
-void destroy_data_buffer(
-    DataBuffer *buffer
-)
-{
+void destroy_data_buffer(DataBuffer *buffer) {
     if (buffer == NULL) {
         return;
     }
-
     free(buffer->pool);
     free(buffer);
+    return;
 }

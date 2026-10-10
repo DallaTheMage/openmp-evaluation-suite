@@ -71,15 +71,12 @@ static bool make_view_create_config(
     ViewCreateConfig *destination,
     const ViewShapeConfig *source,
     ViewType type,
-    uint64_t size
-)
-{
+    uint64_t size) {
     if (destination == NULL || source == NULL || size == UINT64_C(0)) {
         return false;
     }
 
     *destination = (ViewCreateConfig){0};
-
     switch (type) {
         case VIEW_1D:
             destination->v1d.length = size;
@@ -91,7 +88,7 @@ static bool make_view_create_config(
 
         case VIEW_3D:
             destination->v3d.depth = source->v3d.depth;
-            destination->v3d.cols = source->v3d.cols;
+            destination->v3d.cols  = source->v3d.cols;
             break;
 
         case VIEW_AOS:
@@ -103,17 +100,14 @@ static bool make_view_create_config(
             break;
 
         case VIEW_AOSOA:
-            destination->aosoa.vector_length =
-                source->aosoa.vector_length;
-            destination->aosoa.num_fields =
-                source->aosoa.num_fields;
+            destination->aosoa.vector_length = source->aosoa.vector_length;
+            destination->aosoa.num_fields    = source->aosoa.num_fields;
             break;
 
         case VIEW_TYPE_COUNT:
         default:
             return false;
     }
-
     return true;
 }
 
@@ -134,33 +128,15 @@ static bool initialize_test_set_view(
     DataBuffer *buffer,
     const Configuration *config,
     ViewType type,
-    uint64_t size
-)
-{
+    uint64_t size) {
     ViewCreateConfig view_config;
-
-    if (test_set == NULL ||
-        buffer == NULL ||
-        config == NULL) {
+    if (test_set == NULL || buffer == NULL || config == NULL) {
         return false;
     }
-
-    if (!make_view_create_config(
-            &view_config,
-            &config->shapes[type],
-            type,
-            size)) {
+    if (!make_view_create_config(&view_config, &config->shapes[type], type, size)) {
         return false;
     }
-
-    test_set->view = create_data_view(
-        buffer,
-        type,
-        &view_config,
-        UINT64_C(0),
-        size
-    );
-
+    test_set->view = create_data_view(buffer, type, &view_config, UINT64_C(0), size);
     return test_set->view.buffer != NULL;
 }
 
@@ -170,8 +146,7 @@ static bool initialize_test_set_view(
  *
  * @param group Kernel test group to destroy.
  */
-static void destroy_kernel_group(KernelTestGroup *group)
-{
+static void destroy_kernel_group(KernelTestGroup *group) {
     if (group == NULL) {
         return;
     }
@@ -187,8 +162,7 @@ static void destroy_kernel_group(KernelTestGroup *group)
  *
  * @param groups Kernel group array to destroy.
  */
-static void destroy_kernel_groups(KernelTestGroupArray *groups)
-{
+static void destroy_kernel_groups(KernelTestGroupArray *groups) {
     if (groups == NULL) {
         return;
     }
@@ -210,12 +184,10 @@ static void destroy_kernel_groups(KernelTestGroupArray *groups)
  *
  * @param test_set Test set to destroy.
  */
-static void destroy_test_set(TestSet *test_set)
-{
+static void destroy_test_set(TestSet *test_set) {
     if (test_set == NULL) {
         return;
     }
-
     destroy_kernel_groups(&test_set->kernels);
     test_set->view = (DataView){0};
 }
@@ -233,24 +205,13 @@ static void destroy_test_set(TestSet *test_set)
  *
  * @return true on success, false on allocation failure or invalid input.
  */
-static bool populate_test_set_kernels(
-    TestSet *test_set,
-    const Configuration *config,
-    uint32_t fixed_thread_count
-)
-{
+static bool populate_test_set_kernels(TestSet *test_set, const Configuration *config, uint32_t fixed_thread_count) {
     size_t group_count = 0U;
-
     if (test_set == NULL || config == NULL) {
         return false;
     }
-
-    for (size_t kernel = 0U;
-         kernel < (size_t)KERNEL_COUNT;
-         ++kernel) {
-        if (kernel_registry_is_available(
-                test_set->view.type,
-                (KernelType)kernel)) {
+    for (size_t kernel = 0U; kernel < (size_t)KERNEL_COUNT; ++kernel) {
+        if (kernel_registry_is_available(test_set->view.type, (KernelType)kernel)) {
             ++group_count;
         }
     }
@@ -259,18 +220,12 @@ static bool populate_test_set_kernels(
         return true;
     }
 
-    test_set->kernels.data = calloc(
-        group_count,
-        sizeof(*test_set->kernels.data)
-    );
-
+    test_set->kernels.data = calloc(group_count, sizeof(*test_set->kernels.data));
     if (test_set->kernels.data == NULL) {
         return false;
     }
 
-    for (size_t kernel = 0U;
-         kernel < (size_t)KERNEL_COUNT;
-         ++kernel) {
+    for (size_t kernel = 0U; kernel < (size_t)KERNEL_COUNT; ++kernel) {
         const KernelType kernel_type = (KernelType)kernel;
         KernelTestGroup *group;
         size_t case_count = 0U;
@@ -282,30 +237,22 @@ static bool populate_test_set_kernels(
             continue;
         }
 
-        group = &test_set->kernels.data[test_set->kernels.count];
+        group         = &test_set->kernels.data[test_set->kernels.count];
         group->kernel = kernel_type;
 
         if (fixed_thread_count != 0U) {
-            for (size_t i = 0U;
-                 i < config->execution.threads.count;
-                 ++i) {
-                if (config->execution.threads.data[i] ==
-                    fixed_thread_count) {
-                    case_count =
-                        config->execution.chunk_sizes.count;
+            for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+                if (config->execution.threads.data[i] == fixed_thread_count) {
+                    case_count = config->execution.chunk_sizes.count;
                     break;
                 }
             }
         } else {
-            if (config->execution.threads.count >
-                SIZE_MAX / config->execution.chunk_sizes.count) {
+            if (config->execution.threads.count > (SIZE_MAX / config->execution.chunk_sizes.count)) {
                 destroy_kernel_groups(&test_set->kernels);
                 return false;
             }
-
-            case_count =
-                config->execution.threads.count *
-                config->execution.chunk_sizes.count;
+            case_count = config->execution.threads.count * config->execution.chunk_sizes.count;
         }
 
         if (case_count == 0U) {
@@ -318,48 +265,29 @@ static bool populate_test_set_kernels(
             return false;
         }
 
-        group->cases.data = calloc(
-            case_count,
-            sizeof(*group->cases.data)
-        );
-
+        group->cases.data = calloc(case_count,sizeof(*group->cases.data));
         if (group->cases.data == NULL) {
             destroy_kernel_groups(&test_set->kernels);
             return false;
         }
 
-        for (size_t i = 0U;
-             i < config->execution.threads.count;
-             ++i) {
-            const uint32_t num_threads =
-                config->execution.threads.data[i];
-
+        for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+            const uint32_t num_threads = config->execution.threads.data[i];
             if (fixed_thread_count != 0U &&
                 num_threads != fixed_thread_count) {
                 continue;
             }
-
-            for (size_t c = 0U;
-                 c < config->execution.chunk_sizes.count;
-                 ++c) {
-                TestCase *test_case =
-                    &group->cases.data[case_index];
-
-                test_case->uid =
-                    (TestCaseUID)case_index;
-                test_case->num_threads =
-                    num_threads;
-                test_case->chunk_size =
-                    config->execution.chunk_sizes.data[c];
-
+            for (size_t c = 0U; c < config->execution.chunk_sizes.count; ++c) {
+                TestCase *test_case    = &group->cases.data[case_index];
+                test_case->uid         = (TestCaseUID)case_index;
+                test_case->num_threads = num_threads;
+                test_case->chunk_size  = config->execution.chunk_sizes.data[c];
                 ++case_index;
             }
         }
-
         group->cases.count = case_index;
         ++test_set->kernels.count;
     }
-
     return true;
 }
 
@@ -371,12 +299,10 @@ static bool populate_test_set_kernels(
  *
  * @return Allocated array, or NULL on failure.
  */
-static TestSet *allocate_test_sets(size_t count)
-{
+static TestSet *allocate_test_sets(size_t count) {
     if (count == 0U || count > SIZE_MAX / sizeof(TestSet)) {
         return NULL;
     }
-
     return calloc(count, sizeof(TestSet));
 }
 
@@ -397,9 +323,7 @@ static TestPlan *build_test_plan(
     const Configuration *config,
     const uint64_t *sizes,
     size_t size_count,
-    bool proportional
-)
-{
+    bool proportional) {
     TestPlan *plan;
     size_t set_count;
     size_t set_index = 0U;
@@ -420,8 +344,7 @@ static TestPlan *build_test_plan(
         return NULL;
     }
 
-    set_count =
-        size_count * (size_t)VIEW_TYPE_COUNT;
+    set_count = size_count * (size_t)VIEW_TYPE_COUNT;
 
     plan = calloc(1U, sizeof(*plan));
     if (plan == NULL) {
@@ -437,61 +360,35 @@ static TestPlan *build_test_plan(
     plan->count = set_count;
 
     for (size_t i = 0U; i < size_count; ++i) {
-        const uint32_t fixed_thread_count =
-            proportional
-                ? config->execution.threads.data[i]
-                : 0U;
-
+        const uint32_t fixed_thread_count = proportional ? config->execution.threads.data[i] : 0U;
         if (sizes[i] == UINT64_C(0) ||
             sizes[i] > (uint64_t)buffer->element_count) {
             destroy_test_plan(plan);
             return NULL;
         }
-
-        for (size_t type_index = 0U;
-             type_index < (size_t)VIEW_TYPE_COUNT;
-             ++type_index) {
+        for (size_t type_index = 0U; type_index < (size_t)VIEW_TYPE_COUNT; ++type_index) {
             TestSet *test_set = &plan->data[set_index];
             const ViewType type = (ViewType)type_index;
-
-            test_set->uid =
-                (TestSetUID)set_index;
-
-            if (!initialize_test_set_view(
-                    test_set,
-                    buffer,
-                    config,
-                    type,
-                    sizes[i])) {
+            test_set->uid = (TestSetUID)set_index;
+            if (!initialize_test_set_view(test_set, buffer, config, type, sizes[i])) {
                 destroy_test_plan(plan);
                 return NULL;
             }
-
-            if (!populate_test_set_kernels(
-                    test_set,
-                    config,
-                    fixed_thread_count)) {
+            if (!populate_test_set_kernels(test_set, config, fixed_thread_count)) {
                 destroy_test_plan(plan);
                 return NULL;
             }
-
             ++set_index;
         }
     }
-
     return plan;
 }
-
 
 /* ========================================================================= */
 /* Public API                                                                */
 /* ========================================================================= */
 
-TestPlan *generate_proportional_test_plan(
-    DataBuffer *buffer,
-    const Configuration *config
-)
-{
+TestPlan *generate_proportional_test_plan(DataBuffer *buffer, const Configuration *config) {
     uint64_t *sizes;
     TestPlan *plan;
 
@@ -502,25 +399,18 @@ TestPlan *generate_proportional_test_plan(
         return NULL;
     }
 
-    if (config->execution.threads.count >
-        SIZE_MAX / sizeof(*sizes)) {
+    if (config->execution.threads.count > SIZE_MAX / sizeof(*sizes)) {
         return NULL;
     }
 
-    sizes = malloc(
-        config->execution.threads.count * sizeof(*sizes)
-    );
+    sizes = malloc(config->execution.threads.count * sizeof(*sizes));
 
     if (sizes == NULL) {
         return NULL;
     }
 
-    for (size_t i = 0U;
-         i < config->execution.threads.count;
-         ++i) {
-        const uint64_t threads =
-            (uint64_t)config->execution.threads.data[i];
-
+    for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+        const uint64_t threads = (uint64_t)config->execution.threads.data[i];
         if (threads == UINT64_C(0) ||
             config->derived.size_per_thread >
                 UINT64_MAX / threads) {
@@ -528,46 +418,26 @@ TestPlan *generate_proportional_test_plan(
             return NULL;
         }
 
-        sizes[i] =
-            config->derived.size_per_thread * threads;
-
+        sizes[i] = config->derived.size_per_thread * threads;
         if (sizes[i] > (uint64_t)buffer->element_count) {
             free(sizes);
             return NULL;
         }
     }
-
-    plan = build_test_plan(
-        buffer,
-        config,
-        sizes,
-        config->execution.threads.count,
-        true
-    );
-
+    plan = build_test_plan(buffer, config, sizes, config->execution.threads.count, true);
     free(sizes);
-
     return plan;
 }
 
-
-TestPlan *generate_full_scale_test_plan(
-    DataBuffer *buffer,
-    const Configuration *config
-)
-{
+TestPlan *generate_full_scale_test_plan(DataBuffer *buffer, const Configuration *config) {
     if (buffer == NULL ||
         config == NULL ||
         config->execution.window_sizes.count == 0U) {
         return NULL;
     }
 
-    for (size_t i = 0U;
-         i < config->execution.window_sizes.count;
-         ++i) {
-        const uint64_t size =
-            config->execution.window_sizes.data[i];
-
+    for (size_t i = 0U; i < config->execution.window_sizes.count; ++i) {
+        const uint64_t size = config->execution.window_sizes.data[i];
         if (size == UINT64_C(0) ||
             size > (uint64_t)buffer->element_count) {
             return NULL;
@@ -584,8 +454,7 @@ TestPlan *generate_full_scale_test_plan(
 }
 
 
-bool validate_test_plan(const TestPlan *plan)
-{
+bool validate_test_plan(const TestPlan *plan) {
     if (plan == NULL) {
         return false;
     }
@@ -594,12 +463,8 @@ bool validate_test_plan(const TestPlan *plan)
         return false;
     }
 
-    for (size_t set_index = 0U;
-         set_index < plan->count;
-         ++set_index) {
-        const TestSet *test_set =
-            &plan->data[set_index];
-
+    for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
+        const TestSet *test_set = &plan->data[set_index];
         if (test_set->uid != (TestSetUID)set_index ||
             test_set->view.buffer == NULL ||
             test_set->view.type >= VIEW_TYPE_COUNT ||
@@ -612,16 +477,11 @@ bool validate_test_plan(const TestPlan *plan)
             return false;
         }
 
-        for (size_t group_index = 0U;
-             group_index < test_set->kernels.count;
-             ++group_index) {
-            const KernelTestGroup *group =
-                &test_set->kernels.data[group_index];
+        for (size_t group_index = 0U; group_index < test_set->kernels.count; ++group_index) {
+            const KernelTestGroup *group = &test_set->kernels.data[group_index];
 
             if (group->kernel >= KERNEL_COUNT ||
-                !kernel_registry_is_available(
-                    test_set->view.type,
-                    group->kernel)) {
+                !kernel_registry_is_available(test_set->view.type, group->kernel)) {
                 return false;
             }
 
@@ -630,12 +490,8 @@ bool validate_test_plan(const TestPlan *plan)
                 return false;
             }
 
-            for (size_t case_index = 0U;
-                 case_index < group->cases.count;
-                 ++case_index) {
-                const TestCase *test_case =
-                    &group->cases.data[case_index];
-
+            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
+                const TestCase *test_case = &group->cases.data[case_index];
                 if (test_case->uid != (TestCaseUID)case_index ||
                     test_case->num_threads == 0U ||
                     test_case->chunk_size == UINT64_C(0)) {
@@ -644,21 +500,16 @@ bool validate_test_plan(const TestPlan *plan)
             }
         }
     }
-
     return true;
 }
 
-
-void destroy_test_plan(TestPlan *plan)
-{
-    if (plan == NULL) {
-        return;
+void destroy_test_plan(TestPlan *plan) {
+    if (plan != NULL) {
+        for (size_t i = 0U; i < plan->count; ++i) {
+            destroy_test_set(&plan->data[i]);
+        }
+        free(plan->data);
+        free(plan);
     }
-
-    for (size_t i = 0U; i < plan->count; ++i) {
-        destroy_test_set(&plan->data[i]);
-    }
-
-    free(plan->data);
-    free(plan);
+    return;
 }

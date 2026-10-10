@@ -123,13 +123,10 @@ static int write_test_plan(FILE *file, const TestPlan *plan)
 
     for (size_t i = 0U; i < plan->count; ++i) {
         const TestSet *set = &plan->data[i];
-
         for (size_t k = 0U; k < set->kernels.count; ++k) {
             const KernelTestGroup *group = &set->kernels.data[k];
-
             for (size_t c = 0U; c < group->cases.count; ++c) {
                 const TestCase *test_case = &group->cases.data[c];
-
                 if (fprintf(
                         file,
                         "%llu,%s,%llu,%llu,%s,%llu,%u,%llu\n",
@@ -146,7 +143,6 @@ static int write_test_plan(FILE *file, const TestPlan *plan)
             }
         }
     }
-
     return ferror(file) ? -1 : 0;
 }
 
@@ -165,7 +161,6 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples)
     for (size_t i = 0U; i < samples->count; ++i) {
         const RawSample *sample = &samples->samples[i];
         const PerformanceMetric *metric = &sample->metric;
-
         if (fprintf(
                 file,
                 "%llu,%llu,%s,%u,%.17g,%llu,%llu,%llu,%llu,%.17g,"
@@ -187,17 +182,11 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples)
             return -1;
         }
     }
-
     return ferror(file) ? -1 : 0;
 }
 
 
-static int write_aggregated_samples(
-    FILE *file,
-    const AggregatedSample *samples,
-    size_t sample_count
-)
-{
+static int write_aggregated_samples(FILE *file, const AggregatedSample *samples, size_t sample_count) {
     if (fprintf(
             file,
             "test_set_id,test_case_id,kernel,total_runs,"
@@ -220,7 +209,6 @@ static int write_aggregated_samples(
 
     for (size_t i = 0U; i < sample_count; ++i) {
         const AggregatedSample *sample = &samples[i];
-
         if (fprintf(
                 file,
                 "%llu,%llu,%s,%zu,",
@@ -254,23 +242,18 @@ static int write_aggregated_samples(
             return -1;
         }
     }
-
     return ferror(file) ? -1 : 0;
 }
-
 
 static const AggregatedSample *find_aggregated_sample(
     const AggregatedSample *samples,
     size_t sample_count,
     TestSetUID test_set_id,
     TestCaseUID test_case_id,
-    KernelType kernel
-)
-{
+    KernelType kernel) {
     if (samples == NULL) {
         return NULL;
     }
-
     for (size_t i = 0U; i < sample_count; ++i) {
         if (samples[i].test_set_id == test_set_id &&
             samples[i].test_case_id == test_case_id &&
@@ -278,29 +261,20 @@ static const AggregatedSample *find_aggregated_sample(
             return &samples[i];
         }
     }
-
     return NULL;
 }
 
-
-static const TestCase *find_baseline_case(
-    const KernelTestGroup *group,
-    const TestCase *scaled_case
-)
-{
+static const TestCase *find_baseline_case(const KernelTestGroup *group, const TestCase *scaled_case) {
     if (group == NULL || scaled_case == NULL) {
         return NULL;
     }
-
     for (size_t i = 0U; i < group->cases.count; ++i) {
         const TestCase *candidate = &group->cases.data[i];
-
         if (candidate->num_threads == 1U &&
             candidate->chunk_size == scaled_case->chunk_size) {
             return candidate;
         }
     }
-
     return NULL;
 }
 
@@ -309,9 +283,7 @@ static int write_scaling_strong(
     FILE *file,
     const TestPlan *plan,
     const AggregatedSample *aggregated,
-    size_t aggregated_count
-)
-{
+    size_t aggregated_count) {
     if (fprintf(
             file,
             "scaling_type,test_set_id,view_type,window_offset,window_size,"
@@ -320,30 +292,21 @@ static int write_scaling_strong(
             "overhead_sec\n") < 0) {
         return -1;
     }
-
     for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
         const TestSet *set = &plan->data[set_index];
-
-        for (size_t group_index = 0U;
-             group_index < set->kernels.count;
-             ++group_index) {
+        for (size_t group_index = 0U; group_index < set->kernels.count; ++group_index) {
             const KernelTestGroup *group = &set->kernels.data[group_index];
-
-            for (size_t case_index = 0U;
-                 case_index < group->cases.count;
-                 ++case_index) {
+            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
                 const TestCase *scaled_case = &group->cases.data[case_index];
                 const TestCase *baseline_case;
                 const AggregatedSample *baseline_sample;
                 const AggregatedSample *scaled_sample;
                 ScalingMetrics metrics;
-
                 baseline_case = find_baseline_case(group, scaled_case);
                 if (baseline_case == NULL ||
                     scaled_case->num_threads == baseline_case->num_threads) {
-                    continue;
+                    continue; // TODO: TRY TO RETHINK TO REMOVE CONTINUE STATEMENT
                 }
-
                 scaled_sample = find_aggregated_sample(
                     aggregated,
                     aggregated_count,
@@ -358,7 +321,6 @@ static int write_scaling_strong(
                     baseline_case->uid,
                     group->kernel
                 );
-
                 if (scaled_sample == NULL || baseline_sample == NULL ||
                     !analyzer_compute_scaling(
                         baseline_sample,
@@ -366,9 +328,8 @@ static int write_scaling_strong(
                         scaled_sample,
                         scaled_case,
                         &metrics)) {
-                    continue;
+                    continue; // TODO: TRY TO RETHINK TO REMOVE CONTINUE STATEMENT
                 }
-
                 if (fprintf(
                         file,
                         "strong,%llu,%s,%llu,%llu,%s,%llu,%u,%u,"
@@ -391,10 +352,8 @@ static int write_scaling_strong(
             }
         }
     }
-
     return ferror(file) ? -1 : 0;
 }
-
 
 static int find_weak_baseline(
     const TestPlan *plan,
@@ -402,11 +361,8 @@ static int find_weak_baseline(
     const KernelTestGroup *scaled_group,
     const TestCase *scaled_case,
     size_t *baseline_set_index,
-    const TestCase **baseline_case
-)
-{
+    const TestCase **baseline_case) {
     uint32_t best_threads = UINT32_MAX;
-
     if (plan == NULL ||
         scaled_group == NULL ||
         scaled_case == NULL ||
@@ -416,29 +372,19 @@ static int find_weak_baseline(
     }
 
     *baseline_case = NULL;
-
     for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
         const TestSet *set = &plan->data[set_index];
-
         if (set_index == scaled_set_index ||
             set->view.type != plan->data[scaled_set_index].view.type) {
             continue;
         }
-
-        for (size_t group_index = 0U;
-             group_index < set->kernels.count;
-             ++group_index) {
+        for (size_t group_index = 0U; group_index < set->kernels.count; ++group_index) {
             const KernelTestGroup *group = &set->kernels.data[group_index];
-
             if (group->kernel != scaled_group->kernel) {
                 continue;
             }
-
-            for (size_t case_index = 0U;
-                 case_index < group->cases.count;
-                 ++case_index) {
+            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
                 const TestCase *candidate = &group->cases.data[case_index];
-
                 if (candidate->chunk_size == scaled_case->chunk_size &&
                     candidate->num_threads < scaled_case->num_threads &&
                     candidate->num_threads < best_threads) {
@@ -449,18 +395,14 @@ static int find_weak_baseline(
             }
         }
     }
-
     return *baseline_case != NULL;
 }
-
 
 static int write_scaling_weak(
     FILE *file,
     const TestPlan *plan,
     const AggregatedSample *aggregated,
-    size_t aggregated_count
-)
-{
+    size_t aggregated_count) {
     if (fprintf(
             file,
             "scaling_type,baseline_test_set_id,scaled_test_set_id,"
@@ -473,18 +415,10 @@ static int write_scaling_weak(
 
     for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
         const TestSet *scaled_set = &plan->data[set_index];
-
-        for (size_t group_index = 0U;
-             group_index < scaled_set->kernels.count;
-             ++group_index) {
-            const KernelTestGroup *scaled_group =
-                &scaled_set->kernels.data[group_index];
-
-            for (size_t case_index = 0U;
-                 case_index < scaled_group->cases.count;
-                 ++case_index) {
-                const TestCase *scaled_case =
-                    &scaled_group->cases.data[case_index];
+        for (size_t group_index = 0U; group_index < scaled_set->kernels.count; ++group_index) {
+            const KernelTestGroup *scaled_group = &scaled_set->kernels.data[group_index];
+            for (size_t case_index = 0U; case_index < scaled_group->cases.count; ++case_index) {
+                const TestCase *scaled_case = &scaled_group->cases.data[case_index];
                 const TestCase *baseline_case;
                 const AggregatedSample *baseline_sample;
                 const AggregatedSample *scaled_sample;
@@ -555,7 +489,6 @@ static int write_scaling_weak(
             }
         }
     }
-
     return ferror(file) ? -1 : 0;
 }
 
@@ -566,8 +499,7 @@ int write_benchmark_results(
     const RawSampleSet *samples,
     const AggregatedSample *aggregated,
     size_t aggregated_count,
-    ScalingMode scaling_mode
-) {
+    ScalingMode scaling_mode) {
     FILE *plan_file = NULL;
     FILE *raw_file = NULL;
     FILE *aggregated_file = NULL;
@@ -592,16 +524,11 @@ int write_benchmark_results(
         scaling_file != NULL &&
         write_test_plan(plan_file, plan) == 0 &&
         write_raw_samples(raw_file, samples) == 0 &&
-        write_aggregated_samples(
-            aggregated_file,
-            aggregated,
-            aggregated_count) == 0 &&
+        write_aggregated_samples(aggregated_file, aggregated, aggregated_count) == 0 &&
         ((scaling_mode == SCALING_STRONG &&
-          write_scaling_strong(
-              scaling_file, plan, aggregated, aggregated_count) == 0) ||
+          write_scaling_strong(scaling_file, plan, aggregated, aggregated_count) == 0) ||
          (scaling_mode == SCALING_WEAK &&
-          write_scaling_weak(
-              scaling_file, plan, aggregated, aggregated_count) == 0))) {
+          write_scaling_weak(scaling_file, plan, aggregated, aggregated_count) == 0))) {
         result = 0;
     }
 
@@ -617,6 +544,5 @@ int write_benchmark_results(
     if (scaling_file != NULL && fclose(scaling_file) != 0) {
         result = -1;
     }
-
     return result;
 }

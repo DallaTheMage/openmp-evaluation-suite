@@ -22,11 +22,10 @@
  * @brief Incremental statistical accumulation using Welford's algorithm.
  */
 
-#include "core/Statistics.h"
-
-#include <float.h>
 #include <math.h>
+#include <float.h>
 
+#include "core/Statistics.h"
 
 void statistics_init(StatisticsAccumulator *accumulator)
 {
@@ -35,24 +34,17 @@ void statistics_init(StatisticsAccumulator *accumulator)
     }
 
     accumulator->count = 0U;
-    accumulator->min = DBL_MAX;
-    accumulator->max = -DBL_MAX;
-    accumulator->mean = 0.0;
-    accumulator->m2 = 0.0;
+    accumulator->min   = DBL_MAX;
+    accumulator->max   = -DBL_MAX;
+    accumulator->mean  = 0.0;
+    accumulator->m2    = 0.0;
 }
 
-
-void statistics_update(
-    StatisticsAccumulator *accumulator,
-    double value
-)
-{
+void statistics_update(StatisticsAccumulator *accumulator, double value) {
     double delta;
-
     if (accumulator == NULL || !isfinite(value)) {
         return;
     }
-
     if (accumulator->count == 0U) {
         accumulator->min = value;
         accumulator->max = value;
@@ -64,33 +56,22 @@ void statistics_update(
             accumulator->max = value;
         }
     }
-
     ++accumulator->count;
-
     delta = value - accumulator->mean;
     accumulator->mean += delta / (double) accumulator->count;
     accumulator->m2 += delta * (value - accumulator->mean);
 }
 
-
-StatisticsResult statistics_finalize(
-    const StatisticsAccumulator *accumulator
-)
-{
+StatisticsResult statistics_finalize(const StatisticsAccumulator *accumulator) {
     StatisticsResult result = {0.0, 0.0, 0.0, 0.0};
-
     if (accumulator == NULL || accumulator->count == 0U) {
         return result;
     }
-
-    result.min = accumulator->min;
-    result.max = accumulator->max;
+    result.min  = accumulator->min;
+    result.max  = accumulator->max;
     result.mean = accumulator->mean;
-
     if (accumulator->count > 1U) {
-        result.variance = accumulator->m2 /
-                          (double) (accumulator->count - 1U);
+        result.variance = accumulator->m2 / (double)(accumulator->count - 1U);
     }
-
     return result;
 }

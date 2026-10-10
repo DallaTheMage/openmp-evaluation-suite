@@ -47,164 +47,151 @@
  */
 const KernelDescriptor
     KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT] = {
-
     [VIEW_2D] = {
-#if OPENMP_HAS_2_0
-        [KERNEL_LOOP]      = { kernel_2d_loop },
-        [KERNEL_SECTIONS]  = { kernel_2d_sections },
-        [KERNEL_MASTER]    = { kernel_2d_master },
-        [KERNEL_ORDERED]   = { kernel_2d_ordered },
-        [KERNEL_SYNC]      = { kernel_2d_sync },
-        [KERNEL_REDUCTION] = { kernel_2d_reduction },
-#endif
-#if OPENMP_HAS_3_0
-        [KERNEL_COLLAPSE]  = { kernel_2d_collapse },
-        [KERNEL_TASK]      = { kernel_2d_task },
-#endif
-#if OPENMP_HAS_3_1
-        [KERNEL_ATOMIC]    = { kernel_2d_atomic },
-#endif
-#if OPENMP_HAS_SIMD
-        [KERNEL_SIMD_MEMORY] = { kernel_2d_simd_memory },
-        [KERNEL_SIMD_COMPUTE] = { kernel_2d_simd_compute },
-#endif
-#if OPENMP_HAS_TASKLOOP
-        [KERNEL_TASKLOOP] = { kernel_2d_taskloop },
-#endif
-#if OPENMP_HAS_MASKED
-        [KERNEL_MASKED] = { kernel_2d_masked },
-#endif
-#if OPENMP_HAS_NATIVE_SCAN
-        [KERNEL_NATIVE_SCAN] = { kernel_2d_native_scan },
-#endif
-#if OPENMP_HAS_TWO_PASS_SCAN
-        [KERNEL_TWO_PASS_SCAN] = { kernel_2d_two_pass_scan },
-#endif
-    },
+        #if OPENMP_HAS_2_0
+                [KERNEL_LOOP]      = { kernel_2d_loop },
+                [KERNEL_SECTIONS]  = { kernel_2d_sections },
+                [KERNEL_MASTER]    = { kernel_2d_master },
+                [KERNEL_ORDERED]   = { kernel_2d_ordered },
+                [KERNEL_SYNC]      = { kernel_2d_sync },
+                [KERNEL_REDUCTION] = { kernel_2d_reduction },
+        #endif
+        #if OPENMP_HAS_3_0
+                [KERNEL_COLLAPSE]  = { kernel_2d_collapse },
+                [KERNEL_TASK]      = { kernel_2d_task },
+        #endif
+        #if OPENMP_HAS_3_1
+                [KERNEL_ATOMIC]    = { kernel_2d_atomic },
+        #endif
+        #if OPENMP_HAS_SIMD
+                [KERNEL_SIMD_MEMORY] = { kernel_2d_simd_memory },
+                [KERNEL_SIMD_COMPUTE] = { kernel_2d_simd_compute },
+        #endif
+        #if OPENMP_HAS_TASKLOOP
+                [KERNEL_TASKLOOP] = { kernel_2d_taskloop },
+        #endif
+        #if OPENMP_HAS_MASKED
+                [KERNEL_MASKED] = { kernel_2d_masked },
+        #endif
+        #if OPENMP_HAS_NATIVE_SCAN
+                [KERNEL_NATIVE_SCAN] = { kernel_2d_native_scan },
+        #endif
+        #if OPENMP_HAS_TWO_PASS_SCAN
+                [KERNEL_TWO_PASS_SCAN] = { kernel_2d_two_pass_scan },
+        #endif
+            },
 
-    [VIEW_3D] = {
-#if OPENMP_HAS_2_0
-        [KERNEL_LOOP]      = { kernel_3d_loop },
-        [KERNEL_SYNC]      = { kernel_3d_sync },
-        [KERNEL_REDUCTION] = { kernel_3d_reduction },
-#endif
-#if OPENMP_HAS_3_0
-        [KERNEL_COLLAPSE] = { kernel_3d_collapse },
-        [KERNEL_TASK]     = { kernel_3d_task },
-#endif
-#if OPENMP_HAS_3_1
-        [KERNEL_ATOMIC]   = { kernel_3d_atomic },
-#endif
-#if OPENMP_HAS_SIMD
-        [KERNEL_SIMD_MEMORY] = { kernel_3d_simd_memory },
-        [KERNEL_SIMD_COMPUTE] = { kernel_3d_simd_compute },
-#endif
-#if OPENMP_HAS_TASKLOOP
-        [KERNEL_TASKLOOP] = { kernel_3d_taskloop },
-#endif
-#if OPENMP_HAS_TWO_PASS_SCAN
-        [KERNEL_TWO_PASS_SCAN] = { kernel_3d_two_pass_scan },
-#endif
-#if OPENMP_HAS_NATIVE_SCAN
-        [KERNEL_NATIVE_SCAN] = { kernel_3d_native_scan },
-#endif
-    },
+        [VIEW_3D] = {
+        #if OPENMP_HAS_2_0
+                [KERNEL_LOOP]      = { kernel_3d_loop },
+                [KERNEL_SYNC]      = { kernel_3d_sync },
+                [KERNEL_REDUCTION] = { kernel_3d_reduction },
+        #endif
+        #if OPENMP_HAS_3_0
+                [KERNEL_COLLAPSE] = { kernel_3d_collapse },
+                [KERNEL_TASK]     = { kernel_3d_task },
+        #endif
+        #if OPENMP_HAS_3_1
+                [KERNEL_ATOMIC]   = { kernel_3d_atomic },
+        #endif
+        #if OPENMP_HAS_SIMD
+                [KERNEL_SIMD_MEMORY] = { kernel_3d_simd_memory },
+                [KERNEL_SIMD_COMPUTE] = { kernel_3d_simd_compute },
+        #endif
+        #if OPENMP_HAS_TASKLOOP
+                [KERNEL_TASKLOOP] = { kernel_3d_taskloop },
+        #endif
+        #if OPENMP_HAS_TWO_PASS_SCAN
+                [KERNEL_TWO_PASS_SCAN] = { kernel_3d_two_pass_scan },
+        #endif
+        #if OPENMP_HAS_NATIVE_SCAN
+                [KERNEL_NATIVE_SCAN] = { kernel_3d_native_scan },
+        #endif
+            },
 
-    [VIEW_AOS] = {
-#if OPENMP_HAS_2_0
-        [KERNEL_LOOP]      = { kernel_aos_loop },
-        [KERNEL_REDUCTION] = { kernel_aos_reduction },
-#endif
-#if OPENMP_HAS_3_0
-        [KERNEL_TASK] = { kernel_aos_task },
-#endif
-#if OPENMP_HAS_SIMD
-        [KERNEL_SIMD_MEMORY] = { kernel_aos_simd_memory },
-        [KERNEL_SIMD_COMPUTE] = { kernel_aos_simd_compute },
-#endif
-#if OPENMP_HAS_TASKLOOP
-        [KERNEL_TASKLOOP] = { kernel_aos_taskloop },
-#endif
-#if OPENMP_HAS_TWO_PASS_SCAN
-        [KERNEL_TWO_PASS_SCAN] = { kernel_aos_two_pass_scan },
-#endif
-#if OPENMP_HAS_NATIVE_SCAN
-        [KERNEL_NATIVE_SCAN] = { kernel_aos_native_scan },
-#endif
-    },
+        [VIEW_AOS] = {
+        #if OPENMP_HAS_2_0
+                [KERNEL_LOOP]      = { kernel_aos_loop },
+                [KERNEL_REDUCTION] = { kernel_aos_reduction },
+        #endif
+        #if OPENMP_HAS_3_0
+                [KERNEL_TASK] = { kernel_aos_task },
+        #endif
+        #if OPENMP_HAS_SIMD
+                [KERNEL_SIMD_MEMORY] = { kernel_aos_simd_memory },
+                [KERNEL_SIMD_COMPUTE] = { kernel_aos_simd_compute },
+        #endif
+        #if OPENMP_HAS_TASKLOOP
+                [KERNEL_TASKLOOP] = { kernel_aos_taskloop },
+        #endif
+        #if OPENMP_HAS_TWO_PASS_SCAN
+                [KERNEL_TWO_PASS_SCAN] = { kernel_aos_two_pass_scan },
+        #endif
+        #if OPENMP_HAS_NATIVE_SCAN
+                [KERNEL_NATIVE_SCAN] = { kernel_aos_native_scan },
+        #endif
+            },
 
-    [VIEW_SOA] = {
-#if OPENMP_HAS_2_0
-        [KERNEL_LOOP]      = { kernel_soa_loop },
-        [KERNEL_REDUCTION] = { kernel_soa_reduction },
-#endif
-#if OPENMP_HAS_3_0
-        [KERNEL_TASK] = { kernel_soa_task },
-#endif
-#if OPENMP_HAS_SIMD
-        [KERNEL_SIMD_MEMORY] = { kernel_soa_simd_memory },
-        [KERNEL_SIMD_COMPUTE] = { kernel_soa_simd_compute },
-#endif
-#if OPENMP_HAS_TASKLOOP
-        [KERNEL_TASKLOOP] = { kernel_soa_taskloop },
-#endif
-#if OPENMP_HAS_TWO_PASS_SCAN
-        [KERNEL_TWO_PASS_SCAN] = { kernel_soa_two_pass_scan },
-#endif
-#if OPENMP_HAS_NATIVE_SCAN
-        [KERNEL_NATIVE_SCAN] = { kernel_soa_native_scan },
-#endif
-    },
+        [VIEW_SOA] = {
+        #if OPENMP_HAS_2_0
+                [KERNEL_LOOP]      = { kernel_soa_loop },
+                [KERNEL_REDUCTION] = { kernel_soa_reduction },
+        #endif
+        #if OPENMP_HAS_3_0
+                [KERNEL_TASK] = { kernel_soa_task },
+        #endif
+        #if OPENMP_HAS_SIMD
+                [KERNEL_SIMD_MEMORY] = { kernel_soa_simd_memory },
+                [KERNEL_SIMD_COMPUTE] = { kernel_soa_simd_compute },
+        #endif
+        #if OPENMP_HAS_TASKLOOP
+                [KERNEL_TASKLOOP] = { kernel_soa_taskloop },
+        #endif
+        #if OPENMP_HAS_TWO_PASS_SCAN
+                [KERNEL_TWO_PASS_SCAN] = { kernel_soa_two_pass_scan },
+        #endif
+        #if OPENMP_HAS_NATIVE_SCAN
+                [KERNEL_NATIVE_SCAN] = { kernel_soa_native_scan },
+        #endif
+            },
 
-    [VIEW_AOSOA] = {
-#if OPENMP_HAS_2_0
-        [KERNEL_LOOP]      = { kernel_aosoa_loop },
-        [KERNEL_REDUCTION] = { kernel_aosoa_reduction },
-#endif
-#if OPENMP_HAS_3_0
-        [KERNEL_TASK] = { kernel_aosoa_task },
-#endif
-#if OPENMP_HAS_SIMD
-        [KERNEL_SIMD_MEMORY] = { kernel_aosoa_simd_memory },
-        [KERNEL_SIMD_COMPUTE] = { kernel_aosoa_simd_compute },
-#endif
-#if OPENMP_HAS_TASKLOOP
-        [KERNEL_TASKLOOP] = { kernel_aosoa_taskloop },
-#endif
-#if OPENMP_HAS_TWO_PASS_SCAN
-        [KERNEL_TWO_PASS_SCAN] = { kernel_aosoa_two_pass_scan },
-#endif
-#if OPENMP_HAS_NATIVE_SCAN
-        [KERNEL_NATIVE_SCAN] = { kernel_aosoa_native_scan },
-#endif
-    },
-};
+        [VIEW_AOSOA] = {
+        #if OPENMP_HAS_2_0
+                [KERNEL_LOOP]      = { kernel_aosoa_loop },
+                [KERNEL_REDUCTION] = { kernel_aosoa_reduction },
+        #endif
+        #if OPENMP_HAS_3_0
+                [KERNEL_TASK] = { kernel_aosoa_task },
+        #endif
+        #if OPENMP_HAS_SIMD
+                [KERNEL_SIMD_MEMORY] = { kernel_aosoa_simd_memory },
+                [KERNEL_SIMD_COMPUTE] = { kernel_aosoa_simd_compute },
+        #endif
+        #if OPENMP_HAS_TASKLOOP
+                [KERNEL_TASKLOOP] = { kernel_aosoa_taskloop },
+        #endif
+        #if OPENMP_HAS_TWO_PASS_SCAN
+                [KERNEL_TWO_PASS_SCAN] = { kernel_aosoa_two_pass_scan },
+        #endif
+        #if OPENMP_HAS_NATIVE_SCAN
+                [KERNEL_NATIVE_SCAN] = { kernel_aosoa_native_scan },
+        #endif
+            },
+        };
 
-const KernelDescriptor *kernel_registry_get(
-    ViewType view_type,
-    KernelType kernel_type
-) {
+const KernelDescriptor *kernel_registry_get(ViewType view_type, KernelType kernel_type) {
     if ((unsigned) view_type >= VIEW_TYPE_COUNT ||
         (unsigned) kernel_type >= KERNEL_COUNT) {
         return NULL;
     }
-
     return &KERNEL_REGISTRY[view_type][kernel_type];
 }
 
-KernelFunc kernel_registry_get_function(
-    ViewType view_type,
-    KernelType kernel_type
-) {
-    const KernelDescriptor *descriptor =
-        kernel_registry_get(view_type, kernel_type);
-
+KernelFunc kernel_registry_get_function(ViewType view_type, KernelType kernel_type) {
+    const KernelDescriptor *descriptor = kernel_registry_get(view_type, kernel_type);
     return descriptor != NULL ? descriptor->function : NULL;
 }
 
-bool kernel_registry_is_available(
-    ViewType view_type,
-    KernelType kernel_type
-) {
+bool kernel_registry_is_available(ViewType view_type, KernelType kernel_type) {
     return kernel_registry_get_function(view_type, kernel_type) != NULL;
 }

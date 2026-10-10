@@ -92,14 +92,8 @@ static int is_valid_component(const char *component)
 }
 
 
-static int build_test_directory(
-    const FileManager *manager,
-    char *buffer,
-    size_t buffer_size
-)
-{
+static int build_test_directory(const FileManager *manager, char *buffer, size_t buffer_size) {
     int written;
-
     if (manager == NULL ||
         buffer == NULL ||
         buffer_size == 0U ||
@@ -116,21 +110,14 @@ static int build_test_directory(
         manager->schedule_name,
         manager->test_name
     );
-
     if (written < 0 || (size_t) written >= buffer_size) {
         return -1;
     }
-
     return 0;
 }
 
 
-FileManager *create_file_manager(
-    const char *base_dir,
-    const char *compiler_name,
-    const char *schedule_name
-)
-{
+FileManager *create_file_manager(const char *base_dir, const char *compiler_name, const char *schedule_name) {
     FileManager *manager;
     int written;
 
@@ -148,54 +135,33 @@ FileManager *create_file_manager(
         base_dir = "./output";
     }
 
-    written = snprintf(
-        manager->base_dir,
-        sizeof(manager->base_dir),
-        "%s",
-        base_dir
-    );
+    written = snprintf(manager->base_dir, sizeof(manager->base_dir), "%s", base_dir);
     if (written < 0 || (size_t) written >= sizeof(manager->base_dir)) {
         free(manager);
         return NULL;
     }
 
-    written = snprintf(
-        manager->compiler_name,
-        sizeof(manager->compiler_name),
-        "%s",
-        compiler_name
-    );
+    written = snprintf(manager->compiler_name, sizeof(manager->compiler_name), "%s", compiler_name);
     if (written < 0 || (size_t) written >= sizeof(manager->compiler_name)) {
         free(manager);
         return NULL;
     }
 
-    written = snprintf(
-        manager->schedule_name,
-        sizeof(manager->schedule_name),
-        "%s",
-        schedule_name
-    );
+    written = snprintf(manager->schedule_name, sizeof(manager->schedule_name), "%s", schedule_name);
     if (written < 0 || (size_t) written >= sizeof(manager->schedule_name)) {
         free(manager);
         return NULL;
     }
-
     return manager;
 }
 
 
-void destroy_file_manager(FileManager *manager)
-{
+void destroy_file_manager(FileManager *manager) {
     free(manager);
 }
 
 
-int set_current_test(
-    FileManager *manager,
-    const char *test_name
-)
-{
+int set_current_test(FileManager *manager, const char *test_name) {
     char path[FILE_MANAGER_PATH_MAX];
     int written;
 
@@ -203,12 +169,7 @@ int set_current_test(
         return -1;
     }
 
-    written = snprintf(
-        manager->test_name,
-        sizeof(manager->test_name),
-        "%s",
-        test_name
-    );
+    written = snprintf(manager->test_name, sizeof(manager->test_name), "%s", test_name);
     if (written < 0 || (size_t) written >= sizeof(manager->test_name)) {
         return -1;
     }
@@ -222,12 +183,7 @@ int set_current_test(
     return 0;
 }
 
-
-FILE *open_csv_file(
-    FileManager *manager,
-    const char *filename
-)
-{
+FILE *open_csv_file(FileManager *manager, const char *filename) {
     char directory[FILE_MANAGER_PATH_MAX];
     char file_path[FILE_MANAGER_PATH_MAX];
     size_t filename_length;
@@ -246,21 +202,9 @@ FILE *open_csv_file(
     filename_length = strlen(filename);
     if (filename_length > 4U &&
         strcmp(filename + filename_length - 4U, ".csv") == 0) {
-        written = snprintf(
-            file_path,
-            sizeof(file_path),
-            "%s/%s",
-            directory,
-            filename
-        );
+        written = snprintf(file_path, sizeof(file_path), "%s/%s", directory, filename);
     } else {
-        written = snprintf(
-            file_path,
-            sizeof(file_path),
-            "%s/%s.csv",
-            directory,
-            filename
-        );
+        written = snprintf(file_path, sizeof(file_path), "%s/%s.csv", directory, filename);
     }
 
     if (written < 0 || (size_t) written >= sizeof(file_path)) {

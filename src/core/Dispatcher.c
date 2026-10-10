@@ -25,8 +25,6 @@
  * Its execution loop resolves an already registered kernel, executes it
  * for the requested number of repetitions and stores the resulting metrics.
  */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -146,16 +144,12 @@ static const char *kernel_type_to_string(KernelType type)
  *
  * @return 1 if an overflow would occur, 0 otherwise.
  */
-static int size_mul_overflow(
-    size_t a,
-    size_t b,
-    size_t *result
-) {
+static int size_mul_overflow(size_t a, size_t b, size_t *result) {
     if (result == NULL) {
         return 1;
     }
 
-    if (a != 0U && b > SIZE_MAX / a) {
+    if ((a != 0U) && (b > (SIZE_MAX / a))) {
         return 1;
     }
 
@@ -173,16 +167,12 @@ static int size_mul_overflow(
  *
  * @return 1 if an overflow would occur, 0 otherwise.
  */
-static int size_add_overflow(
-    size_t a,
-    size_t b,
-    size_t *result
-) {
+static int size_add_overflow(size_t a, size_t b, size_t *result) {
     if (result == NULL) {
         return 1;
     }
 
-    if (b > SIZE_MAX - a) {
+    if (b > (SIZE_MAX - a)) {
         return 1;
     }
 
@@ -199,10 +189,7 @@ static int size_add_overflow(
  *
  * @return Dispatch status.
  */
-static DispatchStatus validate_plan_for_dispatch(
-    const TestPlan *plan,
-    uint32_t work_reps
-) {
+static DispatchStatus validate_plan_for_dispatch(const TestPlan *plan, uint32_t work_reps) {
     if (plan == NULL || work_reps == 0U) {
         return DISPATCH_INVALID_ARGUMENT;
     }
@@ -221,18 +208,9 @@ static DispatchStatus validate_plan_for_dispatch(
         if (set->kernels.count != 0U && set->kernels.data == NULL) {
             return DISPATCH_INVALID_ARGUMENT;
         }
-
-        for (size_t group_index = 0;
-             group_index < set->kernels.count;
-             ++group_index) {
-            const KernelTestGroup *group =
-                &set->kernels.data[group_index];
-
-            const KernelFunc function =
-                kernel_registry_get_function(
-                    set->view.type,
-                    group->kernel
-                );
+        for (size_t group_index = 0; group_index < set->kernels.count; ++group_index) {
+            const KernelTestGroup *group    = &set->kernels.data[group_index];
+            const KernelFunc       function = kernel_registry_get_function(set->view.type, group->kernel);
 
             if (function == NULL) {
                 return DISPATCH_KERNEL_UNAVAILABLE;
@@ -242,12 +220,8 @@ static DispatchStatus validate_plan_for_dispatch(
                 return DISPATCH_INVALID_ARGUMENT;
             }
 
-            for (size_t case_index = 0;
-                 case_index < group->cases.count;
-                 ++case_index) {
-                const TestCase *test_case =
-                    &group->cases.data[case_index];
-
+            for (size_t case_index = 0; case_index < group->cases.count; ++case_index) {
+                const TestCase *test_case = &group->cases.data[case_index];
                 if (test_case->num_threads == 0U) {
                     return DISPATCH_INVALID_ARGUMENT;
                 }
@@ -282,32 +256,21 @@ static DispatchStatus count_samples(
     for (size_t set_index = 0; set_index < plan->count; ++set_index) {
         const TestSet *set = &plan->data[set_index];
 
-        for (size_t group_index = 0;
-             group_index < set->kernels.count;
-             ++group_index) {
-            const KernelTestGroup *group =
-                &set->kernels.data[group_index];
-
+        for (size_t group_index = 0; group_index < set->kernels.count; ++group_index) {
+            const KernelTestGroup *group = &set->kernels.data[group_index];
             size_t group_samples;
 
-            if (size_mul_overflow(
-                    group->cases.count,
-                    (size_t) work_reps,
-                    &group_samples)) {
+            if (size_mul_overflow(group->cases.count, (size_t) work_reps, &group_samples)) {
                 return DISPATCH_SIZE_OVERFLOW;
             }
 
-            if (size_add_overflow(
-                    total,
-                    group_samples,
-                    &total)) {
+            if (size_add_overflow(total, group_samples, &total)) {
                 return DISPATCH_SIZE_OVERFLOW;
             }
         }
     }
 
     *out_count = total;
-
     return DISPATCH_OK;
 }
 
@@ -343,13 +306,7 @@ static DispatchStatus execute_kernel(
     }
 
     memset(metric, 0, sizeof(*metric));
-
-    function(
-        view,
-        test_case,
-        profiler,
-        metric
-    );
+    function(view, test_case, profiler, metric);
 
     /*
      * KernelFunc is currently void-returning. The profiler state is therefore
@@ -390,22 +347,14 @@ DispatchStatus dispatch_test_plan(
      * Reset the output before starting a new dispatch.
      */
     out_samples->samples = NULL;
-    out_samples->count = 0U;
-
-    status = validate_plan_for_dispatch(
-        plan,
-        work_reps
-    );
+    out_samples->count   = 0U;
+    status = validate_plan_for_dispatch(plan, work_reps);
 
     if (status != DISPATCH_OK) {
         return status;
     }
 
-    status = count_samples(
-        plan,
-        work_reps,
-        &sample_count
-    );
+    status = count_samples(plan, work_reps, &sample_count);
 
     if (status != DISPATCH_OK) {
         return status;
@@ -413,11 +362,7 @@ DispatchStatus dispatch_test_plan(
 
     if (sample_count != 0U) {
         out_samples->samples =
-            calloc(
-                sample_count,
-                sizeof(*out_samples->samples)
-            );
-
+            calloc(sample_count, sizeof(*out_samples->samples));
         if (out_samples->samples == NULL) {
             return DISPATCH_ALLOCATION_FAILURE;
         }
@@ -431,42 +376,19 @@ DispatchStatus dispatch_test_plan(
     );
     fflush(stdout);
 
-    for (size_t set_index = 0;
-         set_index < plan->count;
-         ++set_index) {
+    for (size_t set_index = 0; set_index < plan->count; ++set_index) {
         const TestSet *set = &plan->data[set_index];
         DataView view = set->view;
-
-        for (size_t group_index = 0;
-             group_index < set->kernels.count;
-             ++group_index) {
-            const KernelTestGroup *group =
-                &set->kernels.data[group_index];
-
-            const KernelFunc function =
-                kernel_registry_get_function(
-                    set->view.type,
-                    group->kernel
-                );
-
-            for (size_t case_index = 0;
-                 case_index < group->cases.count;
-                 ++case_index) {
-                const TestCase *test_case =
-                    &group->cases.data[case_index];
-
+        for (size_t group_index = 0; group_index < set->kernels.count; ++group_index) {
+            const KernelTestGroup *group = &set->kernels.data[group_index];
+            const KernelFunc function    = kernel_registry_get_function(set->view.type, group->kernel);
+            for (size_t case_index = 0; case_index < group->cases.count; ++case_index) {
+                const TestCase *test_case = &group->cases.data[case_index];
                 double total_wall_time = 0.0;
-
-                const size_t experiment_index =
-                    sample_index / (size_t) work_reps + 1U;
-
-                const size_t experiment_count =
-                    sample_count / (size_t) work_reps;
-
-                const double window_gib =
-                    (double) view.window.size *
-                    (double) sizeof(double) /
-                    (1024.0 * 1024.0 * 1024.0);
+                const size_t experiment_index = sample_index / (size_t) work_reps + 1U;
+                const size_t experiment_count = sample_count / (size_t) work_reps;
+                // 1073741824.0 = 1024.0 * 1024.0 * 1024.0
+                const double window_gib = (double) view.window.size * ((double) sizeof(double) / (1073741824.0));
 
                 printf(
                     "[Dispatcher] Experiment %zu/%zu\n"
@@ -489,9 +411,7 @@ DispatchStatus dispatch_test_plan(
                 /*
                  * Warm-up executions are deliberately discarded.
                  */
-                for (uint32_t warmup = 0U;
-                     warmup < warmup_reps;
-                     ++warmup) {
+                for (uint32_t warmup = 0U; warmup < warmup_reps; ++warmup) {
                     PerformanceMetric warmup_metric;
 
                     status = execute_kernel(
@@ -508,14 +428,9 @@ DispatchStatus dispatch_test_plan(
                     }
                 }
 
-                /*
-                 * Measured executions.
-                 */
-                for (uint32_t run_id = 0U;
-                     run_id < work_reps;
-                     ++run_id) {
-                    RawSample *sample =
-                        &out_samples->samples[sample_index];
+                /* Measured executions. */
+                for (uint32_t run_id = 0U; run_id < work_reps; ++run_id) {
+                    RawSample *sample = &out_samples->samples[sample_index];
 
                     status = execute_kernel(
                         function,
@@ -530,13 +445,11 @@ DispatchStatus dispatch_test_plan(
                         return status;
                     }
 
-                    sample->test_set_id = set->uid;
+                    sample->test_set_id  = set->uid;
                     sample->test_case_id = test_case->uid;
-                    sample->kernel = group->kernel;
-                    sample->run_id = run_id;
-
-                    total_wall_time += sample->metric.wall_time_sec;
-
+                    sample->kernel       = group->kernel;
+                    sample->run_id       = run_id;
+                    total_wall_time     += sample->metric.wall_time_sec;
                     ++sample_index;
                 }
 
@@ -551,22 +464,17 @@ DispatchStatus dispatch_test_plan(
             }
         }
     }
-
     printf("[Dispatcher] All experiments completed\n");
     fflush(stdout);
-
     return DISPATCH_OK;
 }
 
 
-void dispatch_destroy_samples(RawSampleSet *samples)
-{
-    if (samples == NULL) {
-        return;
+void dispatch_destroy_samples(RawSampleSet *samples) {
+    if(samples != NULL) {
+        free(samples->samples);
+        samples->samples = NULL;
+        samples->count = 0U;
     }
-
-    free(samples->samples);
-
-    samples->samples = NULL;
-    samples->count = 0U;
+    return;
 }
