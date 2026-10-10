@@ -1,89 +1,103 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
 
-CONF_FILE="autotune.conf"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_CONF="${SCRIPT_DIR}/default.conf"
+CONF_FILE="$DEFAULT_CONF"
 CLI_PARAMS=()
 
-# -----------------------------------------------------------------------------
-# 1. PARSING DEGLI ARGOMENTI DA RIGA DI COMANDO
-# -----------------------------------------------------------------------------
-# Riconosce se il primo parametro è un file .conf o un'assegnazione KEY=VALUE
-for arg in "$@"; do
-    if [[ "$arg" == *.conf ]] && [ -f "$arg" ]; then
-        CONF_FILE="$arg"
-    elif [[ "$arg" == *=* ]]; then
-        CLI_PARAMS+=("$arg")
-    fi
+usage() {
+    cat <<'HELP'
+Uso: ./build.sh [file.conf] [KEY=VALUE ...] [opzioni]
+
+  ./build.sh                         usa default.conf
+  ./build.sh autotune.conf           usa la configurazione specificata
+  ./build.sh --config autotune.conf  equivalente
+  ./build.sh WORK_REPS=10            override di una macro
+  ./build.sh autotune.conf WORK_REPS=10
+
+Opzioni:
+  -c, --config FILE   file di configurazione da usare
+  -h, --help          mostra questo messaggio
+
+Gli override KEY=VALUE prevalgono sui valori del file. La variabile d'ambiente
+CC prevale su COMPILERNAME nel file di configurazione.
+HELP
+}
+
+while (($#)); do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        -c|--config)
+            [[ $# -ge 2 ]] || { echo "[-] Manca il file dopo $1" >&2; exit 2; }
+            CONF_FILE="$2"; shift 2 ;;
+        *.conf) CONF_FILE="$1"; shift ;;
+        *=*) CLI_PARAMS+=("$1"); shift ;;
+        *) echo "[-] Argomento non riconosciuto: $1" >&2; usage >&2; exit 2 ;;
+    esac
 done
 
-# Map associativa per gestire la sovrascrittura delle macro (richiede Bash 4+)
-declare -A MACROS
-
-# -----------------------------------------------------------------------------
-# 2. CARICAMENTO MACRO DAL FILE .CONF
-# -----------------------------------------------------------------------------
-if [ -f "$CONF_FILE" ]; then
-    echo "[+] Caricamento configurazione da: $CONF_FILE"
-    while IFS='=' read -r key value || [ -n "$key" ]; do
-        key=$(echo "$key" | xargs)
-        value=$(echo "$value" | xargs)
-
-        # Salta commenti e righe vuote
-        if [[ -z "$key" ]] || [[ "$key" =~ ^# ]]; then
-            continue
-        fi
-
-        MACROS["$key"]="$value"
-    done < "$CONF_FILE"
-else
-    echo "[!] Nessun file '$CONF_FILE' trovato. Utilizzo solo i parametri passati."
+# Per il default usa quello accanto allo script; per gli altri file prova anche la directory corrente.
+if [[ ! -f "$CONF_FILE" && -f "${SCRIPT_DIR}/${CONF_FILE}" ]]; then CONF_FILE="${SCRIPT_DIR}/${CONF_FILE}"; fi
+if [[ ! -f "$CONF_FILE" ]]; then
+    echo "[-] File di configurazione non trovato: $CONF_FILE" >&2
+    exit 2
 fi
 
-# -----------------------------------------------------------------------------
-# 3. SOVRASCRITTURA CON I PARAMETRI DA RIGA DI COMANDO (CLI)
-# -----------------------------------------------------------------------------
+declare -A MACROS=()
+SELECTED_CC=""
+trim() {
+    local value="$1"
+    value="${value#"${value%%[!$' \t\r\n']*}"}"
+    value="${value%"${value##*[!$' \t\r\n']}"}"
+    printf '%s' "$value"
+}
+
+echo "[+] Caricamento configurazione: $CONF_FILE"
+while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%$'\r'}"
+    line="$(trim "$line")"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" == *=* ]] || { echo "[-] Riga non valida in $CONF_FILE: $line" >&2; exit 2; }
+    key="$(trim "${line%%=*}")"
+    value="$(trim "${line#*=}")"
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { echo "[-] Nome parametro non valido: $key" >&2; exit 2; }
+    [[ -n "$value" ]] || { echo "[-] Valore vuoto per $key" >&2; exit 2; }
+    if [[ "$key" == COMPILERNAME ]]; then SELECTED_CC="$value"; else MACROS["$key"]="$value"; fi
+done < "$CONF_FILE"
+
 for param in "${CLI_PARAMS[@]}"; do
-    key="${param%%=*}"
-    value="${param#*=}"
-
-    key=$(echo "$key" | xargs)
-    value=$(echo "$value" | xargs)
-
-    echo "[->] Override riga di comando: $key = $value"
-    MACROS["$key"]="$value"
+    key="$(trim "${param%%=*}")"
+    value="$(trim "${param#*=}")"
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { echo "[-] Nome parametro non valido: $key" >&2; exit 2; }
+    [[ -n "$value" ]] || { echo "[-] Valore vuoto per $key" >&2; exit 2; }
+    if [[ "$key" == COMPILERNAME ]]; then SELECTED_CC="$value"; else MACROS["$key"]="$value"; fi
+    echo "[->] Override CLI: $key=$value"
 done
 
-# -----------------------------------------------------------------------------
-# 4. COSTRUZIONE CFLAGS E COMPILATORE
-# -----------------------------------------------------------------------------
-EXTRA_CFLAGS=""
-SELECTED_CC=""
+# Compatibilità con vecchie configurazioni che usavano CHOSEN_SCHEDULE=static/dynamic/guided.
+if [[ -n "${MACROS[CHOSEN_SCHEDULE]:-}" ]]; then
+    case "${MACROS[CHOSEN_SCHEDULE]}" in
+        static) MACROS[CHOSEN_SCHEDULE_ID]=1U ;;
+        dynamic) MACROS[CHOSEN_SCHEDULE_ID]=2U ;;
+        guided) MACROS[CHOSEN_SCHEDULE_ID]=3U ;;
+        *) echo "[-] CHOSEN_SCHEDULE deve essere static, dynamic o guided" >&2; exit 2 ;;
+    esac
+    unset 'MACROS[CHOSEN_SCHEDULE]'
+fi
 
+CC_COMPILER="${CC:-${SELECTED_CC:-gcc}}"
+CFLAGS_ARRAY=(-g -Wall -Wextra -Wpedantic -std=c99 -D_GNU_SOURCE -Iinclude -Isrc/microroutines -fopenmp -MMD -MP)
 for key in "${!MACROS[@]}"; do
     value="${MACROS[$key]}"
-
-    if [ "$key" = "COMPILERNAME" ]; then
-        SELECTED_CC="$value"
-        continue
-    fi
-
-    EXTRA_CFLAGS="$EXTRA_CFLAGS -D${key}=${value}"
+    [[ "$value" != *$'\n'* ]] || { echo "[-] Valore multilinea non ammesso per $key" >&2; exit 2; }
+    CFLAGS_ARRAY+=("-D${key}=${value}")
 done
+CFLAGS_VALUE=""
+for flag in "${CFLAGS_ARRAY[@]}"; do CFLAGS_VALUE+="${CFLAGS_VALUE:+ }${flag}"; done
 
-# Priorità Compilatore: Variable CC d'ambiente > COMPILERNAME da CLI/conf > gcc
-CC_COMPILER="${CC:-${SELECTED_CC:-gcc}}"
-
-# -----------------------------------------------------------------------------
-# 5. ESECUZIONE MAKE
-# -----------------------------------------------------------------------------
-echo "[+] Compilatore selezionato: $CC_COMPILER"
-echo "[+] Macro precompilatore finali: $EXTRA_CFLAGS"
-
-# Invocazione del Makefile
-make CC="$CC_COMPILER" CFLAGS="-Wall -Wextra -Wpedantic -std=c99 -Iinclude -Isrc/microroutines -fopenmp -MMD -MP $EXTRA_CFLAGS"
-
-if [ $? -eq 0 ]; then
-    echo "[+] Compilazione completata! Eseguibile: build/$CC_COMPILER/main"
-else
-    echo "[-] Errore durante la compilazione."
-    exit 1
-fi
+echo "[+] Compilatore: $CC_COMPILER"
+echo "[+] Configurazione: $CONF_FILE"
+echo "[+] Macro: ${#MACROS[@]}"
+make -C "$SCRIPT_DIR" CC="$CC_COMPILER" CFLAGS="$CFLAGS_VALUE"
+echo "[+] Compilazione completata: build/$(basename -- "$CC_COMPILER")/main"
