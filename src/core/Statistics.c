@@ -27,12 +27,10 @@
 
 #include "core/Statistics.h"
 
-void statistics_init(StatisticsAccumulator *accumulator)
-{
+void statistics_init(StatisticsAccumulator *accumulator) {
     if (accumulator == NULL) {
         return;
     }
-
     accumulator->count = 0U;
     accumulator->min   = DBL_MAX;
     accumulator->max   = -DBL_MAX;
@@ -60,6 +58,7 @@ void statistics_update(StatisticsAccumulator *accumulator, double value) {
     delta = value - accumulator->mean;
     accumulator->mean += delta / (double) accumulator->count;
     accumulator->m2 += delta * (value - accumulator->mean);
+    return;
 }
 
 StatisticsResult statistics_finalize(const StatisticsAccumulator *accumulator) {

@@ -70,7 +70,7 @@ void kernel_aos_reduction(DataView *view, const TestCase *test_case, Profiler *p
     const uint32_t chunk        = test_case->chunk_size;
     const double *restrict pool = view->buffer->pool;
     const uint64_t num_elems    = view->meta.aos.num_structs;
-    const uint64_t struct_size  = view >meta.aos.struct_size;
+    const uint64_t struct_size  = view->meta.aos.struct_size;
     double sum = 0.0;
     profiler_start(profiler);
 

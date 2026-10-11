@@ -22,7 +22,6 @@
  * @brief Filesystem and CSV-file management for benchmark output.
  */
 
-#include "core/FileManager.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -30,11 +29,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "core/FileManager.h"
+
 #define FILE_MANAGER_PATH_MAX 1024U
 
-
-static int make_directory_recursive(const char *path)
-{
+static int make_directory_recursive(const char *path) {
     char temporary[FILE_MANAGER_PATH_MAX];
     size_t length;
 
@@ -53,15 +52,15 @@ static int make_directory_recursive(const char *path)
     }
 
     for (char *cursor = temporary + 1; *cursor != '\0'; ++cursor) {
-        if (*cursor != '/') {
-            continue;
-        }
+        if (*cursor == '/') {
+            *cursor = '\0';
 
-        *cursor = '\0';
-        if (mkdir(temporary, 0755) != 0 && errno != EEXIST) {
-            return -1;
+            if (mkdir(temporary, 0755) != 0 && errno != EEXIST) {
+                return -1;
+            }
+
+            *cursor = '/';
         }
-        *cursor = '/';
     }
 
     if (mkdir(temporary, 0755) != 0 && errno != EEXIST) {
@@ -71,9 +70,7 @@ static int make_directory_recursive(const char *path)
     return 0;
 }
 
-
-static int is_valid_component(const char *component)
-{
+static int is_valid_component(const char *component) {
     if (component == NULL || component[0] == '\0') {
         return 0;
     }
@@ -90,7 +87,6 @@ static int is_valid_component(const char *component)
 
     return 1;
 }
-
 
 static int build_test_directory(const FileManager *manager, char *buffer, size_t buffer_size) {
     int written;
@@ -115,7 +111,6 @@ static int build_test_directory(const FileManager *manager, char *buffer, size_t
     }
     return 0;
 }
-
 
 FileManager *create_file_manager(const char *base_dir, const char *compiler_name, const char *schedule_name) {
     FileManager *manager;
@@ -158,8 +153,8 @@ FileManager *create_file_manager(const char *base_dir, const char *compiler_name
 
 void destroy_file_manager(FileManager *manager) {
     free(manager);
+    return;
 }
-
 
 int set_current_test(FileManager *manager, const char *test_name) {
     char path[FILE_MANAGER_PATH_MAX];
