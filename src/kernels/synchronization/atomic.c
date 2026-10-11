@@ -4,31 +4,16 @@
 #include "core/TestPlan.h"
 
 #if OPENMP_HAS_3_1
-
-
 /* ============================================================================
  * VIEW_2D
  * ========================================================================== */
-
-void kernel_2d_atomic(DataView *view,
-                      const TestCase *test_case,
-                      Profiler *profiler,
-                      PerformanceMetric *metric) {
-
+void kernel_2d_atomic(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t rows =
-        view->meta.v2d.rows;
-
-    const uint64_t cols =
-        view->meta.v2d.cols;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t rows        = view->meta.v2d.rows;
+    const uint64_t cols        = view->meta.v2d.cols;
     double sum = 0.0;
-
     profiler_start(profiler);
 
     #pragma omp parallel for \
@@ -36,12 +21,8 @@ void kernel_2d_atomic(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         default(none) shared(pool, rows, cols, chunk, sum)
     for (uint64_t r = 0; r < rows; ++r) {
-
-        const uint64_t offset =
-            r * cols;
-
+        const uint64_t offset = r * cols;
         for (uint64_t c = 0; c < cols; ++c) {
-
             #pragma omp atomic update
             sum += pool[offset + c];
         }
@@ -54,29 +35,14 @@ void kernel_2d_atomic(DataView *view,
 /* ============================================================================
  * VIEW_3D
  * ========================================================================== */
-
-void kernel_3d_atomic(DataView *view,
-                      const TestCase *test_case,
-                      Profiler *profiler,
-                      PerformanceMetric *metric) {
-
+void kernel_3d_atomic(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t rows =
-        view->meta.v3d.height;
-
-    const uint64_t cols =
-        view->meta.v3d.cols;
-
-    const uint64_t depth =
-        view->meta.v3d.depth;
-
-    double sum = 0.0;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t rows        = view->meta.v3d.height;
+    const uint64_t cols        = view->meta.v3d.cols;
+    const uint64_t depth       = view->meta.v3d.depth;
+    double sum                 = 0.0;
     profiler_start(profiler);
 
     #pragma omp parallel for \
@@ -85,14 +51,9 @@ void kernel_3d_atomic(DataView *view,
         default(none) \
         shared(pool, rows, cols, depth, chunk, sum)
     for (uint64_t r = 0; r < rows; ++r) {
-
         for (uint64_t c = 0; c < cols; ++c) {
-
-            const uint64_t offset =
-                (r * cols + c) * depth;
-
+            const uint64_t offset = (r * cols + c) * depth;
             for (uint64_t d = 0; d < depth; ++d) {
-
                 #pragma omp atomic update
                 sum += pool[offset + d];
             }
@@ -101,6 +62,4 @@ void kernel_3d_atomic(DataView *view,
 
     profiler_stop(profiler, metric);
 }
-
-
 #endif /* OPENMP_HAS_3_1 */

@@ -4,29 +4,15 @@
 #include "core/TestPlan.h"
 
 #if OPENMP_HAS_NATIVE_SCAN
-
-
 /* ============================================================================
  * VIEW_2D
  * ========================================================================== */
-
-void kernel_2d_native_scan(DataView *view,
-                           const TestCase *test_case,
-                           Profiler *profiler,
-                           PerformanceMetric *metric) {
-
+void kernel_2d_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t total =
-        view->meta.v2d.rows *
-        view->meta.v2d.cols;
-
-    double sum = 0.0;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t total       = view->meta.v2d.rows * view->meta.v2d.cols;
+    double sum                 = 0.0;
     profiler_start(profiler);
 
     #pragma omp parallel num_threads(num_threads) \
@@ -35,11 +21,8 @@ void kernel_2d_native_scan(DataView *view,
     {
         #pragma omp for schedule(static, chunk)
         for (uint64_t i = 0; i < total; ++i) {
-
             sum += pool[i];
-
             #pragma omp scan inclusive(sum)
-
             pool[i] = sum;
         }
     }
@@ -51,25 +34,12 @@ void kernel_2d_native_scan(DataView *view,
 /* ============================================================================
  * VIEW_3D
  * ========================================================================== */
-
-void kernel_3d_native_scan(DataView *view,
-                           const TestCase *test_case,
-                           Profiler *profiler,
-                           PerformanceMetric *metric) {
-
+void kernel_3d_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t total =
-        view->meta.v3d.height *
-        view->meta.v3d.cols *
-        view->meta.v3d.depth;
-
-    double sum = 0.0;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t total       = view->meta.v3d.height * view->meta.v3d.cols * view->meta.v3d.depth;
+    double sum                 = 0.0;
     profiler_start(profiler);
 
     #pragma omp parallel num_threads(num_threads) \
@@ -78,11 +48,8 @@ void kernel_3d_native_scan(DataView *view,
     {
         #pragma omp for schedule(static, chunk)
         for (uint64_t i = 0; i < total; ++i) {
-
             sum += pool[i];
-
             #pragma omp scan inclusive(sum)
-
             pool[i] = sum;
         }
     }
@@ -95,23 +62,12 @@ void kernel_3d_native_scan(DataView *view,
  * VIEW_AOS
  * ========================================================================== */
 
-void kernel_aos_native_scan(DataView *view,
-                            const TestCase *test_case,
-                            Profiler *profiler,
-                            PerformanceMetric *metric) {
-
+void kernel_aos_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t total =
-        view->meta.aos.num_structs *
-        view->meta.aos.struct_size;
-
-    double sum = 0.0;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t total       = view->meta.aos.num_structs * view->meta.aos.struct_size;
+    double sum                 = 0.0;
     profiler_start(profiler);
 
     #pragma omp parallel num_threads(num_threads) \
@@ -120,40 +76,23 @@ void kernel_aos_native_scan(DataView *view,
     {
         #pragma omp for schedule(static, chunk)
         for (uint64_t i = 0; i < total; ++i) {
-
             sum += pool[i];
-
             #pragma omp scan inclusive(sum)
-
             pool[i] = sum;
         }
     }
-
     profiler_stop(profiler, metric);
 }
-
 
 /* ============================================================================
  * VIEW_SOA
  * ========================================================================== */
-
-void kernel_soa_native_scan(DataView *view,
-                            const TestCase *test_case,
-                            Profiler *profiler,
-                            PerformanceMetric *metric) {
-
+void kernel_soa_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t total =
-        view->meta.soa.field_length *
-        view->meta.soa.num_fields;
-
-    double sum = 0.0;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t total       = view->meta.soa.field_length * view->meta.soa.num_fields;
+    double sum                 = 0.0;
     profiler_start(profiler);
 
     #pragma omp parallel num_threads(num_threads) \
@@ -162,15 +101,11 @@ void kernel_soa_native_scan(DataView *view,
     {
         #pragma omp for schedule(static, chunk)
         for (uint64_t i = 0; i < total; ++i) {
-
             sum += pool[i];
-
             #pragma omp scan inclusive(sum)
-
             pool[i] = sum;
         }
     }
-
     profiler_stop(profiler, metric);
 }
 
@@ -178,32 +113,16 @@ void kernel_soa_native_scan(DataView *view,
 /* ============================================================================
  * VIEW_AOSOA
  * ========================================================================== */
-
-void kernel_aosoa_native_scan(DataView *view,
-                              const TestCase *test_case,
-                              Profiler *profiler,
-                              PerformanceMetric *metric) {
-
+void kernel_aosoa_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
-
-    double *restrict pool =
-        view->buffer->pool;
-
-    const uint64_t vl =
-        view->meta.aosoa.vector_length;
-
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t vl          = view->meta.aosoa.vector_length;
     if (vl == 0) {
         return;
     }
-
-    const uint64_t total =
-        view->meta.aosoa.num_blocks *
-        view->meta.aosoa.num_fields *
-        vl;
-
-    double sum = 0.0;
-
+    const uint64_t total = view->meta.aosoa.num_blocks * view->meta.aosoa.num_fields * vl;
+    double sum           = 0.0;
     profiler_start(profiler);
 
     #pragma omp parallel num_threads(num_threads) \
@@ -212,16 +131,12 @@ void kernel_aosoa_native_scan(DataView *view,
     {
         #pragma omp for schedule(static, chunk)
         for (uint64_t i = 0; i < total; ++i) {
-
             sum += pool[i];
-
             #pragma omp scan inclusive(sum)
-
             pool[i] = sum;
         }
     }
-
     profiler_stop(profiler, metric);
+    return;
 }
-
 #endif /* OPENMP_HAS_NATIVE_SCAN */
