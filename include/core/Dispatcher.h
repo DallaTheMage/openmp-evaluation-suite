@@ -73,7 +73,7 @@
 #include "core/Analyzer.h"
 #include "core/TestPlan.h"
 #include "profiling/Profiler.h"
-
+#include "data/MemoryManager.h"
 
 /**
  * @brief Result codes returned by the dispatcher.
@@ -101,75 +101,45 @@ typedef enum DispatchStatus {
     DISPATCH_KERNEL_UNAVAILABLE = 4,
 
     /** A kernel returned while its profiler measurement was still active. */
-    DISPATCH_PROFILER_FAILURE = 5
+    DISPATCH_PROFILER_FAILURE = 5,
+
+    /** The memory manager could not prepare the requested working data. */
+    DISPATCH_MEMORY_PREPARATION_FAILURE = 6
 } DispatchStatus;
 
 
 /**
- * @brief Dispatch and execute all valid experiments in a test plan.
+ * @brief Execute all test cases in a test plan and collect profiling samples.
  *
- * For every test set and kernel test group in the plan, the dispatcher
- * resolves the corresponding kernel through the kernel registry.
+ * Each test case is executed for the configured number of warmup repetitions
+ * and measured repetitions. Before every kernel invocation, the working data
+ * is restored from the immutable original buffer through the memory manager.
+ * Data restoration takes place outside the profiler's measurement interval,
+ * ensuring that mutations performed by a kernel do not affect subsequent
+ * invocations.
  *
- * Each valid test case is executed according to the following sequence:
+ * The memory manager must have sufficient working-buffer capacity for every
+ * view in the test plan. All views must reference the manager's working buffer
+ * and use a zero offset.
  *
- *     warm-up executions
- *             |
- *             v
- *     measured executions
+ * @param plan Test plan containing the kernel configurations and data views.
+ * @param memory_manager Memory manager responsible for restoring the working
+ *                       data before each invocation.
+ * @param profiler Profiler used to measure kernel execution.
+ * @param warmup_reps Number of warmup invocations per test case.
+ * @param work_reps Number of measured invocations per test case.
+ * @param out_samples Output collection for the measured profiling samples.
  *
- * Warm-up executions are not included in the returned RawSampleSet.
- *
- * Each measured execution produces exactly one RawSample containing:
- *
- * - the identity of the test set;
- * - the identity of the test case;
- * - the kernel type;
- * - the execution number;
- * - the PerformanceMetric produced by the profiler.
- *
- * The profiler is owned and initialized by the caller. The dispatcher
- * only uses it for benchmark measurements and does not destroy it.
- *
- * @param plan
- *     Test plan to execute.
- *
- * @param profiler
- *     Initialized profiler used for measured executions.
- *
- * @param warmup_reps
- *     Number of unmeasured warm-up executions for each test case.
- *
- * @param work_reps
- *     Number of measured executions for each test case.
- *
- * @param out_samples
- *     Output location receiving the dynamically allocated raw sample set.
- *     On success, ownership is transferred to the caller.
- *
- * @return
- *     A DispatchStatus value. DISPATCH_OK indicates success.
- *
- * @pre plan != NULL.
- * @pre profiler != NULL.
- * @pre out_samples != NULL.
- * @pre profiler must have been successfully initialized.
- * @pre work_reps > 0.
- *
- * @post On success, @p out_samples contains a valid RawSampleSet.
- * @post Warm-up executions are not present in the returned sample set.
- *
- * @note The function does not modify the TestPlan.
- * @note The function does not modify the OpenMP runtime schedule.
- * @note The caller owns the returned RawSampleSet and must release it with
- *       dispatch_destroy_samples().
+ * @return DISPATCH_SUCCESS on success, or an appropriate error status if
+ *         validation, memory preparation, kernel execution, or profiling fails.
  */
 DispatchStatus dispatch_test_plan(
     const TestPlan *plan,
-    Profiler       *profiler,
-    uint32_t        warmup_reps,
-    uint32_t        work_reps,
-    RawSampleSet   *out_samples
+    MemoryManager *memory_manager,
+    Profiler *profiler,
+    uint32_t warmup_reps,
+    uint32_t work_reps,
+    RawSampleSet *out_samples
 );
 
 

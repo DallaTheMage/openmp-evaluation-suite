@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -244,6 +244,21 @@ typedef struct {
      * @brief Required alignment in bytes.
      */
     size_t alignment;
+
+    /**
+     * @brief Detected last-level data/unified cache size, in bytes.
+     *
+     * Zero means that cache detection was unavailable.
+     */
+    uint64_t detected_llc_size_bytes;
+
+    /**
+     * @brief Auxiliary buffer capacity, expressed in double elements.
+     *
+     * The capacity is twice the detected LLC size divided by sizeof(double).
+     * Zero means that no auxiliary buffer is configured.
+     */
+    size_t aux_buffer_size;
 } MemoryConfig;
 
 

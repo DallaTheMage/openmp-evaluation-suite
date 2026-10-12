@@ -279,6 +279,34 @@
 
 
 /* ========================================================================= */
+/* Cache and auxiliary buffer configuration                                  */
+/* ========================================================================= */
+
+/**
+ * @brief Detected last-level data/unified cache size, in bytes.
+ *
+ * autotune.sh supplies this value through the generated build configuration.
+ * A value of zero indicates that cache detection was unavailable.
+ */
+#ifndef DETECTED_LLC_SIZE_BYTES
+    #define DETECTED_LLC_SIZE_BYTES UINT64_C(0)
+#endif
+
+
+/**
+ * @brief Auxiliary buffer capacity, expressed in double elements.
+ *
+ * The buffer is sized to twice the detected LLC capacity as an eviction
+ * heuristic. This increases the likelihood of displacing cached data, but
+ * does not guarantee that every cache level is fully evicted.
+ *
+ * A value of zero means that no auxiliary buffer is configured.
+ */
+#define AUX_BUFFER_SIZE \
+    (((uint64_t)(DETECTED_LLC_SIZE_BYTES) * UINT64_C(2)) / (uint64_t)sizeof(double))
+
+
+/* ========================================================================= */
 /* Window configuration                                                      */
 /* ========================================================================= */
 

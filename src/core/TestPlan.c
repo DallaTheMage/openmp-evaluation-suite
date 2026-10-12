@@ -528,6 +528,68 @@ static TestPlan *build_test_plan(
 /* Public API                                                                */
 /* ========================================================================= */
 
+bool test_plan_max_workload(
+    const TestPlan *plan,
+    size_t *out_elements)
+{
+    size_t maximum = 0U;
+
+    if (plan == NULL ||
+        out_elements == NULL ||
+        (plan->count > 0U && plan->data == NULL)) {
+        return false;
+    }
+
+    for (size_t i = 0U; i < plan->count; ++i) {
+        const uint64_t size = plan->data[i].view.window.size;
+
+        if (size > (uint64_t)SIZE_MAX) {
+            return false;
+        }
+
+        if ((size_t)size > maximum) {
+            maximum = (size_t)size;
+        }
+    }
+
+    *out_elements = maximum;
+    return true;
+}
+
+
+bool test_plan_rebind_buffer(
+    TestPlan *plan,
+    DataBuffer *buffer)
+{
+    if (plan == NULL ||
+        buffer == NULL ||
+        (plan->count > 0U && plan->data == NULL)) {
+        return false;
+    }
+
+    /*
+     * Validate the entire plan before changing any view.
+     * This prevents partially rebinding the plan on failure.
+     */
+    for (size_t i = 0U; i < plan->count; ++i) {
+        const DataView *view = &plan->data[i].view;
+        const uint64_t offset = view->window.offset;
+        const uint64_t size = view->window.size;
+
+        if (offset != UINT64_C(0) ||
+            size > (uint64_t)SIZE_MAX ||
+            (size_t)size > buffer->element_count) {
+            return false;
+        }
+    }
+
+    for (size_t i = 0U; i < plan->count; ++i) {
+        plan->data[i].view.buffer = buffer;
+    }
+
+    return true;
+}
+
 /**
  * @brief Generate a proportional test plan.
  *

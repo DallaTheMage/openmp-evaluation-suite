@@ -216,6 +216,35 @@ TestPlan *generate_full_scale_test_plan(
  */
 bool validate_test_plan(const TestPlan *plan);
 
+/**
+ * @brief Determine the maximum view size required by a test plan.
+ *
+ * @param plan Test plan to inspect.
+ * @param out_elements Receives the maximum view size in elements.
+ * @return true on success, false for invalid arguments or an unrepresentable
+ *         view size.
+ */
+bool test_plan_max_workload(
+    const TestPlan *plan,
+    size_t *out_elements
+);
+
+
+/**
+ * @brief Rebind every view in a test plan to another data buffer.
+ *
+ * The target buffer must be large enough for every view. This operation does
+ * not transfer ownership of the buffer. Current plans use zero-offset views;
+ * nonzero offsets are rejected because kernel offset handling is not uniform.
+ *
+ * @param plan Test plan whose views will be rebound.
+ * @param buffer Target buffer, owned by the caller.
+ * @return true on success, false if any view cannot fit in the target buffer.
+ */
+bool test_plan_rebind_buffer(
+    TestPlan *plan,
+    DataBuffer *buffer
+);
 
 /**
  * @brief Destroy a test plan and all memory owned by it.

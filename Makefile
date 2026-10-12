@@ -1,37 +1,84 @@
-# Consente di sovrascrivere CC da riga di comando (es. make CC=clang)
+# ============================================================
+# OpenMP Evaluation Suite - Makefile
+# ============================================================
+
+# Compiler can be overridden from the command line.
+# Example: make CC=clang
 CC ?= gcc
 
-CFLAGS  := -g -Wall -Wextra -Wpedantic -std=c99 -D_GNU_SOURCE -Iinclude -Isrc/microroutines -fopenmp
-# File di dipendenza automatica (.d) per intercettare le modifiche ai file .h
-CFLAGS  += -MMD -MP
+# Default flags.
+# build.sh normally overrides these values.
+CFLAGS ?= -g -Wall -Wextra -Wpedantic -std=c99 \
+          -D_GNU_SOURCE \
+          -Iinclude \
+          -Isrc/microroutines \
+          -fopenmp \
+          -MMD -MP
 
-LDFLAGS := -fopenmp
-LDLIBS  := -lm
+LDFLAGS ?= -fopenmp
+LDLIBS  ?= -lm
 
-# Isola gli oggetti in base al nome del compilatore (es. build/gcc o build/clang)
+# ------------------------------------------------------------
+# Build directories
+# ------------------------------------------------------------
+
+# Separate output directories by compiler executable name.
+# Examples:
+#   build/gcc/
+#   build/clang/
+#   build/icx/
+
 BUILD_DIR := build/$(notdir $(CC))
 TARGET    := $(BUILD_DIR)/main
 
+# ------------------------------------------------------------
+# Source files
+# ------------------------------------------------------------
+
 SRC := $(shell find src -name '*.c')
-OBJ := $(SRC:src/%.c=$(BUILD_DIR)/%.o)
+OBJ := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
 
-.PHONY: all clean
+# ------------------------------------------------------------
+# Targets
+# ------------------------------------------------------------
+
+.PHONY: all clean erase
 
 all: $(TARGET)
 
-# Linking
+# ------------------------------------------------------------
+# Link executable
+# ------------------------------------------------------------
+
 $(TARGET): $(OBJ)
 	@mkdir -p $(@D)
 	$(CC) $(OBJ) $(LDFLAGS) -o $@ $(LDLIBS)
 
-# Compilazione dei singoli file sorgente
+# ------------------------------------------------------------
+# Compile source files
+# ------------------------------------------------------------
+
 $(BUILD_DIR)/%.o: src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Includi le dipendenze automatiche generate da GCC/Clang (-MMD -MP)
+# ------------------------------------------------------------
+# Automatic header dependencies
+# ------------------------------------------------------------
+
 -include $(DEP)
 
+# ------------------------------------------------------------
+# Clean build artifacts
+# ------------------------------------------------------------
+
 clean:
-	rm -rf build output
+	rm -rf build
+
+# ------------------------------------------------------------
+# Remove generated results
+# ------------------------------------------------------------
+
+erase:
+	rm -rf output

@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -24,6 +24,7 @@
  * The dispatcher deliberately contains no benchmark-specific computation.
  * Its execution loop resolves an already registered kernel, executes it
  * for the requested number of repetitions and stores the resulting metrics.
+ * Before each invocation, it restores the working data through MemoryManager.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,7 +42,6 @@
  * @brief Convert a view type to a human-readable string.
  *
  * @param type View type.
- *
  * @return Constant string describing the view type.
  */
 static const char *view_type_to_string(ViewType type)
@@ -75,7 +75,6 @@ static const char *view_type_to_string(ViewType type)
  * @brief Convert a kernel type to a human-readable string.
  *
  * @param type Kernel type.
- *
  * @return Constant string describing the kernel.
  */
 static const char *kernel_type_to_string(KernelType type)
@@ -141,10 +140,10 @@ static const char *kernel_type_to_string(KernelType type)
  * @param a First operand.
  * @param b Second operand.
  * @param result Destination for the multiplication result.
- *
  * @return 1 if an overflow would occur, 0 otherwise.
  */
-static int size_mul_overflow(size_t a, size_t b, size_t *result) {
+static int size_mul_overflow(size_t a, size_t b, size_t *result)
+{
     if (result == NULL) {
         return 1;
     }
@@ -164,10 +163,10 @@ static int size_mul_overflow(size_t a, size_t b, size_t *result) {
  * @param a First operand.
  * @param b Second operand.
  * @param result Destination for the addition result.
- *
  * @return 1 if an overflow would occur, 0 otherwise.
  */
-static int size_add_overflow(size_t a, size_t b, size_t *result) {
+static int size_add_overflow(size_t a, size_t b, size_t *result)
+{
     if (result == NULL) {
         return 1;
     }
@@ -186,10 +185,12 @@ static int size_add_overflow(size_t a, size_t b, size_t *result) {
  *
  * @param plan Test plan to validate.
  * @param work_reps Number of measured repetitions.
- *
  * @return Dispatch status.
  */
-static DispatchStatus validate_plan_for_dispatch(const TestPlan *plan, uint32_t work_reps) {
+static DispatchStatus validate_plan_for_dispatch(
+    const TestPlan *plan,
+    uint32_t work_reps)
+{
     if (plan == NULL || work_reps == 0U) {
         return DISPATCH_INVALID_ARGUMENT;
     }
@@ -198,30 +199,47 @@ static DispatchStatus validate_plan_for_dispatch(const TestPlan *plan, uint32_t 
         return DISPATCH_INVALID_ARGUMENT;
     }
 
-    for (size_t set_index = 0; set_index < plan->count; ++set_index) {
+    for (size_t set_index = 0U;
+         set_index < plan->count;
+         ++set_index) {
         const TestSet *set = &plan->data[set_index];
 
         if (set->view.buffer == NULL) {
             return DISPATCH_INVALID_ARGUMENT;
         }
 
-        if (set->kernels.count != 0U && set->kernels.data == NULL) {
+        if (set->kernels.count != 0U &&
+            set->kernels.data == NULL) {
             return DISPATCH_INVALID_ARGUMENT;
         }
-        for (size_t group_index = 0; group_index < set->kernels.count; ++group_index) {
-            const KernelTestGroup *group    = &set->kernels.data[group_index];
-            const KernelFunc       function = kernel_registry_get_function(set->view.type, group->kernel);
+
+        for (size_t group_index = 0U;
+             group_index < set->kernels.count;
+             ++group_index) {
+            const KernelTestGroup *group =
+                &set->kernels.data[group_index];
+
+            const KernelFunc function =
+                kernel_registry_get_function(
+                    set->view.type,
+                    group->kernel
+                );
 
             if (function == NULL) {
                 return DISPATCH_KERNEL_UNAVAILABLE;
             }
 
-            if (group->cases.count != 0U && group->cases.data == NULL) {
+            if (group->cases.count != 0U &&
+                group->cases.data == NULL) {
                 return DISPATCH_INVALID_ARGUMENT;
             }
 
-            for (size_t case_index = 0; case_index < group->cases.count; ++case_index) {
-                const TestCase *test_case = &group->cases.data[case_index];
+            for (size_t case_index = 0U;
+                 case_index < group->cases.count;
+                 ++case_index) {
+                const TestCase *test_case =
+                    &group->cases.data[case_index];
+
                 if (test_case->num_threads == 0U) {
                     return DISPATCH_INVALID_ARGUMENT;
                 }
@@ -239,32 +257,45 @@ static DispatchStatus validate_plan_for_dispatch(const TestPlan *plan, uint32_t 
  * @param plan Test plan.
  * @param work_reps Number of measured repetitions.
  * @param out_count Destination for the total sample count.
- *
  * @return Dispatch status.
  */
 static DispatchStatus count_samples(
     const TestPlan *plan,
     uint32_t work_reps,
-    size_t *out_count
-) {
+    size_t *out_count)
+{
     size_t total = 0U;
 
-    if (plan == NULL || out_count == NULL || work_reps == 0U) {
+    if (plan == NULL ||
+        out_count == NULL ||
+        work_reps == 0U) {
         return DISPATCH_INVALID_ARGUMENT;
     }
 
-    for (size_t set_index = 0; set_index < plan->count; ++set_index) {
+    for (size_t set_index = 0U;
+         set_index < plan->count;
+         ++set_index) {
         const TestSet *set = &plan->data[set_index];
 
-        for (size_t group_index = 0; group_index < set->kernels.count; ++group_index) {
-            const KernelTestGroup *group = &set->kernels.data[group_index];
+        for (size_t group_index = 0U;
+             group_index < set->kernels.count;
+             ++group_index) {
+            const KernelTestGroup *group =
+                &set->kernels.data[group_index];
+
             size_t group_samples;
 
-            if (size_mul_overflow(group->cases.count, (size_t) work_reps, &group_samples)) {
+            if (size_mul_overflow(
+                    group->cases.count,
+                    (size_t)work_reps,
+                    &group_samples)) {
                 return DISPATCH_SIZE_OVERFLOW;
             }
 
-            if (size_add_overflow(total, group_samples, &total)) {
+            if (size_add_overflow(
+                    total,
+                    group_samples,
+                    &total)) {
                 return DISPATCH_SIZE_OVERFLOW;
             }
         }
@@ -276,26 +307,31 @@ static DispatchStatus count_samples(
 
 
 /**
- * @brief Execute one kernel invocation and store its metric.
+ * @brief Restore working data and execute one kernel invocation.
+ *
+ * Data restoration occurs before the kernel is called, outside the profiler's
+ * measurement interval.
  *
  * @param function Kernel function.
  * @param view Data view.
  * @param test_case Test case configuration.
+ * @param memory_manager Manager used to restore the working data.
  * @param profiler Profiler instance.
  * @param metric Destination for the performance metric.
- *
  * @return Dispatch status.
  */
 static DispatchStatus execute_kernel(
     KernelFunc function,
     DataView *view,
     const TestCase *test_case,
+    MemoryManager *memory_manager,
     Profiler *profiler,
-    PerformanceMetric *metric
-) {
+    PerformanceMetric *metric)
+{
     if (function == NULL ||
         view == NULL ||
         test_case == NULL ||
+        memory_manager == NULL ||
         profiler == NULL ||
         metric == NULL) {
         return DISPATCH_INVALID_ARGUMENT;
@@ -303,6 +339,14 @@ static DispatchStatus execute_kernel(
 
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
+    }
+
+    if (view->window.offset != UINT64_C(0) ||
+        view->window.size > (uint64_t)SIZE_MAX ||
+        memory_manager_restore(
+            memory_manager,
+            (size_t)view->window.size) != 0) {
+        return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
 
     memset(metric, 0, sizeof(*metric));
@@ -326,16 +370,18 @@ static DispatchStatus execute_kernel(
 
 DispatchStatus dispatch_test_plan(
     const TestPlan *plan,
+    MemoryManager *memory_manager,
     Profiler *profiler,
     uint32_t warmup_reps,
     uint32_t work_reps,
-    RawSampleSet *out_samples
-) {
+    RawSampleSet *out_samples)
+{
     DispatchStatus status;
     size_t sample_count = 0U;
     size_t sample_index = 0U;
 
     if (plan == NULL ||
+        memory_manager == NULL ||
         profiler == NULL ||
         out_samples == NULL ||
         work_reps == 0U) {
@@ -347,15 +393,14 @@ DispatchStatus dispatch_test_plan(
      * Reset the output before starting a new dispatch.
      */
     out_samples->samples = NULL;
-    out_samples->count   = 0U;
-    status = validate_plan_for_dispatch(plan, work_reps);
+    out_samples->count = 0U;
 
+    status = validate_plan_for_dispatch(plan, work_reps);
     if (status != DISPATCH_OK) {
         return status;
     }
 
     status = count_samples(plan, work_reps, &sample_count);
-
     if (status != DISPATCH_OK) {
         return status;
     }
@@ -363,6 +408,7 @@ DispatchStatus dispatch_test_plan(
     if (sample_count != 0U) {
         out_samples->samples =
             calloc(sample_count, sizeof(*out_samples->samples));
+
         if (out_samples->samples == NULL) {
             return DISPATCH_ALLOCATION_FAILURE;
         }
@@ -376,19 +422,42 @@ DispatchStatus dispatch_test_plan(
     );
     fflush(stdout);
 
-    for (size_t set_index = 0; set_index < plan->count; ++set_index) {
+    for (size_t set_index = 0U;
+         set_index < plan->count;
+         ++set_index) {
         const TestSet *set = &plan->data[set_index];
         DataView view = set->view;
-        for (size_t group_index = 0; group_index < set->kernels.count; ++group_index) {
-            const KernelTestGroup *group = &set->kernels.data[group_index];
-            const KernelFunc function    = kernel_registry_get_function(set->view.type, group->kernel);
-            for (size_t case_index = 0; case_index < group->cases.count; ++case_index) {
-                const TestCase *test_case = &group->cases.data[case_index];
+
+        for (size_t group_index = 0U;
+             group_index < set->kernels.count;
+             ++group_index) {
+            const KernelTestGroup *group =
+                &set->kernels.data[group_index];
+
+            const KernelFunc function =
+                kernel_registry_get_function(
+                    set->view.type,
+                    group->kernel
+                );
+
+            for (size_t case_index = 0U;
+                 case_index < group->cases.count;
+                 ++case_index) {
+                const TestCase *test_case =
+                    &group->cases.data[case_index];
+
                 double total_wall_time = 0.0;
-                const size_t experiment_index = sample_index / (size_t) work_reps + 1U;
-                const size_t experiment_count = sample_count / (size_t) work_reps;
-                // 1073741824.0 = 1024.0 * 1024.0 * 1024.0
-                const double window_gib = (double) view.window.size * ((double) sizeof(double) / (1073741824.0));
+
+                const size_t experiment_index =
+                    sample_index / (size_t)work_reps + 1U;
+
+                const size_t experiment_count =
+                    sample_count / (size_t)work_reps;
+
+                /* 1073741824.0 = 1024.0 * 1024.0 * 1024.0 */
+                const double window_gib =
+                    (double)view.window.size *
+                    ((double)sizeof(double) / 1073741824.0);
 
                 printf(
                     "[Dispatcher] Experiment %zu/%zu\n"
@@ -402,22 +471,26 @@ DispatchStatus dispatch_test_plan(
                     view_type_to_string(view.type),
                     kernel_type_to_string(group->kernel),
                     test_case->num_threads,
-                    (unsigned long long) test_case->chunk_size,
-                    (unsigned long long) view.window.size,
+                    (unsigned long long)test_case->chunk_size,
+                    (unsigned long long)view.window.size,
                     window_gib
                 );
                 fflush(stdout);
 
                 /*
                  * Warm-up executions are deliberately discarded.
+                 * Working data is restored before every invocation.
                  */
-                for (uint32_t warmup = 0U; warmup < warmup_reps; ++warmup) {
+                for (uint32_t warmup = 0U;
+                     warmup < warmup_reps;
+                     ++warmup) {
                     PerformanceMetric warmup_metric;
 
                     status = execute_kernel(
                         function,
                         &view,
                         test_case,
+                        memory_manager,
                         profiler,
                         &warmup_metric
                     );
@@ -429,13 +502,17 @@ DispatchStatus dispatch_test_plan(
                 }
 
                 /* Measured executions. */
-                for (uint32_t run_id = 0U; run_id < work_reps; ++run_id) {
-                    RawSample *sample = &out_samples->samples[sample_index];
+                for (uint32_t run_id = 0U;
+                     run_id < work_reps;
+                     ++run_id) {
+                    RawSample *sample =
+                        &out_samples->samples[sample_index];
 
                     status = execute_kernel(
                         function,
                         &view,
                         test_case,
+                        memory_manager,
                         profiler,
                         &sample->metric
                     );
@@ -445,11 +522,12 @@ DispatchStatus dispatch_test_plan(
                         return status;
                     }
 
-                    sample->test_set_id  = set->uid;
+                    sample->test_set_id = set->uid;
                     sample->test_case_id = test_case->uid;
-                    sample->kernel       = group->kernel;
-                    sample->run_id       = run_id;
-                    total_wall_time     += sample->metric.wall_time_sec;
+                    sample->kernel = group->kernel;
+                    sample->run_id = run_id;
+
+                    total_wall_time += sample->metric.wall_time_sec;
                     ++sample_index;
                 }
 
@@ -458,23 +536,30 @@ DispatchStatus dispatch_test_plan(
                     "(average wall time: %.6f s)\n",
                     experiment_index,
                     experiment_count,
-                    total_wall_time / (double) work_reps
+                    total_wall_time / (double)work_reps
                 );
                 fflush(stdout);
             }
         }
     }
+
     printf("[Dispatcher] All experiments completed\n");
     fflush(stdout);
+
     return DISPATCH_OK;
 }
 
 
-void dispatch_destroy_samples(RawSampleSet *samples) {
-    if(samples != NULL) {
+/**
+ * @brief Release the dynamically allocated sample array.
+ *
+ * @param samples Sample set to destroy. Passing NULL is allowed.
+ */
+void dispatch_destroy_samples(RawSampleSet *samples)
+{
+    if (samples != NULL) {
         free(samples->samples);
         samples->samples = NULL;
         samples->count = 0U;
     }
-    return;
 }
