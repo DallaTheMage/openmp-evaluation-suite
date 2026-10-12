@@ -1,3 +1,27 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file HWCounters.c
+ * @brief Hardware performance-counter lifecycle and sampling.
+ */
+
 #include "profiling/HWCounters.h"
 #include <string.h>
 #include <unistd.h>
@@ -12,7 +36,7 @@ int hw_counters_init(HWCounters *hw) {
     }
     hw->leader_fd = -1;
 
-    /* Configurazione tipi ed eventi perf per ciascun contatore */
+    /* Configure the perf event type and event identifier for each counter. */
     uint32_t types[HW_PERF_COUNT_MAX] = {
         PERF_TYPE_HARDWARE,
         PERF_TYPE_HARDWARE,
@@ -27,14 +51,14 @@ int hw_counters_init(HWCounters *hw) {
         PERF_COUNT_HW_CACHE_LL  | (PERF_COUNT_HW_CACHE_OP_READ << 8) | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
     };
 
-    /* Apertura del primo contatore come Group Leader */
+    /* Open the first counter as the event-group leader. */
     hw->fds[0] = perf_counter_open_process(types[0], configs[0], -1);
     if (hw->fds[0] < 0) {
         return -1;
     }
     hw->leader_fd = hw->fds[0];
 
-    /* Apertura dei contatori secondari vincolati al Group Leader */
+    /* Open secondary counters as members of the leader event group. */
     for (int i = 1; i < HW_PERF_COUNT_MAX; i++) {
         hw->fds[i] = perf_counter_open_process(types[i], configs[i], hw->leader_fd);
         if (hw->fds[i] < 0) {
@@ -50,7 +74,7 @@ int hw_counters_init(HWCounters *hw) {
 int hw_counters_start(HWCounters *hw) {
     if (!hw || !hw->is_initialized) return -1;
 
-    /* Reset e abilitazione atomica del gruppo tramite il leader_fd */
+    /* Reset and enable the event group through leader_fd. */
     ioctl(hw->leader_fd, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
     ioctl(hw->leader_fd, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP);
     return 0;
@@ -59,10 +83,10 @@ int hw_counters_start(HWCounters *hw) {
 int hw_counters_stop(HWCounters *hw, HWCountersData *data) {
     if (!hw || !hw->is_initialized || !data) return -1;
 
-    /* Disabilitazione atomica del gruppo */
+    /* Disable the event group. */
     ioctl(hw->leader_fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
 
-    /* Lettura dei valori dai singoli file descriptor */
+    /* Read counter values from the individual file descriptors. */
     data->cycles       = 0;
     data->instructions = 0;
     data->l1d_misses   = 0;

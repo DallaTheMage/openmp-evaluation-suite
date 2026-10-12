@@ -24,9 +24,14 @@
  * The dispatcher resolves registered kernels, executes warm-up and measured
  * repetitions, and stores the resulting performance metrics.
  *
- * Before each invocation, the dispatcher restores the working data through
- * the memory manager. Data restoration is performed outside the profiling
- * interval.
+ * Before each invocation, the dispatcher restores the requested logical
+ * window into the working buffer. Data restoration is performed outside
+ * the kernel profiling interval.
+ *
+ * Logical windows may have arbitrary offsets in the original dataset.
+ * Kernels receive a compact working view whose window starts at offset zero.
+ *
+ * Kernel failures are propagated through DispatchStatus.
  */
 
 #include <stdio.h>
@@ -144,7 +149,10 @@ static const char *kernel_type_to_string(KernelType type)
  * @param result Destination for the multiplication result.
  * @return 1 if an overflow would occur, 0 otherwise.
  */
-static int size_mul_overflow(size_t a, size_t b, size_t *result)
+static int size_mul_overflow(
+    size_t a,
+    size_t b,
+    size_t *result)
 {
     if (result == NULL) {
         return 1;
@@ -155,6 +163,7 @@ static int size_mul_overflow(size_t a, size_t b, size_t *result)
     }
 
     *result = a * b;
+
     return 0;
 }
 
@@ -166,7 +175,10 @@ static int size_mul_overflow(size_t a, size_t b, size_t *result)
  * @param result Destination for the addition result.
  * @return 1 if an overflow would occur, 0 otherwise.
  */
-static int size_add_overflow(size_t a, size_t b, size_t *result)
+static int size_add_overflow(
+    size_t a,
+    size_t b,
+    size_t *result)
 {
     if (result == NULL) {
         return 1;
@@ -177,11 +189,18 @@ static int size_add_overflow(size_t a, size_t b, size_t *result)
     }
 
     *result = a + b;
+
     return 0;
 }
 
 /**
  * @brief Validate the structural fields required by the dispatcher.
+ *
+ * This function validates the plan structure and ensures that every
+ * requested kernel implementation is available.
+ *
+ * Logical window bounds are checked when the window is restored by the
+ * memory manager.
  *
  * @param plan Test plan to validate.
  * @param work_reps Number of measured repetitions.
@@ -202,6 +221,7 @@ static DispatchStatus validate_plan_for_dispatch(
     for (size_t set_index = 0U;
          set_index < plan->count;
          ++set_index) {
+
         const TestSet *set = &plan->data[set_index];
 
         if (set->view.buffer == NULL) {
@@ -216,6 +236,7 @@ static DispatchStatus validate_plan_for_dispatch(
         for (size_t group_index = 0U;
              group_index < set->kernels.count;
              ++group_index) {
+
             const KernelTestGroup *group =
                 &set->kernels.data[group_index];
 
@@ -237,6 +258,7 @@ static DispatchStatus validate_plan_for_dispatch(
             for (size_t case_index = 0U;
                  case_index < group->cases.count;
                  ++case_index) {
+
                 const TestCase *test_case =
                     &group->cases.data[case_index];
 
@@ -252,6 +274,8 @@ static DispatchStatus validate_plan_for_dispatch(
 
 /**
  * @brief Count all measured samples required by a test plan.
+ *
+ * Warm-up repetitions are not included in the sample count.
  *
  * @param plan Test plan.
  * @param work_reps Number of measured repetitions.
@@ -274,11 +298,13 @@ static DispatchStatus count_samples(
     for (size_t set_index = 0U;
          set_index < plan->count;
          ++set_index) {
+
         const TestSet *set = &plan->data[set_index];
 
         for (size_t group_index = 0U;
              group_index < set->kernels.count;
              ++group_index) {
+
             const KernelTestGroup *group =
                 &set->kernels.data[group_index];
 
@@ -301,20 +327,24 @@ static DispatchStatus count_samples(
     }
 
     *out_count = total;
+
     return DISPATCH_OK;
 }
 
 /**
- * @brief Restore working data and execute one kernel invocation.
+ * @brief Restore a logical window and execute one kernel invocation.
  *
- * The working data is restored before invoking the kernel, outside the
- * profiler's measurement interval.
+ * The original view identifies a window in the original dataset.
+ * The memory manager copies that window into the beginning of its working
+ * buffer, outside the kernel profiling interval.
  *
- * The KernelStatus returned by the kernel is translated into a DispatchStatus
- * so that the caller can handle execution and profiling failures.
+ * The kernel receives a local copy of the original view. Its buffer points
+ * to the working buffer, and its window offset is zero.
+ *
+ * The original view and test plan are not modified.
  *
  * @param function Kernel function.
- * @param view Data view.
+ * @param view Original logical data view.
  * @param test_case Test case configuration.
  * @param memory_manager Manager used to restore working data.
  * @param profiler Profiler instance.
@@ -323,13 +353,15 @@ static DispatchStatus count_samples(
  */
 static DispatchStatus execute_kernel(
     KernelFunc function,
-    DataView *view,
+    const DataView *view,
     const TestCase *test_case,
     MemoryManager *memory_manager,
     Profiler *profiler,
     PerformanceMetric *metric)
 {
     KernelStatus kernel_status;
+    DataView execution_view;
+    DataBuffer *working_buffer;
 
     if (function == NULL ||
         view == NULL ||
@@ -340,22 +372,54 @@ static DispatchStatus execute_kernel(
         return DISPATCH_INVALID_ARGUMENT;
     }
 
+    /*
+     * A new measurement must not start while another measurement is active.
+     */
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
     }
 
-    if (view->window.offset != UINT64_C(0) ||
-        view->window.size > (uint64_t)SIZE_MAX ||
-        memory_manager_restore(
+    /*
+     * Restore the requested logical window into the working buffer.
+     * The memory manager validates the offset and size against both buffers.
+     */
+    if (view->window.size > (uint64_t)SIZE_MAX ||
+        memory_manager_restore_window(
             memory_manager,
+            view->window.offset,
             (size_t)view->window.size) != 0) {
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
 
+    /*
+     * Retrieve the working buffer after restoration.
+     */
+    working_buffer = memory_manager_work_buffer(memory_manager);
+
+    if (working_buffer == NULL ||
+        working_buffer->pool == NULL ||
+        working_buffer->element_count < (size_t)view->window.size) {
+        return DISPATCH_MEMORY_PREPARATION_FAILURE;
+    }
+
+    /*
+     * Preserve the original view metadata while redirecting the kernel to
+     * the compact working buffer.
+     *
+     * The logical window begins at zero in this buffer because the requested
+     * source window has already been copied to its beginning.
+     */
+    execution_view = *view;
+    execution_view.buffer = working_buffer;
+    execution_view.window.offset = UINT64_C(0);
+
+    /*
+     * Initialize the destination metric before calling the kernel.
+     */
     memset(metric, 0, sizeof(*metric));
 
     kernel_status = function(
-        view,
+        &execution_view,
         test_case,
         profiler,
         metric
@@ -368,6 +432,9 @@ static DispatchStatus execute_kernel(
         return DISPATCH_PROFILER_FAILURE;
     }
 
+    /*
+     * Translate the kernel result into the dispatcher's public status.
+     */
     switch (kernel_status) {
         case KERNEL_STATUS_OK:
             return DISPATCH_OK;
@@ -395,7 +462,11 @@ static DispatchStatus execute_kernel(
  * @brief Execute a test plan and collect profiling samples.
  *
  * Each test case is executed for the requested number of warm-up and measured
- * repetitions. The working data is restored before every kernel invocation.
+ * repetitions.
+ *
+ * Before every kernel invocation, the dispatcher restores the corresponding
+ * logical window into the working buffer. Restoration occurs outside the
+ * kernel profiling interval.
  *
  * Warm-up metrics are discarded. Measured metrics are stored in the output
  * sample set.
@@ -410,6 +481,11 @@ static DispatchStatus execute_kernel(
  * @param work_reps Number of measured invocations per test case.
  * @param out_samples Output collection for measured profiling samples.
  * @return DISPATCH_OK on success, or an appropriate error status.
+ *
+ * @pre plan must not be NULL.
+ * @pre memory_manager must not be NULL.
+ * @pre profiler must not be NULL.
+ * @pre out_samples must not be NULL.
  */
 DispatchStatus dispatch_test_plan(
     const TestPlan *plan,
@@ -433,23 +509,37 @@ DispatchStatus dispatch_test_plan(
 
     /*
      * Initialize the output collection before allocating resources.
+     *
+     * The caller must release any previously allocated collection before
+     * reusing the same RawSampleSet.
      */
     out_samples->samples = NULL;
     out_samples->count = 0U;
 
     status = validate_plan_for_dispatch(plan, work_reps);
+
     if (status != DISPATCH_OK) {
         return status;
     }
 
-    status = count_samples(plan, work_reps, &sample_count);
+    status = count_samples(
+        plan,
+        work_reps,
+        &sample_count
+    );
+
     if (status != DISPATCH_OK) {
         return status;
     }
 
+    /*
+     * Allocate storage for measured samples only.
+     */
     if (sample_count != 0U) {
-        out_samples->samples =
-            calloc(sample_count, sizeof(*out_samples->samples));
+        out_samples->samples = (RawSample *)calloc(
+            sample_count,
+            sizeof(*out_samples->samples)
+        );
 
         if (out_samples->samples == NULL) {
             return DISPATCH_ALLOCATION_FAILURE;
@@ -467,24 +557,32 @@ DispatchStatus dispatch_test_plan(
     for (size_t set_index = 0U;
          set_index < plan->count;
          ++set_index) {
+
         const TestSet *set = &plan->data[set_index];
-        DataView view = set->view;
+
+        /*
+         * Keep the original DataView unchanged.
+         * execute_kernel() creates a compact local view for each invocation.
+         */
+        const DataView view = set->view;
 
         for (size_t group_index = 0U;
              group_index < set->kernels.count;
              ++group_index) {
+
             const KernelTestGroup *group =
                 &set->kernels.data[group_index];
 
             const KernelFunc function =
                 kernel_registry_get_function(
-                    set->view.type,
+                    view.type,
                     group->kernel
                 );
 
             for (size_t case_index = 0U;
                  case_index < group->cases.count;
                  ++case_index) {
+
                 const TestCase *test_case =
                     &group->cases.data[case_index];
 
@@ -506,6 +604,7 @@ DispatchStatus dispatch_test_plan(
                     "    Kernel     : %s\n"
                     "    Threads    : %u\n"
                     "    Chunk size : %llu\n"
+                    "    Offset     : %llu\n"
                     "    Window     : %llu elements (%.2f GiB)\n",
                     experiment_index,
                     experiment_count,
@@ -513,15 +612,19 @@ DispatchStatus dispatch_test_plan(
                     kernel_type_to_string(group->kernel),
                     test_case->num_threads,
                     (unsigned long long)test_case->chunk_size,
+                    (unsigned long long)view.window.offset,
                     (unsigned long long)view.window.size,
                     window_gib
                 );
                 fflush(stdout);
 
-                /* Execute warm-up repetitions without storing their metrics. */
+                /*
+                 * Execute warm-up repetitions without storing their metrics.
+                 */
                 for (uint32_t warmup = 0U;
                      warmup < warmup_reps;
                      ++warmup) {
+
                     PerformanceMetric warmup_metric;
 
                     status = execute_kernel(
@@ -539,10 +642,13 @@ DispatchStatus dispatch_test_plan(
                     }
                 }
 
-                /* Execute measured repetitions and store their metrics. */
+                /*
+                 * Execute measured repetitions and store their metrics.
+                 */
                 for (uint32_t run_id = 0U;
                      run_id < work_reps;
                      ++run_id) {
+
                     RawSample *sample =
                         &out_samples->samples[sample_index];
 
@@ -565,7 +671,9 @@ DispatchStatus dispatch_test_plan(
                     sample->kernel = group->kernel;
                     sample->run_id = run_id;
 
-                    total_wall_time += sample->metric.wall_time_sec;
+                    total_wall_time +=
+                        sample->metric.wall_time_sec;
+
                     ++sample_index;
                 }
 
@@ -589,6 +697,8 @@ DispatchStatus dispatch_test_plan(
 
 /**
  * @brief Release the dynamically allocated sample array.
+ *
+ * This function resets the collection to an empty state.
  *
  * @param samples Sample set to destroy. Passing NULL is allowed.
  */

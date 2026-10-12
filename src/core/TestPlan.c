@@ -573,11 +573,9 @@ bool test_plan_rebind_buffer(
      */
     for (size_t i = 0U; i < plan->count; ++i) {
         const DataView *view = &plan->data[i].view;
-        const uint64_t offset = view->window.offset;
         const uint64_t size = view->window.size;
 
-        if (offset != UINT64_C(0) ||
-            size > (uint64_t)SIZE_MAX ||
+        if (size > (uint64_t)SIZE_MAX ||
             (size_t)size > buffer->element_count) {
             return false;
         }

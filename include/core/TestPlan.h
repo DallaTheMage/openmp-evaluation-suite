@@ -233,13 +233,17 @@ bool test_plan_max_workload(
 /**
  * @brief Rebind every view in a test plan to another data buffer.
  *
- * The target buffer must be large enough for every view. This operation does
- * not transfer ownership of the buffer. Current plans use zero-offset views;
- * nonzero offsets are rejected because kernel offset handling is not uniform.
+ * The target buffer must be large enough to hold the logical window of
+ * every view. Window offsets refer to the original dataset and are preserved
+ * when views are rebound.
+ *
+ * The function does not transfer ownership of the target buffer.
  *
  * @param plan Test plan whose views will be rebound.
  * @param buffer Target buffer, owned by the caller.
- * @return true on success, false if any view cannot fit in the target buffer.
+ *
+ * @return true on success, false if any logical window exceeds the
+ *         target buffer capacity.
  */
 bool test_plan_rebind_buffer(
     TestPlan *plan,

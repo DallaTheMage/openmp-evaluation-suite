@@ -53,23 +53,24 @@ int perf_counter_open_process(uint32_t type, uint64_t config, int group_fd) {
     pe.size = sizeof(struct perf_event_attr);
     pe.config = config;
 
-    /* Disabilitato all'avvio: verrà abilitato esplicitamente da hw_counters_start() */
+    /* Initially disabled; hw_counters_start() enables the counter explicitly. */
     pe.disabled = 1;
 
     /*
-     * TRACCIAMENTO OPENMP / MULTI-THREAD:
-     * inherit = 1 fa sì che tutti i thread figli creati da OpenMP (#pragma omp parallel)
-     * ereditino automaticamente questo contatore e accumulino le metriche nello stesso FD.
+     * OPENMP / MULTITHREAD TRACKING:
+     * inherit = 1 allows child threads created by OpenMP parallel regions to
+     * inherit this counter configuration and contribute measurements through
+     * the inherited file descriptor.
      */
     pe.inherit = 1;
 
-    /* Esclude il kernel e l'hypervisor per misurare solo lo spazio utente (il codice benchmark) */
+    /* Exclude kernel and hypervisor execution to measure user-space benchmark code only. */
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
 
     /*
-     * pid = 0: Monitora il processo corrente (e i suoi figli grazie a inherit = 1)
-     * cpu = -1: Monitora su qualsiasi CPU su cui vengono schedulati i thread
+     * pid = 0: Monitor the current process and inheriting child threads.
+     * cpu = -1: Monitor on any CPU on which the threads are scheduled.
      */
     return sys_perf_event_open(&pe, 0, -1, group_fd, 0);
 }
@@ -79,3 +80,4 @@ void perf_counter_close(int fd) {
         close(fd);
     }
 }
+

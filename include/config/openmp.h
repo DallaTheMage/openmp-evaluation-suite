@@ -100,9 +100,8 @@
  *
  * OpenMP >= 5.0 is required.
  *
- * Attualmente disabilitato su Clang/ICX per evitare di affidarsi
- * a implementazioni/runtime LLVM note per problematiche nella
- * configurazione utilizzata dalla suite.
+ * Currently disabled for Clang/ICX to avoid relying on LLVM implementations
+ * or runtimes with known issues in the configuration used by this suite.
  */
 #if defined(__clang__) || defined(__INTEL_CLANG_COMPILER)
 
@@ -122,7 +121,7 @@
 /*
  * Custom two-pass scan.
  *
- * Richiede solamente supporto OpenMP di base.
+ * Requires only baseline OpenMP support.
  */
 #define OPENMP_HAS_TWO_PASS_SCAN OPENMP_HAS_2_0
 

@@ -107,6 +107,27 @@ int memory_manager_reserve_work(
 int memory_manager_restore(MemoryManager *manager, size_t element_count);
 
 /**
+ * @brief Restore a logical window into the beginning of the working buffer.
+ *
+ * The requested range is copied from the original buffer at the specified
+ * offset to the beginning of the working buffer.
+ *
+ * The copy is performed outside the kernel profiling interval.
+ *
+ * @param manager Memory manager.
+ * @param offset Starting element in the original buffer.
+ * @param element_count Number of elements to restore.
+ *
+ * @return 0 on success, non-zero if the requested window exceeds the
+ *         original buffer or the working buffer capacity.
+ */
+int memory_manager_restore_window(
+    MemoryManager *manager,
+    uint64_t offset,
+    size_t element_count
+);
+
+/**
  * @brief Destroy the manager and all buffers it owns.
  *
  * Passing NULL is allowed and has no effect.

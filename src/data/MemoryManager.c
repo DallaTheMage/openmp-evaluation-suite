@@ -142,16 +142,30 @@ int memory_manager_reserve_work(
     return 0;
 }
 
-int memory_manager_restore(
+int memory_manager_restore_window(
     MemoryManager *manager,
+    uint64_t offset,
     size_t element_count)
 {
     size_t i;
+    size_t source_offset;
 
     if (manager == NULL ||
         manager->original == NULL ||
         manager->working == NULL ||
-        element_count > manager->original->element_count ||
+        offset > (uint64_t)SIZE_MAX) {
+        return -1;
+    }
+
+    source_offset = (size_t)offset;
+
+    /*
+     * Check the range without computing offset + element_count,
+     * which could overflow.
+     */
+    if (source_offset > manager->original->element_count ||
+        element_count >
+            manager->original->element_count - source_offset ||
         element_count > manager->working->element_count) {
         return -1;
     }
@@ -159,7 +173,7 @@ int memory_manager_restore(
     if (element_count < MEMORY_MANAGER_PARALLEL_THRESHOLD_ELEMENTS) {
         for (i = 0U; i < element_count; ++i) {
             manager->working->pool[i] =
-                manager->original->pool[i];
+                manager->original->pool[source_offset + i];
         }
     } else {
         const int copy_threads =
@@ -169,12 +183,24 @@ int memory_manager_restore(
         #pragma omp parallel for schedule(static) num_threads(copy_threads)
         for (i = 0U; i < count; ++i) {
             manager->working->pool[i] =
-                manager->original->pool[i];
+                manager->original->pool[source_offset + i];
         }
     }
 
     return 0;
 }
+
+int memory_manager_restore(
+    MemoryManager *manager,
+    size_t element_count)
+{
+    return memory_manager_restore_window(
+        manager,
+        UINT64_C(0),
+        element_count
+    );
+}
+
 
 void memory_manager_destroy(MemoryManager *manager)
 {

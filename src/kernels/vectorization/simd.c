@@ -1,3 +1,32 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file simd.c
+ * @brief SIMD memory-bound and compute-bound benchmark kernels.
+ *
+ * The memory-bound kernels perform a reduction over the selected data layout.
+ * The compute-bound kernels apply additional arithmetic to each loaded value
+ * before reducing it. OpenMP SIMD directives expose vectorization opportunities
+ * while the outer parallel regions distribute work across threads.
+ */
+
 #include "kernels/vectorization/simd.h"
 #include "config/openmp.h"
 #include "profiling/Profiler.h"
@@ -6,23 +35,22 @@
 #if OPENMP_HAS_SIMD
 
 /* ============================================================================
-- SIMD MEMORY BOUND
-- ============================================================================
+ * SIMD MEMORY-BOUND BENCHMARK
  *
-- Obiettivo:
--   Evidenziare il comportamento della memoria e del pattern di accesso.
+ * Objective:
+ *   Highlight memory behavior and access patterns.
  *
-- Il lavoro computazionale per elemento è volutamente minimo:
+ * The computational workload per element is intentionally minimal:
  *
--     load -> reduction
+ *     load -> reduction
  *
-- In questo modo le differenze tra 2D, 3D, AoS, SoA, AoSoA e CSR
-- sono maggiormente influenzate dal layout e dalla località degli accessi.
-- ========================================================================== */
+ * This makes differences among 2D, 3D, AoS, SoA, and AoSoA layouts more
+ * strongly influenced by data layout and memory-access locality.
+ * ========================================================================== */
 
 /* --------------------------------------------------------------------------
-- VIEW_2D
-- -------------------------------------------------------------------------- */
+ * VIEW_2D
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_2d_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -48,18 +76,20 @@ KernelStatus kernel_2d_simd_memory(DataView *view, const TestCase *test_case, Pr
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_3D
-- -------------------------------------------------------------------------- */
+ * VIEW_3D
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_3d_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -88,18 +118,20 @@ KernelStatus kernel_3d_simd_memory(DataView *view, const TestCase *test_case, Pr
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_AOS
-- -------------------------------------------------------------------------- */
+ * VIEW_AOS
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_aos_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -125,18 +157,20 @@ KernelStatus kernel_aos_simd_memory(DataView *view, const TestCase *test_case, P
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_SOA
-- -------------------------------------------------------------------------- */
+ * VIEW_SOA
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_soa_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -162,18 +196,20 @@ KernelStatus kernel_soa_simd_memory(DataView *view, const TestCase *test_case, P
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_AOSOA
-- -------------------------------------------------------------------------- */
+ * VIEW_AOSOA
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_aosoa_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -205,33 +241,32 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view, const TestCase *test_case,
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* ============================================================================
-- SIMD COMPUTE BOUND
-- ============================================================================
+ * SIMD COMPUTE-BOUND BENCHMARK
  *
-- Obiettivo:
--   Aumentare il lavoro aritmetico per ogni elemento caricato.
+ * Objective:
+ *   Increase the arithmetic workload for each loaded element.
  *
-- Il pattern di accesso rimane identico alla versione MEMORY.
-- Cambia solamente l'intensità computazionale.
- *
-- Questo permette di osservare quanto le differenze di layout/accesso
-- vengano attenuate quando il collo di bottiglia passa dalla memoria
-- alle unità di calcolo SIMD.
-- ========================================================================== */
+ * The access pattern remains the same as in the memory-bound version; only
+ * the computational intensity changes. This helps show how layout and access
+ * pattern differences change when the bottleneck shifts from memory bandwidth
+ * toward SIMD execution units.
+ * ========================================================================== */
 
 /* --------------------------------------------------------------------------
-- VIEW_2D
-- -------------------------------------------------------------------------- */
+ * VIEW_2D
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_2d_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -264,18 +299,20 @@ KernelStatus kernel_2d_simd_compute(DataView *view, const TestCase *test_case, P
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_3D
-- -------------------------------------------------------------------------- */
+ * VIEW_3D
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_3d_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -311,18 +348,20 @@ KernelStatus kernel_3d_simd_compute(DataView *view, const TestCase *test_case, P
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_AOS
-- -------------------------------------------------------------------------- */
+ * VIEW_AOS
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_aos_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -355,18 +394,20 @@ KernelStatus kernel_aos_simd_compute(DataView *view, const TestCase *test_case, 
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_SOA
-- -------------------------------------------------------------------------- */
+ * VIEW_SOA
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_soa_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -399,18 +440,20 @@ KernelStatus kernel_soa_simd_compute(DataView *view, const TestCase *test_case, 
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 
 
 /* --------------------------------------------------------------------------
-- VIEW_AOSOA
-- -------------------------------------------------------------------------- */
+ * VIEW_AOSOA
+ * -------------------------------------------------------------------------- */
 KernelStatus kernel_aosoa_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -449,11 +492,13 @@ KernelStatus kernel_aosoa_simd_compute(DataView *view, const TestCase *test_case
         }
     }
 
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    volatile double result = sink;
-    (void)result;
 }
 #endif /* OPENMP_HAS_SIMD */
