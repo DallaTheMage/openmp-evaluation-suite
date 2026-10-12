@@ -187,17 +187,22 @@ DETECTED_LLC_SIZE_BYTES=$(detect_llc_bytes)
 # Problem-size selection
 # ---------------------------------------------------------------------------
 
-# Budget approx 25% of available RAM.
-# Estimates up to 8 double arrays (64 bytes/element).
-# The maximum limit avoids excessive initial workloads.
+# Use a conservative data budget (25% of currently available RAM).
+# The estimate reserves 64 bytes per logical element for the data arrays used
+# by the benchmark. Derive all workload sizes from this same budget.
 BUDGET_BYTES=$(( AVAILABLE_MEM_MIB * 1024 * 1024 / 4 ))
+BUDGET_ELEMENTS=$(( BUDGET_BYTES / 64 ))
 
-MAX_PROBLEM_SIZE=20
+if (( BUDGET_ELEMENTS < 1 )); then
+    printf '[ERROR] Available memory is too low for the minimum workload.\n' >&2
+    exit 1
+fi
 
-for (( exp=20; exp<=30; exp++ )); do
-    bytes_needed=$(( (1 << exp) * 64 ))
-
-    if (( bytes_needed <= BUDGET_BYTES )); then
+# Find the largest representable power-of-two element count that fits the
+# budget. Bash arithmetic is signed, so do not shift into bit 63 or beyond.
+MAX_PROBLEM_SIZE=0
+for (( exp=1; exp<=60; exp++ )); do
+    if (( (1 << exp) <= BUDGET_ELEMENTS )); then
         MAX_PROBLEM_SIZE=$exp
     else
         break
@@ -224,27 +229,34 @@ fi
 # Per-thread workload
 # ---------------------------------------------------------------------------
 
-SIZE_PER_THREAD=1048576
-
-if (( LOGICAL_CORES > 1 )); then
-    per_thread_budget=$(( BUDGET_BYTES / LOGICAL_CORES / 64 ))
-
-    while (( SIZE_PER_THREAD > per_thread_budget &&
-              SIZE_PER_THREAD > 65536 )); do
-        SIZE_PER_THREAD=$(( SIZE_PER_THREAD / 2 ))
-    done
+# Keep proportional workloads valid for the largest configured thread count:
+# SIZE_PER_THREAD * LOGICAL_CORES must fit in the original buffer and budget.
+# Choose the largest power of two that satisfies this constraint; there is no
+# arbitrary minimum or fixed initial workload size.
+per_thread_limit=$(( (1 << MAX_PROBLEM_SIZE) / LOGICAL_CORES ))
+if (( per_thread_limit < 1 )); then
+    printf '[ERROR] Memory budget cannot accommodate one element per thread.\n' >&2
+    exit 1
 fi
+
+SIZE_PER_THREAD=1
+for (( exp=1; exp<=62; exp++ )); do
+    if (( (1 << exp) <= per_thread_limit )); then
+        SIZE_PER_THREAD=$(( 1 << exp ))
+    else
+        break
+    fi
+done
 
 # ---------------------------------------------------------------------------
 # Window-size selection
 # ---------------------------------------------------------------------------
 
 WINDOW_MAX=$MAX_PROBLEM_SIZE
-
-(( WINDOW_MAX > 24 )) && WINDOW_MAX=24
-
 WINDOW_MIN=16
 
+# For small-memory systems, start at the largest valid exponent instead of
+# emitting windows larger than the configured problem buffer.
 (( WINDOW_MAX < WINDOW_MIN )) && WINDOW_MIN="$WINDOW_MAX"
 
 WINDOWS_LOG2_LIST=""
@@ -268,7 +280,7 @@ cat > "$OUTPUT_FILE" <<CONFIG
 # Host: $(hostname 2>/dev/null || echo unknown)
 # Available logical CPUs: ${LOGICAL_CORES}
 # Estimated available RAM: ${AVAILABLE_MEM_MIB} MiB
-# Conservative data budget: approx 25% of available RAM
+# Conservative data budget: approx 25% of available RAM (64 bytes/element)
 # =============================================================================
 
 COMPILERNAME=${DEFAULT_COMPILER}

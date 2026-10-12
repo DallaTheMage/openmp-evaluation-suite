@@ -31,9 +31,10 @@ KernelStatus kernel_2d_reduction(DataView *view, const TestCase *test_case, Prof
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    return KERNEL_STATUS_OK;
     volatile double result = sum;
     (void)result;
+    return KERNEL_STATUS_OK;
+
 }
 
 /* ============================================================================
@@ -67,9 +68,10 @@ KernelStatus kernel_3d_reduction(DataView *view, const TestCase *test_case, Prof
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    return KERNEL_STATUS_OK;
     volatile double result = sum;
     (void)result;
+    return KERNEL_STATUS_OK;
+
 }
 
 /* ============================================================================
@@ -100,9 +102,10 @@ KernelStatus kernel_aos_reduction(DataView *view, const TestCase *test_case, Pro
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    return KERNEL_STATUS_OK;
     volatile double result = sum;
     (void)result;
+    return KERNEL_STATUS_OK;
+
 }
 
 /* ============================================================================
@@ -133,9 +136,10 @@ KernelStatus kernel_soa_reduction(DataView *view, const TestCase *test_case, Pro
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    return KERNEL_STATUS_OK;
     volatile double result = sum;
     (void)result;
+    return KERNEL_STATUS_OK;
+
 }
 
 
@@ -173,9 +177,9 @@ KernelStatus kernel_aosoa_reduction(DataView *view, const TestCase *test_case, P
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    return KERNEL_STATUS_OK;
     volatile double result = sum;
     (void)result;
+    return KERNEL_STATUS_OK;
 }
 
 #endif /* OPENMP_HAS_2_0 */
