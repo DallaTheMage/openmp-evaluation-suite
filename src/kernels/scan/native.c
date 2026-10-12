@@ -7,13 +7,15 @@
 /* ============================================================================
  * VIEW_2D
  * ========================================================================== */
-void kernel_2d_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.v2d.rows * view->meta.v2d.cols;
     double sum                 = 0.0;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, chunk) \
@@ -27,20 +29,25 @@ void kernel_2d_native_scan(DataView *view, const TestCase *test_case, Profiler *
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
 /* ============================================================================
  * VIEW_3D
  * ========================================================================== */
-void kernel_3d_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_3d_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.v3d.height * view->meta.v3d.cols * view->meta.v3d.depth;
     double sum                 = 0.0;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, chunk) \
@@ -54,7 +61,10 @@ void kernel_3d_native_scan(DataView *view, const TestCase *test_case, Profiler *
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
@@ -62,13 +72,15 @@ void kernel_3d_native_scan(DataView *view, const TestCase *test_case, Profiler *
  * VIEW_AOS
  * ========================================================================== */
 
-void kernel_aos_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aos_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.aos.num_structs * view->meta.aos.struct_size;
     double sum                 = 0.0;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, chunk) \
@@ -81,19 +93,24 @@ void kernel_aos_native_scan(DataView *view, const TestCase *test_case, Profiler 
             pool[i] = sum;
         }
     }
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 /* ============================================================================
  * VIEW_SOA
  * ========================================================================== */
-void kernel_soa_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_soa_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.soa.field_length * view->meta.soa.num_fields;
     double sum                 = 0.0;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, chunk) \
@@ -106,24 +123,29 @@ void kernel_soa_native_scan(DataView *view, const TestCase *test_case, Profiler 
             pool[i] = sum;
         }
     }
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
 /* ============================================================================
  * VIEW_AOSOA
  * ========================================================================== */
-void kernel_aosoa_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aosoa_native_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t vl          = view->meta.aosoa.vector_length;
     if (vl == 0) {
-        return;
+        return KERNEL_STATUS_INVALID_ARGUMENT;
     }
     const uint64_t total = view->meta.aosoa.num_blocks * view->meta.aosoa.num_fields * vl;
     double sum           = 0.0;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, chunk) \
@@ -136,7 +158,10 @@ void kernel_aosoa_native_scan(DataView *view, const TestCase *test_case, Profile
             pool[i] = sum;
         }
     }
-    profiler_stop(profiler, metric);
-    return;
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+    return KERNEL_STATUS_INVALID_ARGUMENT;
 }
 #endif /* OPENMP_HAS_NATIVE_SCAN */

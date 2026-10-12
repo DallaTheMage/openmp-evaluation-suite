@@ -10,9 +10,9 @@
 /* ============================================================================
  * INTERNAL TWO-PASS IMPLEMENTATION
  * ========================================================================== */
-static void run_twopass_omp(double *restrict pool, uint64_t total, uint16_t num_threads, Profiler *profiler, PerformanceMetric *metric) {
-    if (!pool || total == 0) {
-        return;
+static KernelStatus run_twopass_omp(double *restrict pool, uint64_t total, uint16_t num_threads, Profiler *profiler, PerformanceMetric *metric) {
+    if (pool == NULL || total == 0U || profiler == NULL || metric == NULL) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
     }
     if (num_threads == 0) {
         num_threads = 1;
@@ -24,10 +24,13 @@ static void run_twopass_omp(double *restrict pool, uint64_t total, uint16_t num_
      * benchmark del costrutto/algoritmo di scan.
      */
     double *offsets = calloc(num_threads, sizeof(double));
-    if (!offsets) {
-        return;
+    if (offsets == NULL) {
+        return KERNEL_STATUS_ALLOCATION_FAILURE;
     }
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        free(offsets);
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, offsets)
@@ -103,56 +106,56 @@ static void run_twopass_omp(double *restrict pool, uint64_t total, uint16_t num_
         }
     }
 
-    profiler_stop(profiler, metric);
+    const int stop_status = profiler_stop(profiler, metric);
     free(offsets);
+    if (stop_status != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 /* ============================================================================
  * VIEW_2D
  * ========================================================================== */
-void kernel_2d_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint64_t total = view->meta.v2d.rows * view->meta.v2d.cols;
-    run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
+    return run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
 }
 
 /* ============================================================================
  * VIEW_3D
  * ========================================================================== */
-void kernel_3d_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_3d_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint64_t total = view->meta.v3d.height * view->meta.v3d.cols * view->meta.v3d.depth;
-    run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
-    return;
+    return run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
 }
 
 /* ============================================================================
  * VIEW_AOS
  * ========================================================================== */
-void kernel_aos_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aos_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint64_t total = view->meta.aos.num_structs * view->meta.aos.struct_size;
-    run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
-    return;
+    return run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
 }
 
 /* ============================================================================
  * VIEW_SOA
  * ========================================================================== */
-void kernel_soa_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_soa_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint64_t total = view->meta.soa.field_length * view->meta.soa.num_fields;
-    run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
-    return;
+    return run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
 }
 
 
 /* ============================================================================
  * VIEW_AOSOA
  * ========================================================================== */
-void kernel_aosoa_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aosoa_two_pass_scan(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint64_t vl = view->meta.aosoa.vector_length;
     if (vl == 0) {
-        return;
+        return KERNEL_STATUS_INVALID_ARGUMENT;
     }
     const uint64_t total = view->meta.aosoa.num_blocks * view->meta.aosoa.num_fields * vl;
-    run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
-    return;
+    return run_twopass_omp(view->buffer->pool, total, test_case->num_threads, profiler, metric);
 }
 #endif /* OPENMP_HAS_TWO_PASS_SCAN */

@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_2d_sync(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_sync(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the 3D sync benchmark.
  *
@@ -50,6 +50,6 @@ void kernel_2d_sync(DataView *, const struct TestCase *, struct Profiler *, stru
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_3d_sync(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_sync(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 
 #endif /* KERNELS_SYNCHRONIZATION_SYNC_H */

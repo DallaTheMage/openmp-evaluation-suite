@@ -10,8 +10,8 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -19,11 +19,11 @@
 
 /**
  * @file main.c
- * @brief Command-line entry point for the benchmark suite.
+ * @brief Command-line entry point and top-level benchmark orchestration.
  */
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "config/params.h"
@@ -39,21 +39,19 @@
 /**
  * @brief Execute one benchmark suite and write its results.
  *
- * The function owns all per-suite execution state. This is important when
- * more than one suite is enabled: the profiler, samples, aggregated results
- * and output directory are reset between full-scale and proportional runs.
+ * This function owns all resources whose lifetime is limited to one suite.
+ * The shared MemoryManager is borrowed from the caller and is never destroyed
+ * here. All resources acquired by this function are released at @c cleanup,
+ * regardless of which operation fails.
  *
- * The test plan is generated using the original data buffer. After the
- * maximum workload is determined, its views are rebound to the reusable
- * working buffer owned by the memory manager.
+ * @param memory_manager Shared manager containing original and working data.
+ * @param config Validated benchmark configuration.
+ * @param test_name Logical suite name and output-directory component.
+ * @param scaling_mode Scaling mode recorded in the output.
+ * @param proportional Non-zero selects the proportional test plan.
  *
- * @param memory_manager Owner of the original and working data buffers.
- * @param config Runtime benchmark configuration.
- * @param test_name Output-directory name and logical suite name.
- * @param scaling_mode Scaling metric type written to scaling.csv.
- * @param proportional Non-zero to generate the proportional test plan.
- *
- * @return 0 on success, non-zero on failure.
+ * @return 0 on success; non-zero if setup, execution, analysis, or output
+ *         generation fails.
  */
 static int run_benchmark_suite(
     MemoryManager *memory_manager,
@@ -62,17 +60,20 @@ static int run_benchmark_suite(
     ScalingMode scaling_mode,
     int proportional)
 {
-    DataBuffer *original_buffer;
-    DataBuffer *work_buffer;
+    DataBuffer *original_buffer = NULL;
+    DataBuffer *work_buffer = NULL;
     TestPlan *plan = NULL;
     FileManager *file_manager = NULL;
+
     Profiler profiler = {0};
     RawSampleSet samples = {0};
     AggregatedSample *aggregated = NULL;
+
     size_t aggregated_count = 0U;
     size_t max_workload = 0U;
+
     int profiler_initialized = 0;
-    int result = -1;
+    int result = EXIT_FAILURE;
 
     if (memory_manager == NULL ||
         config == NULL ||
@@ -81,8 +82,10 @@ static int run_benchmark_suite(
             stderr,
             "[Error] Invalid arguments for benchmark suite\n"
         );
-        return -1;
+        goto cleanup;
     }
+
+    printf("[Main] Starting suite: %s\n", test_name);
 
     original_buffer =
         memory_manager_original_buffer(memory_manager);
@@ -92,14 +95,11 @@ static int run_benchmark_suite(
             stderr,
             "[Error] Original data buffer is unavailable\n"
         );
-        return -1;
+        goto cleanup;
     }
 
-    printf("[Main] Starting suite: %s\n", test_name);
-
     /*
-     * Generate the test plan using the immutable original buffer.
-     * The views will be rebound to the working buffer after allocation.
+     * Build the test plan against the immutable original data buffer.
      */
     if (proportional) {
         plan = generate_proportional_test_plan(
@@ -123,8 +123,7 @@ static int run_benchmark_suite(
     }
 
     /*
-     * Determine the maximum workload before allocating working storage.
-     * The memory manager retains its capacity between benchmark suites.
+     * Reserve enough working memory once, before dispatching any kernel.
      */
     if (!test_plan_max_workload(plan, &max_workload) ||
         memory_manager_reserve_work(
@@ -141,9 +140,6 @@ static int run_benchmark_suite(
 
     work_buffer = memory_manager_work_buffer(memory_manager);
 
-    /*
-     * Rebind every view to the working buffer, then validate the plan again.
-     */
     if (work_buffer == NULL ||
         !test_plan_rebind_buffer(plan, work_buffer) ||
         !validate_test_plan(plan)) {
@@ -163,6 +159,9 @@ static int run_benchmark_suite(
         work_buffer->element_count
     );
 
+    /*
+     * Create and select the output directory for this suite.
+     */
     file_manager = create_file_manager(
         "./output",
         config->build.compiler_name,
@@ -186,6 +185,10 @@ static int run_benchmark_suite(
         test_name
     );
 
+    /*
+     * Initialize the profiler before dispatch.
+     * Kernels borrow this instance and do not own it.
+     */
     printf("[Main] Initializing profiler for %s\n", test_name);
 
     if (profiler_init(&profiler) != 0) {
@@ -199,25 +202,40 @@ static int run_benchmark_suite(
 
     profiler_initialized = 1;
 
+    /*
+     * Execute warm-ups and measured repetitions.
+     */
     printf("[Main] Dispatching %s suite\n", test_name);
 
-    if (dispatch_test_plan(
-            plan,
-            memory_manager,
-            &profiler,
-            config->benchmark.warmup_reps,
-            config->benchmark.work_reps,
-            &samples) != DISPATCH_OK) {
-        fprintf(
-            stderr,
-            "[Error] Benchmark dispatch failed for %s\n",
-            test_name
-        );
-        goto cleanup;
+    {
+        const DispatchStatus dispatch_status =
+            dispatch_test_plan(
+                plan,
+                memory_manager,
+                &profiler,
+                config->benchmark.warmup_reps,
+                config->benchmark.work_reps,
+                &samples
+            );
+
+        if (dispatch_status != DISPATCH_OK) {
+            fprintf(
+                stderr,
+                "[Error] Benchmark dispatch failed for %s "
+                "(status=%d)\n",
+                test_name,
+                (int)dispatch_status
+            );
+            goto cleanup;
+        }
     }
 
     printf("[Main] Dispatch completed for %s\n", test_name);
 
+    /*
+     * Aggregate only the complete sample set returned by a
+     * successful dispatch.
+     */
     aggregated = analyzer_aggregate_samples(
         samples.samples,
         samples.count,
@@ -241,6 +259,9 @@ static int run_benchmark_suite(
         aggregated_count
     );
 
+    /*
+     * Persist the raw and aggregated benchmark results.
+     */
     if (write_benchmark_results(
             file_manager,
             plan,
@@ -261,9 +282,12 @@ static int run_benchmark_suite(
         test_name
     );
 
-    result = 0;
+    result = EXIT_SUCCESS;
 
 cleanup:
+    /*
+     * Release resources in reverse acquisition order.
+     */
     free(aggregated);
     dispatch_destroy_samples(&samples);
 
@@ -277,45 +301,61 @@ cleanup:
     return result;
 }
 
-
-int main(void)
+/**
+ * @brief Run the benchmark suites enabled by the build configuration.
+ *
+ * The MemoryManager is created once and shared by all enabled suites.
+ * This permits reuse of its original buffer and working-buffer capacity.
+ * A failure in one suite does not prevent the other enabled suite from
+ * being attempted.
+ *
+ * @param config Loaded benchmark configuration.
+ *
+ * @return EXIT_SUCCESS if every enabled suite succeeds;
+ *         EXIT_FAILURE otherwise.
+ */
+static int run_application(const Configuration *config)
 {
-    Configuration config = load_configuration();
     MemoryManager *memory_manager = NULL;
 
-    int exit_code = EXIT_FAILURE;
     int full_scale_failed = 0;
     int proportional_failed = 0;
+    int exit_code = EXIT_FAILURE;
 
-    printf("[Main] Configuration loaded\n");
-
-    printf(
-        "[Main] Allocating and initializing original data buffer "
-        "(%llu elements)\n",
-        (unsigned long long)config.derived.problem_size_elements
-    );
-
-    /*
-     * Ensure that the configured dataset size is representable by size_t
-     * before passing it to the memory manager.
-     */
-    if (config.derived.problem_size_elements > (uint64_t)SIZE_MAX) {
+    if (config == NULL) {
         fprintf(
             stderr,
-            "[Error] Configured dataset exceeds addressable memory\n"
+            "[Error] Invalid configuration\n"
         );
         goto cleanup;
     }
 
     /*
-     * The manager allocates and initializes the original buffer once.
-     * The working buffer is allocated later, after each test plan has
-     * determined its maximum required workload.
+     * Ensure the configured dataset fits the address space.
+     */
+    if (config->derived.problem_size_elements == 0U ||
+        config->derived.problem_size_elements > (uint64_t)SIZE_MAX) {
+        fprintf(
+            stderr,
+            "[Error] Configured dataset size is invalid "
+            "or not addressable\n"
+        );
+        goto cleanup;
+    }
+
+    printf(
+        "[Main] Allocating and initializing original data buffer "
+        "(%llu elements)\n",
+        (unsigned long long)config->derived.problem_size_elements
+    );
+
+    /*
+     * The manager owns the original buffer and the reusable working buffer.
      */
     memory_manager = memory_manager_create(
-        (size_t)config.derived.problem_size_elements,
-        config.memory.alignment,
-        config.benchmark.generation_seed
+        (size_t)config->derived.problem_size_elements,
+        config->memory.alignment,
+        config->benchmark.generation_seed
     );
 
     if (memory_manager == NULL) {
@@ -326,31 +366,34 @@ int main(void)
         goto cleanup;
     }
 
+    /*
+     * Suites are independent: try every enabled suite even if
+     * an earlier suite fails.
+     */
 #if RUN_FULL_SCALE
-    full_scale_failed = run_benchmark_suite(
-        memory_manager,
-        &config,
-        "full_scale",
-        SCALING_STRONG,
-        0
-    ) != 0;
+    full_scale_failed = (
+        run_benchmark_suite(
+            memory_manager,
+            config,
+            "full_scale",
+            SCALING_STRONG,
+            0
+        ) != 0
+    );
 #endif
 
 #if RUN_PROPORTIONAL
-    proportional_failed = run_benchmark_suite(
-        memory_manager,
-        &config,
-        "proportional",
-        SCALING_WEAK,
-        1
-    ) != 0;
+    proportional_failed = (
+        run_benchmark_suite(
+            memory_manager,
+            config,
+            "proportional",
+            SCALING_WEAK,
+            1
+        ) != 0
+    );
 #endif
 
-    if (!full_scale_failed && !proportional_failed) {
-        exit_code = EXIT_SUCCESS;
-    }
-
-cleanup:
     if (full_scale_failed) {
         fprintf(
             stderr,
@@ -365,7 +408,40 @@ cleanup:
         );
     }
 
+    /*
+     * Success requires every enabled suite to have completed successfully.
+     */
+    if (!full_scale_failed && !proportional_failed) {
+        exit_code = EXIT_SUCCESS;
+    }
+
+cleanup:
+    /*
+     * The manager is application-owned and is destroyed exactly once.
+     * memory_manager_destroy() must accept NULL.
+     */
     memory_manager_destroy(memory_manager);
+
+    return exit_code;
+}
+
+/**
+ * @brief Application entry point.
+ *
+ * @return EXIT_SUCCESS on success; EXIT_FAILURE on any fatal suite error.
+ */
+int main(void)
+{
+    Configuration config = load_configuration();
+    int exit_code;
+
+    printf("[Main] Configuration loaded\n");
+
+    exit_code = run_application(&config);
+
+    /*
+     * Configuration owns dynamically allocated lists and is released here.
+     */
     destroy_configuration(&config);
 
     return exit_code;

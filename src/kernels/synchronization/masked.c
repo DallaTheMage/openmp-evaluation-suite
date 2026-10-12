@@ -7,12 +7,14 @@
 /* ============================================================================
 - VIEW_2D
 - ========================================================================== */
-void kernel_2d_masked(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_masked(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads) default(none) shared(pool, rows, cols)
     {
@@ -24,6 +26,9 @@ void kernel_2d_masked(DataView *view, const TestCase *test_case, Profiler *profi
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 #endif /* OPENMP_HAS_5_1 */

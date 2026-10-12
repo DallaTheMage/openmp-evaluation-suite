@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_2d_master(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_master(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the 2D masked benchmark.
  *
@@ -50,6 +50,6 @@ void kernel_2d_master(DataView *, const struct TestCase *, struct Profiler *, st
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_2d_masked(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_masked(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 
 #endif /* KERNELS_SYNCHRONIZATION_MASTER_MASKED_H */

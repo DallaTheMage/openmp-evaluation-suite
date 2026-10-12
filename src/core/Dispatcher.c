@@ -21,18 +21,22 @@
  * @file Dispatcher.c
  * @brief Execution orchestration for benchmark test plans.
  *
- * The dispatcher deliberately contains no benchmark-specific computation.
- * Its execution loop resolves an already registered kernel, executes it
- * for the requested number of repetitions and stores the resulting metrics.
- * Before each invocation, it restores the working data through MemoryManager.
+ * The dispatcher resolves registered kernels, executes warm-up and measured
+ * repetitions, and stores the resulting performance metrics.
+ *
+ * Before each invocation, the dispatcher restores the working data through
+ * the memory manager. Data restoration is performed outside the profiling
+ * interval.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #include "core/Dispatcher.h"
 #include "kernels/KernelRegistry.h"
-
 
 /* ========================================================================== */
 /* Internal helpers                                                           */
@@ -69,7 +73,6 @@ static const char *view_type_to_string(ViewType type)
             return "Unknown";
     }
 }
-
 
 /**
  * @brief Convert a kernel type to a human-readable string.
@@ -133,7 +136,6 @@ static const char *kernel_type_to_string(KernelType type)
     }
 }
 
-
 /**
  * @brief Check whether a size_t multiplication would overflow.
  *
@@ -148,14 +150,13 @@ static int size_mul_overflow(size_t a, size_t b, size_t *result)
         return 1;
     }
 
-    if ((a != 0U) && (b > (SIZE_MAX / a))) {
+    if (a != 0U && b > SIZE_MAX / a) {
         return 1;
     }
 
     *result = a * b;
     return 0;
 }
-
 
 /**
  * @brief Check whether a size_t addition would overflow.
@@ -171,14 +172,13 @@ static int size_add_overflow(size_t a, size_t b, size_t *result)
         return 1;
     }
 
-    if (b > (SIZE_MAX - a)) {
+    if (b > SIZE_MAX - a) {
         return 1;
     }
 
     *result = a + b;
     return 0;
 }
-
 
 /**
  * @brief Validate the structural fields required by the dispatcher.
@@ -250,7 +250,6 @@ static DispatchStatus validate_plan_for_dispatch(
     return DISPATCH_OK;
 }
 
-
 /**
  * @brief Count all measured samples required by a test plan.
  *
@@ -305,17 +304,19 @@ static DispatchStatus count_samples(
     return DISPATCH_OK;
 }
 
-
 /**
  * @brief Restore working data and execute one kernel invocation.
  *
- * Data restoration occurs before the kernel is called, outside the profiler's
- * measurement interval.
+ * The working data is restored before invoking the kernel, outside the
+ * profiler's measurement interval.
+ *
+ * The KernelStatus returned by the kernel is translated into a DispatchStatus
+ * so that the caller can handle execution and profiling failures.
  *
  * @param function Kernel function.
  * @param view Data view.
  * @param test_case Test case configuration.
- * @param memory_manager Manager used to restore the working data.
+ * @param memory_manager Manager used to restore working data.
  * @param profiler Profiler instance.
  * @param metric Destination for the performance metric.
  * @return Dispatch status.
@@ -328,6 +329,8 @@ static DispatchStatus execute_kernel(
     Profiler *profiler,
     PerformanceMetric *metric)
 {
+    KernelStatus kernel_status;
+
     if (function == NULL ||
         view == NULL ||
         test_case == NULL ||
@@ -350,24 +353,64 @@ static DispatchStatus execute_kernel(
     }
 
     memset(metric, 0, sizeof(*metric));
-    function(view, test_case, profiler, metric);
+
+    kernel_status = function(
+        view,
+        test_case,
+        profiler,
+        metric
+    );
 
     /*
-     * KernelFunc is currently void-returning. The profiler state is therefore
-     * the only execution-level failure signal exposed to the dispatcher.
+     * A kernel must leave the profiler stopped, regardless of its status.
      */
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
     }
 
-    return DISPATCH_OK;
-}
+    switch (kernel_status) {
+        case KERNEL_STATUS_OK:
+            return DISPATCH_OK;
 
+        case KERNEL_STATUS_PROFILER_FAILURE:
+            return DISPATCH_PROFILER_FAILURE;
+
+        case KERNEL_STATUS_INVALID_ARGUMENT:
+            return DISPATCH_INVALID_ARGUMENT;
+
+        case KERNEL_STATUS_ALLOCATION_FAILURE:
+            return DISPATCH_ALLOCATION_FAILURE;
+
+        case KERNEL_STATUS_EXECUTION_FAILURE:
+        default:
+            return DISPATCH_KERNEL_EXECUTION_FAILURE;
+    }
+}
 
 /* ========================================================================== */
 /* Public API                                                                 */
 /* ========================================================================== */
 
+/**
+ * @brief Execute a test plan and collect profiling samples.
+ *
+ * Each test case is executed for the requested number of warm-up and measured
+ * repetitions. The working data is restored before every kernel invocation.
+ *
+ * Warm-up metrics are discarded. Measured metrics are stored in the output
+ * sample set.
+ *
+ * If an execution fails, dispatch stops and releases the partially populated
+ * output collection.
+ *
+ * @param plan Test plan containing kernel configurations and data views.
+ * @param memory_manager Memory manager used to restore working data.
+ * @param profiler Initialized profiler used to measure kernel execution.
+ * @param warmup_reps Number of warm-up invocations per test case.
+ * @param work_reps Number of measured invocations per test case.
+ * @param out_samples Output collection for measured profiling samples.
+ * @return DISPATCH_OK on success, or an appropriate error status.
+ */
 DispatchStatus dispatch_test_plan(
     const TestPlan *plan,
     MemoryManager *memory_manager,
@@ -389,8 +432,7 @@ DispatchStatus dispatch_test_plan(
     }
 
     /*
-     * The dispatcher owns the result buffer produced by this invocation.
-     * Reset the output before starting a new dispatch.
+     * Initialize the output collection before allocating resources.
      */
     out_samples->samples = NULL;
     out_samples->count = 0U;
@@ -454,7 +496,6 @@ DispatchStatus dispatch_test_plan(
                 const size_t experiment_count =
                     sample_count / (size_t)work_reps;
 
-                /* 1073741824.0 = 1024.0 * 1024.0 * 1024.0 */
                 const double window_gib =
                     (double)view.window.size *
                     ((double)sizeof(double) / 1073741824.0);
@@ -477,10 +518,7 @@ DispatchStatus dispatch_test_plan(
                 );
                 fflush(stdout);
 
-                /*
-                 * Warm-up executions are deliberately discarded.
-                 * Working data is restored before every invocation.
-                 */
+                /* Execute warm-up repetitions without storing their metrics. */
                 for (uint32_t warmup = 0U;
                      warmup < warmup_reps;
                      ++warmup) {
@@ -501,7 +539,7 @@ DispatchStatus dispatch_test_plan(
                     }
                 }
 
-                /* Measured executions. */
+                /* Execute measured repetitions and store their metrics. */
                 for (uint32_t run_id = 0U;
                      run_id < work_reps;
                      ++run_id) {
@@ -548,7 +586,6 @@ DispatchStatus dispatch_test_plan(
 
     return DISPATCH_OK;
 }
-
 
 /**
  * @brief Release the dynamically allocated sample array.

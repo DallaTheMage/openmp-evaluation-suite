@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_2d_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the 3D native scan benchmark.
  *
@@ -50,7 +50,7 @@ void kernel_2d_native_scan(DataView *, const struct TestCase *, struct Profiler 
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_3d_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the AOS native scan benchmark.
  *
@@ -62,7 +62,7 @@ void kernel_3d_native_scan(DataView *, const struct TestCase *, struct Profiler 
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_aos_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aos_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the SOA native scan benchmark.
  *
@@ -74,7 +74,7 @@ void kernel_aos_native_scan(DataView *, const struct TestCase *, struct Profiler
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_soa_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_soa_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the AOSOA native scan benchmark.
  *
@@ -86,6 +86,6 @@ void kernel_soa_native_scan(DataView *, const struct TestCase *, struct Profiler
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_aosoa_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aosoa_native_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 
 #endif /* KERNELS_SCAN_NATIVE_H */

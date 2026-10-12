@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_2d_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the 3D two pass scan benchmark.
  *
@@ -50,7 +50,7 @@ void kernel_2d_two_pass_scan(DataView *, const struct TestCase *, struct Profile
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_3d_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the AOS two pass scan benchmark.
  *
@@ -62,7 +62,7 @@ void kernel_3d_two_pass_scan(DataView *, const struct TestCase *, struct Profile
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_aos_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aos_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the SOA two pass scan benchmark.
  *
@@ -74,7 +74,7 @@ void kernel_aos_two_pass_scan(DataView *, const struct TestCase *, struct Profil
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_soa_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_soa_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 /**
  * @brief Execute the AOSOA two pass scan benchmark.
  *
@@ -86,6 +86,6 @@ void kernel_soa_two_pass_scan(DataView *, const struct TestCase *, struct Profil
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-void kernel_aosoa_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aosoa_two_pass_scan(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
 
 #endif /* KERNELS_SCAN_TWO_PASS_H */

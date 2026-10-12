@@ -7,13 +7,15 @@
 /* ============================================================================
 - VIEW_2D
 - ========================================================================== */
-void kernel_2d_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads)
     {
@@ -29,21 +31,26 @@ void kernel_2d_taskloop(DataView *view, const TestCase *test_case, Profiler *pro
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
 /* ============================================================================
 - VIEW_3D
 - ========================================================================== */
-void kernel_3d_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_3d_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v3d.height;
     const uint64_t cols        = view->meta.v3d.cols;
     const uint64_t depth       = view->meta.v3d.depth;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads)
     {
@@ -61,20 +68,25 @@ void kernel_3d_taskloop(DataView *view, const TestCase *test_case, Profiler *pro
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
 /* ============================================================================
 - VIEW_AOS
 - ========================================================================== */
-void kernel_aos_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aos_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aos.num_structs;
     const uint64_t struct_size = view->meta.aos.struct_size;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads)
     {
@@ -90,20 +102,25 @@ void kernel_aos_taskloop(DataView *view, const TestCase *test_case, Profiler *pr
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
 /* ============================================================================
 - VIEW_SOA
 - ========================================================================== */
-void kernel_soa_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_soa_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads)
     {
@@ -119,14 +136,17 @@ void kernel_soa_taskloop(DataView *view, const TestCase *test_case, Profiler *pr
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 
 
 /* ============================================================================
 - VIEW_AOSOA
 - ========================================================================== */
-void kernel_aosoa_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aosoa_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -135,7 +155,9 @@ void kernel_aosoa_taskloop(DataView *view, const TestCase *test_case, Profiler *
     const uint64_t vl          = view->meta.aosoa.vector_length;
     const uint64_t num_tiles   = num_elems;
     const uint64_t tile_size   = num_fields * vl;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel num_threads(num_threads)
     {
@@ -154,6 +176,9 @@ void kernel_aosoa_taskloop(DataView *view, const TestCase *test_case, Profiler *
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 #endif /* OPENMP_HAS_TASKLOOP */

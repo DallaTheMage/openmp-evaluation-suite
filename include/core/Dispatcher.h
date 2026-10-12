@@ -21,47 +21,21 @@
  * @file Dispatcher.h
  * @brief Execution dispatcher for benchmark test plans.
  *
- * The dispatcher is responsible for translating a TestPlan into actual
- * kernel executions.
+ * The dispatcher translates a TestPlan into benchmark kernel executions.
  *
- * Its responsibilities are limited to execution orchestration:
+ * Its responsibilities include:
  *
- * - iterate over test sets;
- * - iterate over kernel test groups;
- * - resolve kernel implementations through the kernel registry;
- * - perform warm-up executions;
- * - perform measured executions;
- * - collect the resulting PerformanceMetric values;
- * - store measured executions as RawSample objects.
+ * - iterating over test sets and kernel groups;
+ * - resolving kernel implementations through the registry;
+ * - restoring working data before each invocation;
+ * - executing warm-up and measured repetitions;
+ * - collecting performance metrics;
+ * - storing measured executions as RawSample objects.
  *
- * The dispatcher does not:
+ * The dispatcher does not select OpenMP scheduling policies, perform
+ * statistical analysis, or own the profiler and data buffers.
  *
- * - select OpenMP scheduling policies;
- * - modify OpenMP runtime scheduling state;
- * - perform statistical analysis;
- * - compute aggregated benchmark results;
- * - own the Profiler;
- * - own the DataBuffer referenced by a DataView.
- *
- * OpenMP scheduling is a compile-time property of the benchmark build and
- * is therefore completely outside the dispatcher's runtime control.
- *
- * The execution flow is:
- *
- *     TestPlan
- *         |
- *         v
- *     Dispatcher
- *         |
- *         +----> Kernel Registry
- *         |
- *         +----> Profiler
- *         |
- *         v
- *     RawSampleSet
- *
- * The dispatcher is part of the benchmark control path and is never called
- * from inside a benchmark kernel's hot loop.
+ * Kernel execution failures are propagated through DispatchStatus.
  */
 
 #ifndef CORE_DISPATCHER_H
@@ -78,11 +52,8 @@
 /**
  * @brief Result codes returned by the dispatcher.
  *
- * The dispatcher reports setup and orchestration failures explicitly so the
- * caller can distinguish an invalid invocation from a failed execution.
- * Kernel implementations themselves currently expose a void return type;
- * therefore the dispatcher can only detect failures visible through the
- * profiler state and its own validation.
+ * These values distinguish validation, allocation, kernel execution,
+ * memory preparation, and profiling failures.
  */
 typedef enum DispatchStatus {
     /** Dispatch completed successfully. */
@@ -100,38 +71,42 @@ typedef enum DispatchStatus {
     /** A required kernel/view implementation is unavailable. */
     DISPATCH_KERNEL_UNAVAILABLE = 4,
 
-    /** A kernel returned while its profiler measurement was still active. */
+    /** A kernel or profiler measurement failed. */
     DISPATCH_PROFILER_FAILURE = 5,
 
     /** The memory manager could not prepare the requested working data. */
-    DISPATCH_MEMORY_PREPARATION_FAILURE = 6
-} DispatchStatus;
+    DISPATCH_MEMORY_PREPARATION_FAILURE = 6,
 
+    /** A kernel reported an execution failure. */
+    DISPATCH_KERNEL_EXECUTION_FAILURE = 7
+} DispatchStatus;
 
 /**
  * @brief Execute all test cases in a test plan and collect profiling samples.
  *
- * Each test case is executed for the configured number of warmup repetitions
- * and measured repetitions. Before every kernel invocation, the working data
- * is restored from the immutable original buffer through the memory manager.
- * Data restoration takes place outside the profiler's measurement interval,
- * ensuring that mutations performed by a kernel do not affect subsequent
- * invocations.
+ * Each test case is executed for the requested number of warm-up and measured
+ * repetitions. Before each invocation, the working data is restored through
+ * the memory manager.
  *
- * The memory manager must have sufficient working-buffer capacity for every
- * view in the test plan. All views must reference the manager's working buffer
- * and use a zero offset.
+ * Data restoration occurs outside the kernel's profiling interval.
  *
- * @param plan Test plan containing the kernel configurations and data views.
- * @param memory_manager Memory manager responsible for restoring the working
- *                       data before each invocation.
- * @param profiler Profiler used to measure kernel execution.
- * @param warmup_reps Number of warmup invocations per test case.
+ * The dispatcher stops processing the plan when an execution fails.
+ * On failure, the caller must inspect the returned status and release any
+ * partially populated output sample set with dispatch_destroy_samples().
+ *
+ * @param plan Test plan containing kernel configurations and data views.
+ * @param memory_manager Memory manager used to restore working data.
+ * @param profiler Initialized profiler used to measure kernel execution.
+ * @param warmup_reps Number of warm-up invocations per test case.
  * @param work_reps Number of measured invocations per test case.
- * @param out_samples Output collection for the measured profiling samples.
+ * @param out_samples Output collection for measured profiling samples.
  *
- * @return DISPATCH_SUCCESS on success, or an appropriate error status if
- *         validation, memory preparation, kernel execution, or profiling fails.
+ * @return DISPATCH_OK on success, or an appropriate error status.
+ *
+ * @pre plan must not be NULL.
+ * @pre memory_manager must not be NULL.
+ * @pre profiler must not be NULL.
+ * @pre out_samples must not be NULL.
  */
 DispatchStatus dispatch_test_plan(
     const TestPlan *plan,
@@ -142,27 +117,18 @@ DispatchStatus dispatch_test_plan(
     RawSampleSet *out_samples
 );
 
-
 /**
  * @brief Release a raw sample set produced by the dispatcher.
  *
- * This function releases the dynamically allocated sample array and
- * resets the RawSampleSet to an empty state.
+ * This function releases the sample array and resets the collection
+ * to an empty state.
  *
- * @param samples
- *     Raw sample set to destroy.
- *
- * @pre The object must either be initialized by dispatch_test_plan() or
- *     contain zero/NULL values.
- *
- * @post samples->samples == NULL.
- * @post samples->count == 0.
+ * @param samples Raw sample set to destroy.
  *
  * @note Passing NULL is allowed and has no effect.
  */
 void dispatch_destroy_samples(
     RawSampleSet *samples
 );
-
 
 #endif /* CORE_DISPATCHER_H */

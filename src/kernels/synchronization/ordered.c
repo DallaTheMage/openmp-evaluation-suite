@@ -7,14 +7,16 @@
 /* ============================================================================
 - VIEW_2D
 - ========================================================================== */
-void kernel_2d_ordered(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_ordered(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
     double ordered_sum         = 0.0;
-    profiler_start(profiler);
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
 
     #pragma omp parallel for \
         num_threads(num_threads) \
@@ -38,6 +40,9 @@ void kernel_2d_ordered(DataView *view, const TestCase *test_case, Profiler *prof
         }
     }
 
-    profiler_stop(profiler, metric);
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
 }
 #endif /* OPENMP_HAS_2_0 */
