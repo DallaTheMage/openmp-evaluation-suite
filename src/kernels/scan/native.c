@@ -162,6 +162,5 @@ KernelStatus kernel_aosoa_native_scan(DataView *view, const TestCase *test_case,
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
-    return KERNEL_STATUS_INVALID_ARGUMENT;
 }
 #endif /* OPENMP_HAS_NATIVE_SCAN */
