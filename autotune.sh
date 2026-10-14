@@ -65,11 +65,6 @@ detect_cores() {
 #
 # Returns the cache size in bytes.
 # Returns 0 when cache detection is unavailable.
-#
-# Linux sysfs commonly reports cache sizes as values such as:
-#   32K
-#   8M
-#   1G
 detect_llc_bytes() {
     local cache_dir
     local level type size

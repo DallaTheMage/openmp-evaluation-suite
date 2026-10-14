@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_2d_task(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the 3D task benchmark.
  *
@@ -50,7 +50,7 @@ KernelStatus kernel_2d_task(DataView *, const struct TestCase *, struct Profiler
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_3d_task(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOS task benchmark.
  *
@@ -62,7 +62,7 @@ KernelStatus kernel_3d_task(DataView *, const struct TestCase *, struct Profiler
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aos_task(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aos_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA task benchmark.
  *
@@ -74,7 +74,7 @@ KernelStatus kernel_aos_task(DataView *, const struct TestCase *, struct Profile
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_soa_task(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_soa_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA task benchmark.
  *
@@ -86,6 +86,6 @@ KernelStatus kernel_soa_task(DataView *, const struct TestCase *, struct Profile
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aosoa_task(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aosoa_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
 #endif /* KERNELS_TASKING_TASK_H */

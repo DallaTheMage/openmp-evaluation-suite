@@ -57,20 +57,11 @@
  * it corresponds to the indices used by HWCounters::fds.
  */
 typedef enum HWPerfEventType {
-    /** Retired CPU cycle count. */
-    HW_PERF_CYCLES = 0,
-
-    /** Retired instruction count. */
-    HW_PERF_INSTRUCTIONS,
-
-    /** L1 data-cache miss count. */
-    HW_PERF_L1D_MISSES,
-
-    /** Last-level-cache miss count. */
-    HW_PERF_LLC_MISSES,
-
-    /** Number of supported hardware events. */
-    HW_PERF_COUNT_MAX
+    HW_PERF_CYCLES = 0,   /* Retired CPU cycle count. */
+    HW_PERF_INSTRUCTIONS, /* Retired instruction count. */
+    HW_PERF_L1D_MISSES,   /* L1 data-cache miss count. */
+    HW_PERF_LLC_MISSES,   /* Last-level-cache miss count. */
+    HW_PERF_COUNT_MAX     /* Number of supported hardware events. */
 } HWPerfEventType;
 
 /**
@@ -80,18 +71,13 @@ typedef enum HWPerfEventType {
  * hardware events.
  */
 typedef struct HWCounters {
-    /** File descriptors indexed by HWPerfEventType. */
-    int fds[HW_PERF_COUNT_MAX];
-
+    int  fds[HW_PERF_COUNT_MAX]; /* File descriptors indexed by HWPerfEventType. */
     /**
      * File descriptor of the group leader.
-     *
      * The remaining counters are attached to this group.
      */
-    int leader_fd;
-
-    /** True after successful counter initialization. */
-    bool is_initialized;
+    int  leader_fd;
+    bool is_initialized;        /* True after successful counter initialization. */
 } HWCounters;
 
 /**
@@ -101,17 +87,10 @@ typedef struct HWCounters {
  * represents raw hardware observations rather than derived metrics.
  */
 typedef struct HWCountersData {
-    /** Retired CPU cycles. */
-    uint64_t cycles;
-
-    /** Retired instructions. */
-    uint64_t instructions;
-
-    /** L1 data-cache misses. */
-    uint64_t l1d_misses;
-
-    /** Last-level-cache misses. */
-    uint64_t llc_misses;
+    uint64_t cycles;       /* Retired CPU cycles. */
+    uint64_t instructions; /* Retired instructions. */
+    uint64_t l1d_misses;   /* L1 data-cache misses. */
+    uint64_t llc_misses;   /* Last-level-cache misses. */
 } HWCountersData;
 
 /**
@@ -160,10 +139,7 @@ int hw_counters_start(HWCounters *hw);
  *
  * @post On success, data contains the values measured by the counters.
  */
-int hw_counters_stop(
-    HWCounters *hw,
-    HWCountersData *data
-);
+int hw_counters_stop(HWCounters *hw, HWCountersData *data);
 
 /**
  * @brief Release all hardware-counter resources.

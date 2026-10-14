@@ -38,6 +38,6 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_2d_ordered(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_ordered(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
 #endif /* KERNELS_SYNCHRONIZATION_ORDERED_H */

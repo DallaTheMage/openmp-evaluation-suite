@@ -47,8 +47,7 @@ struct MemoryManager {
  *
  * @return A positive thread count no greater than the configured internal cap.
  */
-static int memory_manager_copy_thread_count(void)
-{
+static int memory_manager_copy_thread_count(void) {
     int available = omp_get_num_procs();
 
     if (available < 1) {
@@ -64,8 +63,7 @@ static int memory_manager_copy_thread_count(void)
 MemoryManager *memory_manager_create(
     size_t original_element_count,
     size_t alignment,
-    uint64_t seed)
-{
+    uint64_t seed) {
     MemoryManager *manager;
 
     manager = (MemoryManager *)calloc(1U, sizeof(*manager));
@@ -92,20 +90,17 @@ MemoryManager *memory_manager_create(
     return manager;
 }
 
-DataBuffer *memory_manager_original_buffer(MemoryManager *manager)
-{
+DataBuffer *memory_manager_original_buffer(MemoryManager *manager) {
     return manager != NULL ? manager->original : NULL;
 }
 
-DataBuffer *memory_manager_work_buffer(MemoryManager *manager)
-{
+DataBuffer *memory_manager_work_buffer(MemoryManager *manager) {
     return manager != NULL ? manager->working : NULL;
 }
 
 int memory_manager_reserve_work(
     MemoryManager *manager,
-    size_t required_elements)
-{
+    size_t required_elements) {
     DataBuffer *replacement;
 
     if (manager == NULL ||
@@ -145,8 +140,7 @@ int memory_manager_reserve_work(
 int memory_manager_restore_window(
     MemoryManager *manager,
     uint64_t offset,
-    size_t element_count)
-{
+    size_t element_count) {
     size_t i;
     size_t source_offset;
 
@@ -164,36 +158,30 @@ int memory_manager_restore_window(
      * which could overflow.
      */
     if (source_offset > manager->original->element_count ||
-        element_count >
-            manager->original->element_count - source_offset ||
+        element_count > (manager->original->element_count - source_offset) ||
         element_count > manager->working->element_count) {
         return -1;
     }
 
     if (element_count < MEMORY_MANAGER_PARALLEL_THRESHOLD_ELEMENTS) {
         for (i = 0U; i < element_count; ++i) {
-            manager->working->pool[i] =
-                manager->original->pool[source_offset + i];
+            manager->working->pool[i] = manager->original->pool[source_offset + i];
         }
     } else {
-        const int copy_threads =
-            memory_manager_copy_thread_count();
+        const int copy_threads = memory_manager_copy_thread_count();
         const size_t count = element_count;
 
         #pragma omp parallel for schedule(static) num_threads(copy_threads)
         for (i = 0U; i < count; ++i) {
-            manager->working->pool[i] =
-                manager->original->pool[source_offset + i];
+            manager->working->pool[i] = manager->original->pool[source_offset + i];
         }
     }
-
     return 0;
 }
 
 int memory_manager_restore(
     MemoryManager *manager,
-    size_t element_count)
-{
+    size_t element_count) {
     return memory_manager_restore_window(
         manager,
         UINT64_C(0),
@@ -202,13 +190,11 @@ int memory_manager_restore(
 }
 
 
-void memory_manager_destroy(MemoryManager *manager)
-{
-    if (manager == NULL) {
-        return;
+void memory_manager_destroy(MemoryManager *manager) {
+    if (manager != NULL) {
+        destroy_data_buffer(manager->working);
+        destroy_data_buffer(manager->original);
+        free(manager);
     }
-
-    destroy_data_buffer(manager->working);
-    destroy_data_buffer(manager->original);
-    free(manager);
+    return;
 }

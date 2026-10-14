@@ -69,35 +69,16 @@
  * Wall-clock time is expressed in seconds.
  */
 typedef struct PerformanceMetric {
-    /** Effective wall-clock execution time in seconds. */
-    double wall_time_sec;
-
-    /** CPU cycle count. */
-    uint64_t cycles;
-
-    /** Retired instruction count. */
-    uint64_t instructions;
-
-    /** L1 data-cache miss count. */
-    uint64_t l1d_misses;
-
-    /** Last-level-cache miss count. */
-    uint64_t llc_misses;
-
-    /** Instructions per cycle. */
-    double ipc;
-
-    /** L1 data-cache miss ratio. */
-    double l1d_miss_ratio;
-
-    /** Last-level-cache miss ratio. */
-    double llc_miss_ratio;
-
-    /** Package energy consumed during the measurement, in joules. */
-    double energy_pkg_joules;
-
-    /** DRAM energy consumed during the measurement, in joules. */
-    double energy_dram_joules;
+    double   wall_time_sec;      /* Effective wall-clock execution time in seconds. */
+    uint64_t cycles;             /* CPU cycle count. */
+    uint64_t instructions;       /* Retired instruction count. */
+    uint64_t l1d_misses;         /* L1 data-cache miss count. */
+    uint64_t llc_misses;         /* Last-level-cache miss count. */
+    double   ipc;                /* Instructions per cycle. */
+    double   l1d_miss_ratio;     /* L1 data-cache miss ratio. */
+    double   llc_miss_ratio;     /* Last-level-cache miss ratio. */
+    double   energy_pkg_joules;  /* Package energy consumed during the measurement, in joules. */
+    double   energy_dram_joules; /* DRAM energy consumed during the measurement, in joules. */
 } PerformanceMetric;
 
 /**
@@ -110,17 +91,10 @@ typedef struct PerformanceMetric {
  * profiler_start() and profiler_stop() define one measurement interval.
  */
 typedef struct Profiler {
-    /** Hardware performance-counter state. */
-    HWCounters hw;
-
-    /** RAPL energy-measurement state. */
-    RaplPower rapl;
-
-    /** Wall-clock timestamp captured by profiler_start(). */
-    double start_wtime;
-
-    /** True while a measurement interval is active. */
-    bool is_running;
+    HWCounters hw;          /* Hardware performance-counter state. */
+    RaplPower  rapl;        /* RAPL energy-measurement state. */
+    double     start_wtime; /* Wall-clock timestamp captured by profiler_start(). */
+    bool       is_running;  /* True while a measurement interval is active. */
 } Profiler;
 
 /**
@@ -182,10 +156,7 @@ int profiler_start(Profiler *p);
  * @post On successful completion, p->is_running is false.
  * @post metric contains the measurements for the completed interval.
  */
-int profiler_stop(
-    Profiler *p,
-    PerformanceMetric *metric
-);
+int profiler_stop(Profiler *p, PerformanceMetric *metric);
 
 /**
  * @brief Release all resources owned by a profiler.

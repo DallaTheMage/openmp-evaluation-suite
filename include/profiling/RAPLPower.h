@@ -50,26 +50,13 @@
  * beginning of a measurement interval.
  */
 typedef struct RaplPower {
-    /** File descriptor for the package energy counter. */
-    int fd_pkg;
-
-    /** File descriptor for the DRAM energy counter. */
-    int fd_dram;
-
-    /** Package-domain energy scale factor. */
-    double scale_pkg;
-
-    /** DRAM-domain energy scale factor. */
-    double scale_dram;
-
-    /** Package energy reading captured at measurement start, in microjoules. */
-    double start_energy_pkg_uj;
-
-    /** DRAM energy reading captured at measurement start, in microjoules. */
-    double start_energy_dram_uj;
-
-    /** True when the required RAPL interface is available. */
-    bool is_supported;
+    int    fd_pkg;               /* File descriptor for the package energy counter. */
+    int    fd_dram;              /* File descriptor for the DRAM energy counter. */
+    double scale_pkg;            /* Package-domain energy scale factor. */
+    double scale_dram;           /* DRAM-domain energy scale factor. */
+    double start_energy_pkg_uj;  /* Package energy reading captured at measurement start, in microjoules. */
+    double start_energy_dram_uj; /* DRAM energy reading captured at measurement start, in microjoules. */
+    bool   is_supported;         /* True when the required RAPL interface is available. */
 } RaplPower;
 
 /**
@@ -79,11 +66,8 @@ typedef struct RaplPower {
  * directly by the profiler without exposing the underlying RAPL unit.
  */
 typedef struct RaplPowerData {
-    /** Package energy consumed during the measurement interval, in joules. */
-    double energy_pkg_joules;
-
-    /** DRAM energy consumed during the measurement interval, in joules. */
-    double energy_dram_joules;
+    double energy_pkg_joules;  /* Package energy consumed during the measurement interval, in joules. */
+    double energy_dram_joules; /* DRAM energy consumed during the measurement interval, in joules. */
 } RaplPowerData;
 
 /**
@@ -138,10 +122,7 @@ int rapl_power_start(RaplPower *rapl);
  * @post On success, data contains package and DRAM energy consumption
  *       expressed in joules.
  */
-int rapl_power_stop(
-    RaplPower *rapl,
-    RaplPowerData *data
-);
+int rapl_power_stop(RaplPower *rapl, RaplPowerData *data);
 
 /**
  * @brief Release RAPL resources.

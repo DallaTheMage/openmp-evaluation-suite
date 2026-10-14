@@ -44,8 +44,8 @@ static const char *view_type_to_string(ViewType type)
             return "Unknown";
     }
 }
-static const char *kernel_type_to_string(KernelType type)
-{
+
+static const char *kernel_type_to_string(KernelType type) {
     switch (type) {
         case KERNEL_LOOP:
             return "Loop";
@@ -83,8 +83,8 @@ static const char *kernel_type_to_string(KernelType type)
             return "Unknown";
     }
 }
-static int write_metric_values(FILE *file, const Metrics *metric)
-{
+
+static int write_metric_values(FILE *file, const Metrics *metric) {
     if (file == NULL || metric == NULL) {
         return -1;
     }
@@ -99,8 +99,8 @@ static int write_metric_values(FILE *file, const Metrics *metric)
     }
     return 0;
 }
-static int write_test_plan(FILE *file, const TestPlan *plan)
-{
+
+static int write_test_plan(FILE *file, const TestPlan *plan) {
     if (fprintf(
             file,
             "test_set_id,view_type,window_offset,window_size,"
@@ -131,13 +131,13 @@ static int write_test_plan(FILE *file, const TestPlan *plan)
     }
     return ferror(file) ? -1 : 0;
 }
-static int write_raw_samples(FILE *file, const RawSampleSet *samples)
-{
+
+static int write_raw_samples(FILE *file, const RawSampleSet *samples) {
     if (fprintf(
             file,
             "test_set_id,test_case_id,kernel,run_id,wall_time_sec,"
             "cycles,instructions,l1d_misses,llc_misses,ipc,"
-            "l1d_miss_ratio,llc_miss_ratio,energy_pkg_joules,"
+            "l1d_miss_ratio_per_instruction,llc_miss_ratio_per_instruction,energy_pkg_joules,"
             "energy_dram_joules\n") < 0) {
         return -1;
     }
@@ -167,6 +167,7 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples)
     }
     return ferror(file) ? -1 : 0;
 }
+
 static int write_aggregated_samples(FILE *file, const AggregatedSample *samples, size_t sample_count) {
     if (fprintf(
             file,
@@ -223,6 +224,7 @@ static int write_aggregated_samples(FILE *file, const AggregatedSample *samples,
     }
     return ferror(file) ? -1 : 0;
 }
+
 static const AggregatedSample *find_aggregated_sample(
     const AggregatedSample *samples,
     size_t sample_count,
@@ -241,6 +243,7 @@ static const AggregatedSample *find_aggregated_sample(
     }
     return NULL;
 }
+
 static const TestCase *find_baseline_case(const KernelTestGroup *group, const TestCase *scaled_case) {
     if (group == NULL || scaled_case == NULL) {
         return NULL;
@@ -254,6 +257,7 @@ static const TestCase *find_baseline_case(const KernelTestGroup *group, const Te
     }
     return NULL;
 }
+
 static int write_scaling_strong(
     FILE *file,
     const TestPlan *plan,
@@ -442,25 +446,21 @@ static int write_scaling_weak(
                         &baseline_set_index,
                         &baseline_case)) {
 
-                    const TestSet *baseline_set =
-                        &plan->data[baseline_set_index];
-                    const AggregatedSample *scaled_sample =
-                        find_aggregated_sample(
-                            aggregated,
-                            aggregated_count,
-                            scaled_set->uid,
-                            scaled_case->uid,
-                            scaled_group->kernel
-                        );
-                    const AggregatedSample *baseline_sample =
-                        find_aggregated_sample(
-                            aggregated,
-                            aggregated_count,
-                            baseline_set->uid,
-                            baseline_case->uid,
-                            scaled_group->kernel
-                        );
-
+                    const TestSet *baseline_set = &plan->data[baseline_set_index];
+                    const AggregatedSample *scaled_sample   = find_aggregated_sample(
+                                                                aggregated,
+                                                                aggregated_count,
+                                                                scaled_set->uid,
+                                                                scaled_case->uid,
+                                                                scaled_group->kernel
+                                                            );
+                    const AggregatedSample *baseline_sample = find_aggregated_sample(
+                                                                aggregated,
+                                                                aggregated_count,
+                                                                baseline_set->uid,
+                                                                baseline_case->uid,
+                                                                scaled_group->kernel
+                                                            );
                     ScalingMetrics metrics;
 
                     if (scaled_sample != NULL &&

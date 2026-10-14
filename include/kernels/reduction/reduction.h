@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_2d_reduction(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the 3D reduction benchmark.
  *
@@ -50,7 +50,7 @@ KernelStatus kernel_2d_reduction(DataView *, const struct TestCase *, struct Pro
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_3d_reduction(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOS reduction benchmark.
  *
@@ -62,7 +62,7 @@ KernelStatus kernel_3d_reduction(DataView *, const struct TestCase *, struct Pro
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aos_reduction(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aos_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA reduction benchmark.
  *
@@ -74,7 +74,7 @@ KernelStatus kernel_aos_reduction(DataView *, const struct TestCase *, struct Pr
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_soa_reduction(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_soa_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA reduction benchmark.
  *
@@ -86,6 +86,6 @@ KernelStatus kernel_soa_reduction(DataView *, const struct TestCase *, struct Pr
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aosoa_reduction(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aosoa_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
 #endif /* KERNELS_REDUCTION_H */

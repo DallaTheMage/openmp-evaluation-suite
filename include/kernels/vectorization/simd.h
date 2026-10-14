@@ -38,7 +38,7 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_2d_simd_memory(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the 3D simd memory benchmark.
  *
@@ -50,7 +50,7 @@ KernelStatus kernel_2d_simd_memory(DataView *, const struct TestCase *, struct P
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_3d_simd_memory(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOS simd memory benchmark.
  *
@@ -62,7 +62,7 @@ KernelStatus kernel_3d_simd_memory(DataView *, const struct TestCase *, struct P
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aos_simd_memory(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aos_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA simd memory benchmark.
  *
@@ -74,7 +74,7 @@ KernelStatus kernel_aos_simd_memory(DataView *, const struct TestCase *, struct 
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_soa_simd_memory(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_soa_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA simd memory benchmark.
  *
@@ -86,7 +86,7 @@ KernelStatus kernel_soa_simd_memory(DataView *, const struct TestCase *, struct 
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aosoa_simd_memory(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aosoa_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D simd compute benchmark.
@@ -99,7 +99,7 @@ KernelStatus kernel_aosoa_simd_memory(DataView *, const struct TestCase *, struc
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_2d_simd_compute(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_2d_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the 3D simd compute benchmark.
  *
@@ -111,7 +111,7 @@ KernelStatus kernel_2d_simd_compute(DataView *, const struct TestCase *, struct 
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_3d_simd_compute(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_3d_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOS simd compute benchmark.
  *
@@ -123,7 +123,7 @@ KernelStatus kernel_3d_simd_compute(DataView *, const struct TestCase *, struct 
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aos_simd_compute(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aos_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA simd compute benchmark.
  *
@@ -135,7 +135,7 @@ KernelStatus kernel_aos_simd_compute(DataView *, const struct TestCase *, struct
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_soa_simd_compute(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_soa_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA simd compute benchmark.
  *
@@ -147,6 +147,6 @@ KernelStatus kernel_soa_simd_compute(DataView *, const struct TestCase *, struct
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_aosoa_simd_compute(DataView *, const struct TestCase *, struct Profiler *, struct PerformanceMetric *);
+KernelStatus kernel_aosoa_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
 #endif /* KERNELS_VECTORIZATION_SIMD_H */

@@ -28,8 +28,7 @@
 #include "profiling/Profiler.h"
 
 
-int profiler_init(Profiler *p)
-{
+int profiler_init(Profiler *p) {
     int hw_status;
     int rapl_status;
 
@@ -54,8 +53,7 @@ int profiler_init(Profiler *p)
 }
 
 
-int profiler_start(Profiler *p)
-{
+int profiler_start(Profiler *p) {
     if (p == NULL || p->is_running) {
         return -1;
     }
@@ -77,7 +75,7 @@ int profiler_start(Profiler *p)
 
 int profiler_stop(Profiler *p, PerformanceMetric *metric)
 {
-    HWCountersData hw_data = {0};
+    HWCountersData hw_data  = {0};
     RaplPowerData rapl_data = {0};
     const double stop_wtime = omp_get_wtime();
 
@@ -125,8 +123,7 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric)
 }
 
 
-void profiler_cleanup(Profiler *p)
-{
+void profiler_cleanup(Profiler *p) {
     if (p == NULL) {
         return;
     }

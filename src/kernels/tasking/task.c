@@ -8,11 +8,11 @@
 - VIEW_2D
 - ========================================================================== */
 KernelStatus kernel_2d_task(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
-    double *restrict pool      = view->buffer->pool;
-    const uint64_t rows        = view->meta.v2d.rows;
-    const uint64_t cols        = view->meta.v2d.cols;
+    const uint16_t   num_threads = test_case->num_threads;
+    const uint32_t   chunk       = test_case->chunk_size;
+    double *restrict pool        = view->buffer->pool;
+    const uint64_t   rows        = view->meta.v2d.rows;
+    const uint64_t   cols        = view->meta.v2d.cols;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
@@ -47,12 +47,12 @@ KernelStatus kernel_2d_task(DataView *view, const TestCase *test_case, Profiler 
 - VIEW_3D
 - ========================================================================== */
 KernelStatus kernel_3d_task(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
-    double *restrict pool      = view->buffer->pool;
-    const uint64_t rows        = view->meta.v3d.height;
-    const uint64_t cols        = view->meta.v3d.cols;
-    const uint64_t depth       = view->meta.v3d.depth;
+    const uint16_t   num_threads = test_case->num_threads;
+    const uint32_t   chunk       = test_case->chunk_size;
+    double *restrict pool        = view->buffer->pool;
+    const uint64_t   rows        = view->meta.v3d.height;
+    const uint64_t   cols        = view->meta.v3d.cols;
+    const uint64_t   depth       = view->meta.v3d.depth;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
