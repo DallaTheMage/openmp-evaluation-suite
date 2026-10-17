@@ -135,6 +135,10 @@ static const char *kernel_type_to_string(KernelType type)
 
         case KERNEL_GEMM:
             return "GEMM";
+        case KERNEL_JACOBI:
+            return "Jacobi 2D";
+        case KERNEL_CG:
+            return "Conjugate Gradient";
 
         case KERNEL_TWO_PASS_SCAN:
             return "Two-Pass Scan";

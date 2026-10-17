@@ -40,6 +40,8 @@
 #include "kernels/worksharing/collapse.h"
 #include "kernels/worksharing/loop.h"
 #include "kernels/worksharing/sections.h"
+#include "kernels/algorithms/jacobi.h"
+#include "kernels/algorithms/cg.h"
 
 /*
  * The registry is indexed by ViewType first and KernelType second.
@@ -52,6 +54,8 @@ const KernelDescriptor
         #if OPENMP_HAS_2_0
                 [KERNEL_LOOP]      = { kernel_2d_loop },
                 [KERNEL_GEMM]      = { kernel_2d_gemm },
+                [KERNEL_JACOBI]    = { kernel_2d_jacobi },
+                [KERNEL_CG]        = { kernel_2d_cg },
                 [KERNEL_SECTIONS]  = { kernel_2d_sections },
                 [KERNEL_MASTER]    = { kernel_2d_master },
                 [KERNEL_ORDERED]   = { kernel_2d_ordered },

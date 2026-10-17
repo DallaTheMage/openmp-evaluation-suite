@@ -21,20 +21,21 @@
  * @file gemm.c
  * @brief Deterministic dense GEMM workload with untimed numerical checks.
  */
-#include "kernels/algorithms/gemm.h"
-#include "core/TestPlan.h"
-#include "profiling/Profiler.h"
-#include "config/openmp.h"
 #include <math.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "config/openmp.h"
+#include "core/TestPlan.h"
+#include "profiling/Profiler.h"
+#include "kernels/algorithms/gemm.h"
+
 #if OPENMP_HAS_2_0
 /** @brief Compute a reproducible, bounded right-hand matrix element. */
 static double right_element(size_t k, size_t j) {
-    return (double)((k * 17U + j * 13U) % 29U + 1U) / 29.0;
+    return (double)((((k * 17U) + (j * 13U)) % 29U) + 1U) / 29.0;
 }
 
 /**
@@ -127,7 +128,9 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
     int valid = stop_result == 0 && validate_rows(a, b, c, m, n);
     free(b);
     free(c);
-    if (stop_result != 0) return KERNEL_STATUS_PROFILER_FAILURE;
+    if (stop_result != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
     return valid ? KERNEL_STATUS_OK : KERNEL_STATUS_EXECUTION_FAILURE;
 }
 #endif

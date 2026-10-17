@@ -79,6 +79,10 @@ static const char *kernel_type_to_string(KernelType type) {
             return "Native Scan";
         case KERNEL_GEMM:
             return "GEMM";
+        case KERNEL_CG:
+            return "Coniugate Gradient";
+        case KERNEL_JACOBI:
+            return "Jacobi";
         case KERNEL_TWO_PASS_SCAN:
             return "Two-Pass Scan";
         default:
