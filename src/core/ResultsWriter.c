@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "data/views/ViewType.h"
+#include "config/params.h"
 
 static const char *view_type_to_string(ViewType type)
 {
@@ -144,7 +145,7 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples) {
             "test_set_id,test_case_id,kernel,run_id,wall_time_sec,"
             "cycles,instructions,l1d_misses,llc_misses,ipc,"
             "l1d_miss_ratio_per_instruction,llc_miss_ratio_per_instruction,energy_pkg_joules,"
-            "energy_dram_joules\n") < 0) {
+            "energy_dram_joules,hw_counters_valid,energy_pkg_valid,energy_dram_valid\n") < 0) {
         return -1;
     }
     for (size_t i = 0U; i < samples->count; ++i) {
@@ -153,7 +154,7 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples) {
         if (fprintf(
                 file,
                 "%llu,%llu,%s,%u,%.17g,%llu,%llu,%llu,%llu,%.17g,"
-                "%.17g,%.17g,%.17g,%.17g\n",
+                "%.17g,%.17g,%.17g,%.17g,%d,%d,%d\n",
                 (unsigned long long) sample->test_set_id,
                 (unsigned long long) sample->test_case_id,
                 kernel_type_to_string(sample->kernel),
@@ -167,7 +168,10 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples) {
                 metric->l1d_miss_ratio,
                 metric->llc_miss_ratio,
                 metric->energy_pkg_joules,
-                metric->energy_dram_joules) < 0) {
+                metric->energy_dram_joules,
+                metric->hw_counters_valid ? 1 : 0,
+                metric->energy_pkg_valid ? 1 : 0,
+                metric->energy_dram_valid ? 1 : 0) < 0) {
             return -1;
         }
     }
@@ -517,21 +521,67 @@ static int write_scaling_weak(
     return ferror(file) ? -1 : 0;
 }
 
+/* RFC 4180 quoting for values containing delimiters, quotes or newlines. */
+static int write_metadata_field(FILE *file, const char *value) {
+    const unsigned char *cursor = (const unsigned char *)(value != NULL ? value : "");
+    if (fputc('"', file) == EOF) return -1;
+    while (*cursor != '\0') {
+        if (*cursor == '"' && fputc('"', file) == EOF) return -1;
+        if (fputc((int)*cursor, file) == EOF) return -1;
+        ++cursor;
+    }
+    return fputc('"', file) == EOF ? -1 : 0;
+}
+
+static int write_metadata_pair(FILE *file, const char *key, const char *value) {
+    if (write_metadata_field(file, key) != 0 ||
+        fputc(',', file) == EOF ||
+        write_metadata_field(file, value) != 0 ||
+        fputc('\n', file) == EOF) return -1;
+    return 0;
+}
+
+static int write_metadata_u64(FILE *file, const char *key, uint64_t value) {
+    char buffer[32];
+    if (snprintf(buffer, sizeof(buffer), "%llu", (unsigned long long)value) < 0) return -1;
+    return write_metadata_pair(file, key, buffer);
+}
+
+static int write_metadata(FILE *file, const Configuration *config) {
+    if (fprintf(file, "key,value\n") < 0 ||
+        write_metadata_pair(file, "compiler", config->build.compiler_name) != 0 ||
+        write_metadata_pair(file, "compiler_family", config->build.compiler_family) != 0 ||
+        write_metadata_pair(file, "compiler_version", config->build.compiler_version) != 0 ||
+        write_metadata_pair(file, "compiler_flags", config->build.compiler_flags) != 0 ||
+        write_metadata_pair(file, "openmp_version", config->build.openmp_version) != 0 ||
+        write_metadata_pair(file, "schedule", CHOSEN_SCHEDULE_NAME) != 0 ||
+        write_metadata_pair(file, "hw_counters_enabled", ENABLE_HW_COUNTERS ? "true" : "false") != 0 ||
+        write_metadata_u64(file, "warmup_reps", config->benchmark.warmup_reps) != 0 ||
+        write_metadata_u64(file, "work_reps", config->benchmark.work_reps) != 0 ||
+        write_metadata_u64(file, "generation_seed", config->benchmark.generation_seed) != 0 ||
+        write_metadata_u64(file, "problem_size_elements", config->derived.problem_size_elements) != 0 ||
+        write_metadata_u64(file, "size_per_thread", config->derived.size_per_thread) != 0) return -1;
+    return ferror(file) ? -1 : 0;
+}
+
 int write_benchmark_results(
     FileManager *manager,
     const TestPlan *plan,
     const RawSampleSet *samples,
     const AggregatedSample *aggregated,
     size_t aggregated_count,
+    const Configuration *config,
     ScalingMode scaling_mode) {
     FILE *plan_file = NULL;
     FILE *raw_file = NULL;
     FILE *aggregated_file = NULL;
     FILE *scaling_file = NULL;
+    FILE *metadata_file = NULL;
     int result = -1;
     if (manager == NULL ||
         plan == NULL ||
         samples == NULL ||
+        config == NULL ||
         (aggregated_count > 0U && aggregated == NULL)) {
         return -1;
     }
@@ -539,10 +589,13 @@ int write_benchmark_results(
     raw_file = open_csv_file(manager, "raw_samples");
     aggregated_file = open_csv_file(manager, "aggregated_samples");
     scaling_file = open_csv_file(manager, "scaling");
+    metadata_file = open_schedule_csv_file(manager, "metadata");
     if (plan_file != NULL &&
         raw_file != NULL &&
         aggregated_file != NULL &&
         scaling_file != NULL &&
+        metadata_file != NULL &&
+        write_metadata(metadata_file, config) == 0 &&
         write_test_plan(plan_file, plan) == 0 &&
         write_raw_samples(raw_file, samples) == 0 &&
         write_aggregated_samples(aggregated_file, aggregated, aggregated_count) == 0 &&
@@ -562,6 +615,9 @@ int write_benchmark_results(
         result = -1;
     }
     if (scaling_file != NULL && fclose(scaling_file) != 0) {
+        result = -1;
+    }
+    if (metadata_file != NULL && fclose(metadata_file) != 0) {
         result = -1;
     }
     return result;

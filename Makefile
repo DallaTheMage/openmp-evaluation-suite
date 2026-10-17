@@ -27,7 +27,7 @@ CC ?= gcc
 
 # Default flags.
 # build.sh normally overrides these values.
-CFLAGS ?= -g -Wall -Wextra -Wpedantic -std=c99 \
+CFLAGS ?= -O2 -g -Wall -Wextra -Wpedantic -std=c99 \
           -D_GNU_SOURCE \
           -Iinclude \
           -Isrc/microroutines \

@@ -22,6 +22,7 @@
  * @brief Analysis and aggregation of benchmark measurements.
  */
 #include <stdlib.h>
+#include <math.h>
 #include "core/Analyzer.h"
 #include "core/Statistics.h"
 
@@ -73,10 +74,10 @@ static void group_accumulator_update(GroupAccumulator *acc, const PerformanceMet
     }
 
     statistics_update(&acc->wall_time_sec     , metric->wall_time_sec);
-    statistics_update(&acc->cycles            , (double)metric->cycles);
-    statistics_update(&acc->instructions      , (double)metric->instructions);
-    statistics_update(&acc->l1d_misses        , (double)metric->l1d_misses);
-    statistics_update(&acc->llc_misses        , (double)metric->llc_misses);
+    statistics_update(&acc->cycles            , metric->hw_counters_valid ? (double)metric->cycles : NAN);
+    statistics_update(&acc->instructions      , metric->hw_counters_valid ? (double)metric->instructions : NAN);
+    statistics_update(&acc->l1d_misses        , metric->hw_counters_valid ? (double)metric->l1d_misses : NAN);
+    statistics_update(&acc->llc_misses        , metric->hw_counters_valid ? (double)metric->llc_misses : NAN);
     statistics_update(&acc->ipc               , metric->ipc);
     statistics_update(&acc->l1d_miss_ratio    , metric->l1d_miss_ratio);
     statistics_update(&acc->llc_miss_ratio    , metric->llc_miss_ratio);
@@ -86,7 +87,7 @@ static void group_accumulator_update(GroupAccumulator *acc, const PerformanceMet
 
 
 static Metrics statistics_to_metrics(const StatisticsResult *result) {
-    Metrics metrics = {0.0, 0.0, 0.0, 0.0};
+    Metrics metrics = {NAN, NAN, NAN, NAN};
 
     if (result != NULL) {
         metrics.min = result->min;

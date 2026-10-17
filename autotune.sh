@@ -345,6 +345,11 @@ RUN_FULL_SCALE=1
 RUN_PROPORTIONAL=1
 WARMUP_REPS=3U
 WORK_REPS=5U
+
+# 0 = disable experimental perf_event counters (default); 1 = enable for diagnostics.
+# Timing and RAPL measurements are independent of this option.
+ENABLE_HW_COUNTERS=0
+
 SLOWDOWN_FACTOR=0U
 WINDOWS_LOG2_LIST=${WINDOWS_LOG2_LIST}
 GENERATION_SEED=12345ULL

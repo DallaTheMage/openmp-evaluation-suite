@@ -56,6 +56,8 @@ typedef struct RaplPower {
     double scale_dram;           /* DRAM-domain energy scale factor. */
     double start_energy_pkg_uj;  /* Package energy reading captured at measurement start, in microjoules. */
     double start_energy_dram_uj; /* DRAM energy reading captured at measurement start, in microjoules. */
+    double max_energy_pkg_uj;   /* Counter modulus, from powercap. */
+    double max_energy_dram_uj;  /* Optional DRAM counter modulus. */
     bool   is_supported;         /* True when the required RAPL interface is available. */
 } RaplPower;
 
@@ -73,7 +75,7 @@ typedef struct RaplPowerData {
 /**
  * @brief Initialize the RAPL energy measurement interface.
  *
- * The function discovers and opens the supported RAPL energy domains and
+ * The function opens package-0 and discovers its optional DRAM energy domain and
  * initializes the scale factors required to convert hardware readings.
  *
  * RAPL is optional for the benchmark suite. Therefore, lack of RAPL support

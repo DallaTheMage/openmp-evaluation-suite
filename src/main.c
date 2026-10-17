@@ -326,6 +326,7 @@ static int run_benchmark_suite(
             &samples,
             aggregated,
             aggregated_count,
+            config,
             scaling_mode) != 0) {
         fprintf(
             stderr,

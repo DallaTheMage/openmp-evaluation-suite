@@ -79,6 +79,9 @@ typedef struct PerformanceMetric {
     double   llc_miss_ratio;     /* Last-level-cache miss ratio. */
     double   energy_pkg_joules;  /* Package energy consumed during the measurement, in joules. */
     double   energy_dram_joules; /* DRAM energy consumed during the measurement, in joules. */
+    bool hw_counters_valid;       /* False when perf counters are unavailable. */
+    bool energy_pkg_valid;       /* False when package energy was not collected. */
+    bool energy_dram_valid;      /* False when DRAM energy was not collected. */
 } PerformanceMetric;
 
 /**
@@ -141,7 +144,7 @@ int profiler_start(Profiler *p);
  *
  * This function stops all active measurement backends and stores the
  * resulting measurements and derived metrics in the supplied output
- * structure. Unavailable optional backends produce zero-valued metrics.
+ * structure. Unavailable optional backends produce NaN floating-point metrics and false availability flags; raw integer counters remain zero.
  *
  * @param p Initialized and running profiler.
  * @param metric Output structure receiving the measurement results.

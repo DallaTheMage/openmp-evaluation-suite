@@ -42,6 +42,19 @@
 
 
 /* ========================================================================= */
+/* Optional hardware performance counters                                    */
+/* ========================================================================= */
+
+/* Disabled until the perf_event/OpenMP worker accounting is validated. */
+#ifndef ENABLE_HW_COUNTERS
+    #define ENABLE_HW_COUNTERS 0
+#endif
+
+#if ENABLE_HW_COUNTERS != 0 && ENABLE_HW_COUNTERS != 1
+    #error "ENABLE_HW_COUNTERS must be 0 or 1"
+#endif
+
+/* ========================================================================= */
 /* Benchmark repetitions                                                     */
 /* ========================================================================= */
 

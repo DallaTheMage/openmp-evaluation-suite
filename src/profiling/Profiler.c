@@ -25,11 +25,15 @@
 
 #include <omp.h>
 #include <string.h>
+#include <math.h>
 #include "profiling/Profiler.h"
+#include "config/params.h"
 
 
 int profiler_init(Profiler *p) {
+#if ENABLE_HW_COUNTERS
     int hw_status;
+#endif
     int rapl_status;
 
     if (p == NULL) {
@@ -38,10 +42,12 @@ int profiler_init(Profiler *p) {
 
     memset(p, 0, sizeof(*p));
 
+#if ENABLE_HW_COUNTERS
     hw_status = hw_counters_init(&p->hw);
     if (hw_status != 0) {
         hw_counters_cleanup(&p->hw);
     }
+#endif
 
     rapl_status = rapl_power_init(&p->rapl);
     if (rapl_status != 0) {
@@ -75,6 +81,9 @@ int profiler_start(Profiler *p) {
 
 int profiler_stop(Profiler *p, PerformanceMetric *metric)
 {
+    bool hw_valid = false;
+    bool pkg_valid = false;
+    bool dram_valid = false;
     HWCountersData hw_data  = {0};
     RaplPowerData rapl_data = {0};
     const double stop_wtime = omp_get_wtime();
@@ -86,12 +95,17 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric)
     if (p->hw.is_initialized) {
         if (hw_counters_stop(&p->hw, &hw_data) != 0) {
             hw_counters_cleanup(&p->hw);
+        } else {
+            hw_valid = true;
         }
     }
 
     if (p->rapl.is_supported) {
         if (rapl_power_stop(&p->rapl, &rapl_data) != 0) {
             rapl_power_cleanup(&p->rapl);
+        } else {
+            pkg_valid = true;
+            dram_valid = p->rapl.fd_dram >= 0 && isfinite(rapl_data.energy_dram_joules);
         }
     }
 
@@ -116,8 +130,16 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric)
         ? (double) metric->llc_misses / (double) metric->instructions
         : 0.0;
 
-    metric->energy_pkg_joules = rapl_data.energy_pkg_joules;
-    metric->energy_dram_joules = rapl_data.energy_dram_joules;
+    metric->energy_dram_joules = dram_valid ? rapl_data.energy_dram_joules : NAN;
+    metric->energy_pkg_joules = pkg_valid ? rapl_data.energy_pkg_joules : NAN;
+    metric->hw_counters_valid = hw_valid;
+    metric->energy_pkg_valid = pkg_valid;
+    metric->energy_dram_valid = dram_valid;
+    if (!hw_valid) {
+        metric->ipc = NAN;
+        metric->l1d_miss_ratio = NAN;
+        metric->llc_miss_ratio = NAN;
+    }
 
     return 0;
 }

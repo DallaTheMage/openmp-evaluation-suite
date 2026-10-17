@@ -33,6 +33,7 @@
  *     raw_samples.csv
  *     aggregated_samples.csv
  *     scaling.csv
+ *     metadata.csv
  *
  * The test-plan file contains the configuration identifiers required to
  * interpret raw and aggregated samples. Measurement files can therefore
@@ -56,6 +57,7 @@
 #include <stddef.h>
 
 #include "core/Analyzer.h"
+#include "core/Configuration.h"
 #include "core/FileManager.h"
 #include "core/TestPlan.h"
 
@@ -63,7 +65,7 @@
 /**
  * @brief Write the complete benchmark result set to CSV files.
  *
- * The function creates or replaces the four CSV files associated with the
+ * The function creates or replaces the five CSV files associated with the
  * current FileManager test directory.
  *
  * @param manager
@@ -80,6 +82,9 @@
  *
  * @param aggregated_count
  *     Number of elements in @p aggregated.
+ *
+ * @param config
+ *     Effective configuration, including compilation metadata.
  *
  * @param scaling_mode
  *     Selects strong-scaling or weak-scaling output for scaling.csv.
@@ -99,6 +104,7 @@ int write_benchmark_results(
     const RawSampleSet *samples,
     const AggregatedSample *aggregated,
     size_t aggregated_count,
+    const Configuration *config,
     ScalingMode scaling_mode
 );
 

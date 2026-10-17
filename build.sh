@@ -61,6 +61,7 @@ Options:
 Environment variables:
   CC                  Compiler executable (overrides COMPILERNAME)
   VERBOSE=1           Show the full build command output
+  OPT_LEVEL           Optimization flag (default: -O2; e.g. -O0, -O3)
   OPENMP_CFLAGS       Override OpenMP compilation flags
   OPENMP_LDFLAGS      Override OpenMP linking flags
   OPENMP_LIBS         Override OpenMP libraries
@@ -473,7 +474,11 @@ info "OpenMP compilation and runtime test passed."
 # Build compiler flags
 # ------------------------------------------------------------
 
+OPT_LEVEL="${OPT_LEVEL:--O2}"
+[[ "$OPT_LEVEL" =~ ^-O(0|1|2|3|s|g|fast)$ ]] || error "Unsupported OPT_LEVEL: $OPT_LEVEL"
+
 CFLAGS_ARRAY=(
+    "$OPT_LEVEL"
     -g
     -Wall
     -Wextra
@@ -487,6 +492,15 @@ CFLAGS_ARRAY=(
 )
 
 CFLAGS_ARRAY+=("${OPENMP_CFLAGS_ARRAY[@]}")
+
+# Record the effective optimization/compilation options in the binary.
+# Exclude preprocessor configuration macros (which represent the experiment
+# configuration and may contain arbitrary data, not toolchain options).
+# Encode as a valid C string literal and a single shell argument.
+BUILD_FLAGS_TEXT="${CFLAGS_ARRAY[*]}"
+BUILD_FLAGS_ESCAPED="${BUILD_FLAGS_TEXT//\\/\\\\}"
+BUILD_FLAGS_ESCAPED="${BUILD_FLAGS_ESCAPED//\"/\\\"}"
+CFLAGS_ARRAY+=("-DOES_COMPILER_FLAGS='\"${BUILD_FLAGS_ESCAPED}\"'")
 
 # Add configuration values as preprocessor macros.
 for key in "${!MACROS[@]}"; do

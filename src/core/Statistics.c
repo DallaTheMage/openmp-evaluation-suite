@@ -62,10 +62,11 @@ void statistics_update(StatisticsAccumulator *accumulator, double value) {
 }
 
 StatisticsResult statistics_finalize(const StatisticsAccumulator *accumulator) {
-    StatisticsResult result = {0.0, 0.0, 0.0, 0.0};
+    StatisticsResult result = {NAN, NAN, NAN, NAN};
     if (accumulator == NULL || accumulator->count == 0U) {
         return result;
     }
+    result.variance = 0.0;
     result.min  = accumulator->min;
     result.max  = accumulator->max;
     result.mean = accumulator->mean;

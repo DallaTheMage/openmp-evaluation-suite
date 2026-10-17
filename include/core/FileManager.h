@@ -211,4 +211,7 @@ FILE *open_csv_file(
 );
 
 
+/** Open a CSV file at <base>/<compiler>/<schedule>/, shared by scaling modes. */
+FILE *open_schedule_csv_file(FileManager *manager, const char *filename);
+
 #endif /* CORE_FILE_MANAGER_H */

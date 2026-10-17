@@ -78,6 +78,7 @@ int hw_counters_init(HWCounters *hw)
         long tid = strtol(entry->d_name, &end, 10);
         if (errno || *end != '\0' || tid <= 0 || tid > INT_MAX) continue;
         if (hw->thread_count == capacity) {
+            if (capacity > SIZE_MAX / (2 * sizeof(*hw->threads))) goto fail;
             size_t next = capacity ? capacity * 2 : 8;
             HWThreadCounters *tmp = realloc(hw->threads, next * sizeof(*tmp));
             if (!tmp) goto fail;
@@ -107,11 +108,19 @@ fail:
 int hw_counters_start(HWCounters *hw)
 {
     if (!hw || !hw->is_initialized) return -1;
+    size_t started = 0;
     for (size_t t = 0; t < hw->thread_count; ++t) {
         int fd = hw->threads[t].leader_fd;
         if (ioctl(fd, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP) == -1 ||
-            ioctl(fd, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP) == -1)
+            ioctl(fd, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP) == -1) {
+            /* A failed enable may leave this group partially active. */
+            (void)ioctl(fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
+            for (size_t j = 0; j < started; ++j)
+                (void)ioctl(hw->threads[j].leader_fd,
+                            PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
             return -1;
+        }
+        ++started;
     }
     return 0;
 }

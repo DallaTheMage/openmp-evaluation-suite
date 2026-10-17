@@ -208,3 +208,29 @@ FILE *open_csv_file(FileManager *manager, const char *filename) {
 
     return fopen(file_path, "w");
 }
+
+FILE *open_schedule_csv_file(FileManager *manager, const char *filename) {
+    char directory[FILE_MANAGER_PATH_MAX];
+    char file_path[FILE_MANAGER_PATH_MAX];
+    int written;
+    size_t length;
+
+    if (manager == NULL || !is_valid_component(filename)) {
+        return NULL;
+    }
+    written = snprintf(directory, sizeof(directory), "%s/%s/%s",
+                       manager->base_dir, manager->compiler_name,
+                       manager->schedule_name);
+    if (written < 0 || (size_t)written >= sizeof(directory) ||
+        make_directory_recursive(directory) != 0) {
+        return NULL;
+    }
+    length = strlen(filename);
+    written = snprintf(file_path, sizeof(file_path),
+                       (length > 4U && strcmp(filename + length - 4U, ".csv") == 0)
+                           ? "%s/%s" : "%s/%s.csv", directory, filename);
+    if (written < 0 || (size_t)written >= sizeof(file_path)) {
+        return NULL;
+    }
+    return fopen(file_path, "w");
+}

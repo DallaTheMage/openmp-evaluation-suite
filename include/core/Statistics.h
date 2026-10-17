@@ -137,7 +137,7 @@ typedef struct StatisticsResult {
  * The returned variance is the sample variance using N - 1 as the
  * denominator when at least two observations are available.
  *
- * For zero observations, all result fields are zero.
+ * For zero observations, result fields are NaN (missing data).
  *
  * For one observation, min, max and mean contain the observation and
  * variance is zero.
