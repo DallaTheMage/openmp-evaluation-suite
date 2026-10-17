@@ -81,3 +81,20 @@ void perf_counter_close(int fd) {
     }
 }
 
+
+int perf_counter_open_thread(uint32_t type, uint64_t config,
+                             pid_t tid, int group_fd)
+{
+    struct perf_event_attr pe;
+    memset(&pe, 0, sizeof(pe));
+    pe.type = type;
+    pe.size = sizeof(pe);
+    pe.config = config;
+    pe.disabled = 1;
+    pe.inherit = 1; /* Include threads created after this event is opened. */
+    pe.exclude_kernel = 1;
+    pe.exclude_hv = 1;
+    pe.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
+                     PERF_FORMAT_TOTAL_TIME_RUNNING;
+    return sys_perf_event_open(&pe, tid, -1, group_fd, 0);
+}

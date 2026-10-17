@@ -1,3 +1,30 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file taskloop.c
+ * @brief OpenMP task-based execution for the taskloop construct.
+ *
+ * Implementation details are kept separate from the public API contracts
+ * documented in the corresponding header.
+ */
+
 #include "kernels/tasking/taskloop.h"
 #include "config/openmp.h"
 #include "profiling/Profiler.h"
@@ -7,6 +34,14 @@
 /* ============================================================================
 - VIEW_2D
 - ========================================================================== */
+/**
+ * @brief Run the taskloop benchmark using the 2D data layout.
+ * @param view Non-owning view of the benchmark input/output buffer.
+ * @param test_case Thread count and scheduling/workload parameters.
+ * @param profiler Initialized profiler used to bracket the kernel workload.
+ * @param metric Output measurement populated by the profiler.
+ * @return Kernel execution status; propagates profiler failures.
+ */
 KernelStatus kernel_2d_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -41,6 +76,14 @@ KernelStatus kernel_2d_taskloop(DataView *view, const TestCase *test_case, Profi
 /* ============================================================================
 - VIEW_3D
 - ========================================================================== */
+/**
+ * @brief Run the taskloop benchmark using the 3D data layout.
+ * @param view Non-owning view of the benchmark input/output buffer.
+ * @param test_case Thread count and scheduling/workload parameters.
+ * @param profiler Initialized profiler used to bracket the kernel workload.
+ * @param metric Output measurement populated by the profiler.
+ * @return Kernel execution status; propagates profiler failures.
+ */
 KernelStatus kernel_3d_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -78,6 +121,14 @@ KernelStatus kernel_3d_taskloop(DataView *view, const TestCase *test_case, Profi
 /* ============================================================================
 - VIEW_AOS
 - ========================================================================== */
+/**
+ * @brief Run the taskloop benchmark using the AOS data layout.
+ * @param view Non-owning view of the benchmark input/output buffer.
+ * @param test_case Thread count and scheduling/workload parameters.
+ * @param profiler Initialized profiler used to bracket the kernel workload.
+ * @param metric Output measurement populated by the profiler.
+ * @return Kernel execution status; propagates profiler failures.
+ */
 KernelStatus kernel_aos_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -112,6 +163,14 @@ KernelStatus kernel_aos_taskloop(DataView *view, const TestCase *test_case, Prof
 /* ============================================================================
 - VIEW_SOA
 - ========================================================================== */
+/**
+ * @brief Run the taskloop benchmark using the SOA data layout.
+ * @param view Non-owning view of the benchmark input/output buffer.
+ * @param test_case Thread count and scheduling/workload parameters.
+ * @param profiler Initialized profiler used to bracket the kernel workload.
+ * @param metric Output measurement populated by the profiler.
+ * @return Kernel execution status; propagates profiler failures.
+ */
 KernelStatus kernel_soa_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
@@ -146,6 +205,14 @@ KernelStatus kernel_soa_taskloop(DataView *view, const TestCase *test_case, Prof
 /* ============================================================================
 - VIEW_AOSOA
 - ========================================================================== */
+/**
+ * @brief Run the taskloop benchmark using the AOSOA data layout.
+ * @param view Non-owning view of the benchmark input/output buffer.
+ * @param test_case Thread count and scheduling/workload parameters.
+ * @param profiler Initialized profiler used to bracket the kernel workload.
+ * @param metric Output measurement populated by the profiler.
+ * @return Kernel execution status; propagates profiler failures.
+ */
 KernelStatus kernel_aosoa_taskloop(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;

@@ -284,6 +284,68 @@ Configuration load_configuration(void) {
 
 
     /* --------------------------------------------------------------------- */
+    /* Cache eviction configuration                                          */
+    /* --------------------------------------------------------------------- */
+
+    config.memory.cache_eviction.enabled =
+        (uint32_t)CACHE_EVICTION_ENABLED;
+
+    config.memory.cache_eviction.multiplier =
+        (uint32_t)CACHE_EVICTION_MULTIPLIER;
+
+    config.memory.cache_eviction.stride_bytes =
+        (size_t)CACHE_EVICTION_STRIDE_BYTES;
+
+    /*
+     * Validate cache eviction parameters.
+     *
+     * enabled must be either 0 or 1.
+     * multiplier and stride must be strictly positive.
+     */
+    if (config.memory.cache_eviction.enabled > 1U ||
+        config.memory.cache_eviction.multiplier == 0U ||
+        config.memory.cache_eviction.stride_bytes == 0U) {
+
+        fprintf(
+            stderr,
+            "[Configuration] Invalid cache eviction parameters\n"
+        );
+
+        destroy_configuration(&config);
+        return (Configuration){0};
+    }
+
+    /*
+     * When cache eviction is enabled, verify that:
+     *
+     * 1. The detected LLC size is available.
+     * 2. The eviction buffer size does not overflow uint64_t.
+     * 3. The resulting size is representable by size_t.
+     */
+    if (config.memory.cache_eviction.enabled != 0U) {
+
+        const uint64_t llc_bytes =
+            config.memory.detected_llc_size_bytes;
+
+        const uint64_t multiplier =
+            (uint64_t)config.memory.cache_eviction.multiplier;
+
+        if (llc_bytes == 0U ||
+            llc_bytes > UINT64_MAX / multiplier ||
+            llc_bytes * multiplier > (uint64_t)SIZE_MAX) {
+
+            fprintf(
+                stderr,
+                "[Configuration] Invalid cache eviction buffer size\n"
+            );
+
+            destroy_configuration(&config);
+            return (Configuration){0};
+        }
+    }
+
+
+    /* --------------------------------------------------------------------- */
     /* DataView shape configuration                                          */
     /* --------------------------------------------------------------------- */
 
@@ -367,7 +429,6 @@ Configuration load_configuration(void) {
 
     return config;
 }
-
 
 /* ========================================================================= */
 /* Configuration destruction                                                */

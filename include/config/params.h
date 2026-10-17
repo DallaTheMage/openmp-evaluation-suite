@@ -292,6 +292,17 @@
     #define DETECTED_LLC_SIZE_BYTES UINT64_C(0)
 #endif
 
+#ifndef CACHE_EVICTION_ENABLED
+    #define CACHE_EVICTION_ENABLED 0U
+#endif
+
+#ifndef CACHE_EVICTION_MULTIPLIER
+    #define CACHE_EVICTION_MULTIPLIER 2U
+#endif
+
+#ifndef CACHE_EVICTION_STRIDE_BYTES
+    #define CACHE_EVICTION_STRIDE_BYTES 64U
+#endif
 
 /**
  * @brief Auxiliary buffer capacity, expressed in double elements.

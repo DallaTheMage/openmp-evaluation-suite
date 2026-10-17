@@ -35,6 +35,7 @@
 #include "core/TestPlan.h"
 #include "data/MemoryManager.h"
 #include "profiling/Profiler.h"
+#include "data/CacheEviction.h"
 
 /**
  * @brief Execute one benchmark suite and write its results.
@@ -68,6 +69,15 @@ static int run_benchmark_suite(
     Profiler profiler = {0};
     RawSampleSet samples = {0};
     AggregatedSample *aggregated = NULL;
+
+    /*
+     * Cache eviction resources.
+     *
+     * The eviction buffer is owned by this benchmark suite
+     * and released during cleanup.
+     */
+    CacheEviction eviction = {0};
+    CacheEviction *active_eviction = NULL;
 
     size_t aggregated_count = 0U;
     size_t max_workload = 0U;
@@ -203,19 +213,66 @@ static int run_benchmark_suite(
     profiler_initialized = 1;
 
     /*
+     * Initialize cache eviction when requested by Configuration.
+     *
+     * Allocation and initialization happen outside the
+     * measured benchmark interval.
+     */
+    if (config->memory.cache_eviction.enabled != 0U) {
+
+        const CacheEvictionConfig *eviction_config =
+            &config->memory.cache_eviction;
+
+        if (cache_eviction_init(
+                &eviction,
+                (size_t)config->memory.detected_llc_size_bytes,
+                (size_t)eviction_config->multiplier,
+                eviction_config->stride_bytes
+            ) != 0) {
+
+            fprintf(
+                stderr,
+                "[Error] Unable to initialize cache eviction for %s\n",
+                test_name
+            );
+
+            goto cleanup;
+        }
+
+        active_eviction = &eviction;
+
+        printf(
+            "[Main] Cache eviction enabled for %s: "
+            "%zu bytes, stride=%zu bytes\n",
+            test_name,
+            eviction.size_bytes,
+            eviction.stride_bytes
+        );
+
+    } else {
+
+        printf(
+            "[Main] Cache eviction disabled for %s\n",
+            test_name
+        );
+    }
+
+
+    /*
      * Execute warm-ups and measured repetitions.
      */
     printf("[Main] Dispatching %s suite\n", test_name);
 
     {
         const DispatchStatus dispatch_status =
-            dispatch_test_plan(
+            dispatch_test_plan_with_eviction(
                 plan,
                 memory_manager,
                 &profiler,
                 config->benchmark.warmup_reps,
                 config->benchmark.work_reps,
-                &samples
+                &samples,
+                active_eviction
             );
 
         if (dispatch_status != DISPATCH_OK) {
@@ -226,6 +283,7 @@ static int run_benchmark_suite(
                 test_name,
                 (int)dispatch_status
             );
+
             goto cleanup;
         }
     }
@@ -290,6 +348,14 @@ cleanup:
      */
     free(aggregated);
     dispatch_destroy_samples(&samples);
+
+    /*
+     * Release the cache eviction buffer.
+     *
+     * Safe even when eviction was disabled,
+     * because the context was zero-initialized.
+     */
+    cache_eviction_destroy(&eviction);
 
     if (profiler_initialized) {
         profiler_cleanup(&profiler);

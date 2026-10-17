@@ -47,6 +47,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "profiling/PerfEventWrapper.h"
 
@@ -70,14 +71,15 @@ typedef enum HWPerfEventType {
  * The structure owns the file descriptors associated with the configured
  * hardware events.
  */
+typedef struct HWThreadCounters {
+    int fds[HW_PERF_COUNT_MAX];
+    int leader_fd;
+} HWThreadCounters;
+
 typedef struct HWCounters {
-    int  fds[HW_PERF_COUNT_MAX]; /* File descriptors indexed by HWPerfEventType. */
-    /**
-     * File descriptor of the group leader.
-     * The remaining counters are attached to this group.
-     */
-    int  leader_fd;
-    bool is_initialized;        /* True after successful counter initialization. */
+    HWThreadCounters *threads;
+    size_t thread_count;
+    bool is_initialized;
 } HWCounters;
 
 /**

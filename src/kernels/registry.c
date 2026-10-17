@@ -23,6 +23,7 @@
  */
 
 #include "kernels/KernelRegistry.h"
+#include "kernels/algorithms/gemm.h"
 
 #include "config/openmp.h"
 #include "kernels/reduction/reduction.h"
@@ -50,6 +51,7 @@ const KernelDescriptor
     [VIEW_2D] = {
         #if OPENMP_HAS_2_0
                 [KERNEL_LOOP]      = { kernel_2d_loop },
+                [KERNEL_GEMM]      = { kernel_2d_gemm },
                 [KERNEL_SECTIONS]  = { kernel_2d_sections },
                 [KERNEL_MASTER]    = { kernel_2d_master },
                 [KERNEL_ORDERED]   = { kernel_2d_ordered },

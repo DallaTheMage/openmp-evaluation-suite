@@ -1,4 +1,24 @@
 #!/usr/bin/env bash
+
+#
+# Copyright (C) 2026
+#
+# This file is part of the OpenMP compiler-agnostic benchmark suite.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
 set -Eeuo pipefail
 
 # Usage: ./autotune.sh [output.conf]
@@ -176,6 +196,20 @@ detect_mem_mib() {
 LOGICAL_CORES=$(detect_cores)
 AVAILABLE_MEM_MIB=$(detect_mem_mib)
 DEFAULT_COMPILER=$(detect_default_compiler)
+
+# ---------------------------------------------------------------------------
+# Cache eviction defaults
+# ---------------------------------------------------------------------------
+
+# Disabled by default to preserve existing benchmark behavior.
+CACHE_EVICTION_ENABLED=0
+
+# Allocate an eviction buffer twice the detected LLC capacity.
+CACHE_EVICTION_MULTIPLIER=2
+
+# Access one byte every 64 bytes.
+CACHE_EVICTION_STRIDE_BYTES=64
+
 DETECTED_LLC_SIZE_BYTES=$(detect_llc_bytes)
 
 # ---------------------------------------------------------------------------
@@ -286,7 +320,22 @@ MEMORY_ALIGNMENT=64U
 
 # Detected last-level data/unified cache size, in bytes.
 # Zero means cache detection was unavailable.
+# Detected last-level data/unified cache size, in bytes.
+# Zero means cache detection was unavailable.
 DETECTED_LLC_SIZE_BYTES=${DETECTED_LLC_SIZE_BYTES}ULL
+
+# =============================================================================
+# Cache eviction configuration
+# =============================================================================
+
+# 0 = disabled, 1 = enabled.
+CACHE_EVICTION_ENABLED=${CACHE_EVICTION_ENABLED}U
+
+# Eviction buffer capacity = multiplier * detected LLC capacity.
+CACHE_EVICTION_MULTIPLIER=${CACHE_EVICTION_MULTIPLIER}U
+
+# Distance between consecutive accesses, in bytes.
+CACHE_EVICTION_STRIDE_BYTES=${CACHE_EVICTION_STRIDE_BYTES}U
 
 # OpenMP: 1=static, 2=dynamic, 3=guided
 CHOSEN_SCHEDULE_ID=1U
@@ -316,6 +365,25 @@ if (( DETECTED_LLC_SIZE_BYTES > 0 )); then
 else
     echo "    Detected LLC: unavailable"
     echo "    Auxiliary buffer target: 0 elements"
+fi
+
+echo "    Cache eviction: disabled by default"
+echo "    Cache eviction multiplier: ${CACHE_EVICTION_MULTIPLIER}x LLC"
+echo "    Cache eviction stride: ${CACHE_EVICTION_STRIDE_BYTES} bytes"
+
+if (( DETECTED_LLC_SIZE_BYTES > 0 )); then
+
+    EVICTION_BUFFER_MIB=$((
+        DETECTED_LLC_SIZE_BYTES *
+        CACHE_EVICTION_MULTIPLIER /
+        1024 /
+        1024
+    ))
+
+    echo "    Cache eviction buffer: ${EVICTION_BUFFER_MIB} MiB"
+
+else
+    echo "    Cache eviction buffer: unavailable (LLC unknown)"
 fi
 
 echo "    Main size: 2^${MAX_PROBLEM_SIZE} elements"

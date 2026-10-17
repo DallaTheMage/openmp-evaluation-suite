@@ -85,11 +85,10 @@ bool shape_2d_validate(const DataView *view) {
         return false;
     }
 
-    /*
-     * The shape represents complete rows only. The unused remainder,
-     * if any, is intentionally outside the logical 2D shape.
-     */
-    return rows == (view->window.size / cols);
+    /* Require a nonempty rectangular shape with no discarded elements. */
+    return rows > 0U &&
+           view->window.size % cols == 0U &&
+           rows == view->window.size / cols;
 }
 
 
@@ -132,7 +131,9 @@ bool shape_3d_validate(const DataView *view) {
         return false;
     }
     plane_size = depth * cols;
-    return height == view->window.size / plane_size;
+    return height > 0U &&
+           view->window.size % plane_size == 0U &&
+           height == view->window.size / plane_size;
 }
 
 

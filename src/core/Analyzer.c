@@ -40,6 +40,10 @@ typedef struct GroupAccumulator {
 } GroupAccumulator;
 
 
+/**
+ * @brief Reset each statistics accumulator for a new group.
+ * @param acc Group accumulator to initialize; NULL is ignored.
+ */
 static void group_accumulator_init(GroupAccumulator *acc)
 {
     if (acc == NULL) {
@@ -58,6 +62,11 @@ static void group_accumulator_init(GroupAccumulator *acc)
     statistics_init(&acc->energy_dram_joules);
 }
 
+/**
+ * @brief Append one measurement to every statistics accumulator in the group.
+ * @param acc Destination accumulator; NULL is ignored.
+ * @param metric Measurement whose fields are appended; NULL is ignored.
+ */
 static void group_accumulator_update(GroupAccumulator *acc, const PerformanceMetric *metric) {
     if (acc == NULL || metric == NULL) {
         return;

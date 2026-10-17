@@ -1,3 +1,33 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file RAPLPower.c
+ * @brief Linux powercap RAPL package and optional DRAM energy readings.
+ *
+ * Implementation details are kept separate from the public API contracts
+ * documented in the corresponding header.
+
+ * @note Energy counter wraparound is currently reported as zero delta.
+ *       Read failures in the internal helper also return zero.
+ */
+
 /* RAPLPower.c */
 #include "profiling/RAPLPower.h"
 #include <stdio.h>
@@ -9,6 +39,10 @@
 #define RAPL_PKG_PATH "/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj"
 #define RAPL_DRAM_PATH "/sys/class/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:0/energy_uj"
 
+/** @brief Read a powercap energy counter in microjoules.
+ * @param fd Open counter descriptor.
+ * @return Parsed counter value, or 0.0 on invalid descriptor/read failure.
+ */
 static double read_energy_uj(int fd) {
     if (fd < 0) return 0.0;
     char buffer[32];

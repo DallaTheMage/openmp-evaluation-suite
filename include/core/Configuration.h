@@ -231,6 +231,11 @@ typedef struct {
     uint64_t generation_seed;
 } BenchmarkConfig;
 
+typedef struct {
+    uint32_t enabled;
+    uint32_t multiplier;
+    size_t   stride_bytes;
+} CacheEvictionConfig;
 
 /* ========================================================================= */
 /* Memory configuration                                                      */
@@ -259,6 +264,8 @@ typedef struct {
      * Zero means that no auxiliary buffer is configured.
      */
     size_t aux_buffer_size;
+
+    CacheEvictionConfig cache_eviction;
 } MemoryConfig;
 
 

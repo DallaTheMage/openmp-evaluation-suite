@@ -77,6 +77,8 @@ static const char *kernel_type_to_string(KernelType type) {
             return "Taskloop";
         case KERNEL_NATIVE_SCAN:
             return "Native Scan";
+        case KERNEL_GEMM:
+            return "GEMM";
         case KERNEL_TWO_PASS_SCAN:
             return "Two-Pass Scan";
         default:
@@ -244,6 +246,12 @@ static const AggregatedSample *find_aggregated_sample(
     return NULL;
 }
 
+/**
+ * @brief Find the one-thread baseline matching a scaled case's chunk size.
+ * @param group Group of benchmark cases to search.
+ * @param scaled_case Case whose chunk size determines the matching baseline.
+ * @return Borrowed matching case, or NULL if no baseline exists.
+ */
 static const TestCase *find_baseline_case(const KernelTestGroup *group, const TestCase *scaled_case) {
     if (group == NULL || scaled_case == NULL) {
         return NULL;

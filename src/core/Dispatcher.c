@@ -133,6 +133,9 @@ static const char *kernel_type_to_string(KernelType type)
         case KERNEL_NATIVE_SCAN:
             return "Native Scan";
 
+        case KERNEL_GEMM:
+            return "GEMM";
+
         case KERNEL_TWO_PASS_SCAN:
             return "Two-Pass Scan";
 
@@ -357,8 +360,9 @@ static DispatchStatus execute_kernel(
     const TestCase *test_case,
     MemoryManager *memory_manager,
     Profiler *profiler,
-    PerformanceMetric *metric)
-{
+    PerformanceMetric *metric,
+    CacheEviction *eviction) {
+
     KernelStatus kernel_status;
     DataView execution_view;
     DataBuffer *working_buffer;
@@ -412,6 +416,17 @@ static DispatchStatus execute_kernel(
     execution_view = *view;
     execution_view.buffer = working_buffer;
     execution_view.window.offset = UINT64_C(0);
+
+    /*
+     * Cache eviction is executed after restoring the
+     * working data and before entering the kernel.
+     *
+     * The kernel's profiling interval does not include
+     * this operation.
+     */
+    if (eviction != NULL) {
+        cache_eviction_run(eviction);
+    }
 
     /*
      * Initialize the destination metric before calling the kernel.
@@ -487,14 +502,15 @@ static DispatchStatus execute_kernel(
  * @pre profiler must not be NULL.
  * @pre out_samples must not be NULL.
  */
-DispatchStatus dispatch_test_plan(
+DispatchStatus dispatch_test_plan_with_eviction(
     const TestPlan *plan,
     MemoryManager *memory_manager,
     Profiler *profiler,
     uint32_t warmup_reps,
     uint32_t work_reps,
-    RawSampleSet *out_samples)
-{
+    RawSampleSet *out_samples,
+    CacheEviction *eviction) {
+
     DispatchStatus status;
     size_t sample_count = 0U;
     size_t sample_index = 0U;
@@ -633,7 +649,8 @@ DispatchStatus dispatch_test_plan(
                         test_case,
                         memory_manager,
                         profiler,
-                        &warmup_metric
+                        &warmup_metric,
+                        eviction
                     );
 
                     if (status != DISPATCH_OK) {
@@ -658,7 +675,8 @@ DispatchStatus dispatch_test_plan(
                         test_case,
                         memory_manager,
                         profiler,
-                        &sample->metric
+                        &sample->metric,
+                        eviction
                     );
 
                     if (status != DISPATCH_OK) {
@@ -693,6 +711,25 @@ DispatchStatus dispatch_test_plan(
     fflush(stdout);
 
     return DISPATCH_OK;
+}
+
+DispatchStatus dispatch_test_plan(
+    const TestPlan *plan,
+    MemoryManager *memory_manager,
+    Profiler *profiler,
+    uint32_t warmup_reps,
+    uint32_t work_reps,
+    RawSampleSet *out_samples
+) {
+    return dispatch_test_plan_with_eviction(
+        plan,
+        memory_manager,
+        profiler,
+        warmup_reps,
+        work_reps,
+        out_samples,
+        NULL
+    );
 }
 
 /**

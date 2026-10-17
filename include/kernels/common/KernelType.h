@@ -58,6 +58,7 @@ typedef enum KernelType {
     KERNEL_TASKLOOP,
     KERNEL_NATIVE_SCAN,
     KERNEL_TWO_PASS_SCAN,
+    KERNEL_GEMM,
 
     /** Number of valid kernel identifiers. */
     KERNEL_COUNT

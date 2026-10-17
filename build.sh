@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+#
+# Copyright (C) 2026
+#
+# This file is part of the OpenMP compiler-agnostic benchmark suite.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
 set -Eeuo pipefail
 
 # ============================================================
@@ -214,6 +233,71 @@ if [[ -n "${MACROS[CHOSEN_SCHEDULE]:-}" ]]; then
     unset 'MACROS[CHOSEN_SCHEDULE]'
 
 fi
+
+# ------------------------------------------------------------
+# Cache eviction configuration
+# ------------------------------------------------------------
+
+# Default values preserve the original benchmark behavior.
+MACROS[CACHE_EVICTION_ENABLED]="${MACROS[CACHE_EVICTION_ENABLED]:-0U}"
+MACROS[CACHE_EVICTION_MULTIPLIER]="${MACROS[CACHE_EVICTION_MULTIPLIER]:-2U}"
+MACROS[CACHE_EVICTION_STRIDE_BYTES]="${MACROS[CACHE_EVICTION_STRIDE_BYTES]:-64U}"
+
+# Validate an unsigned integer with an optional C integer suffix.
+# Accepted examples: 0, 1U, 64U, 128UL, 256ULL.
+parse_cache_uint() {
+    local value="$1"
+    local digits
+
+    if [[ ! "$value" =~ ^([0-9]+)(U|UL|ULL)?$ ]]; then
+        error "Invalid cache eviction integer: $value"
+    fi
+
+    digits="${BASH_REMATCH[1]}"
+
+    # Avoid leading-zero octal interpretation in Bash.
+    CACHE_PARSED_UINT="$((10#$digits))"
+}
+
+parse_cache_uint "${MACROS[CACHE_EVICTION_ENABLED]}"
+CACHE_EVICTION_ENABLED_VALUE="$CACHE_PARSED_UINT"
+
+parse_cache_uint "${MACROS[CACHE_EVICTION_MULTIPLIER]}"
+CACHE_EVICTION_MULTIPLIER_VALUE="$CACHE_PARSED_UINT"
+
+parse_cache_uint "${MACROS[CACHE_EVICTION_STRIDE_BYTES]}"
+CACHE_EVICTION_STRIDE_VALUE="$CACHE_PARSED_UINT"
+
+if (( CACHE_EVICTION_ENABLED_VALUE != 0 &&
+      CACHE_EVICTION_ENABLED_VALUE != 1 )); then
+
+    error "CACHE_EVICTION_ENABLED must be 0 or 1"
+fi
+
+if (( CACHE_EVICTION_MULTIPLIER_VALUE < 1 )); then
+    error "CACHE_EVICTION_MULTIPLIER must be greater than zero"
+fi
+
+if (( CACHE_EVICTION_STRIDE_VALUE < 1 )); then
+    error "CACHE_EVICTION_STRIDE_BYTES must be greater than zero"
+fi
+
+if (( CACHE_EVICTION_ENABLED_VALUE == 1 )); then
+
+    if [[ -z "${MACROS[DETECTED_LLC_SIZE_BYTES]:-}" ]]; then
+        error "Cache eviction requires DETECTED_LLC_SIZE_BYTES"
+    fi
+
+    parse_cache_uint "${MACROS[DETECTED_LLC_SIZE_BYTES]}"
+
+    if (( CACHE_PARSED_UINT == 0 )); then
+        error "Cache eviction requires a nonzero LLC size"
+    fi
+fi
+
+info "Cache eviction enabled: ${CACHE_EVICTION_ENABLED_VALUE}"
+info "Cache eviction multiplier: ${CACHE_EVICTION_MULTIPLIER_VALUE}"
+info "Cache eviction stride: ${CACHE_EVICTION_STRIDE_VALUE} bytes"
 
 # ------------------------------------------------------------
 # Select compiler

@@ -48,6 +48,7 @@
 #include "core/TestPlan.h"
 #include "profiling/Profiler.h"
 #include "data/MemoryManager.h"
+#include "data/CacheEviction.h"
 
 /**
  * @brief Result codes returned by the dispatcher.
@@ -115,6 +116,16 @@ DispatchStatus dispatch_test_plan(
     uint32_t warmup_reps,
     uint32_t work_reps,
     RawSampleSet *out_samples
+);
+
+DispatchStatus dispatch_test_plan_with_eviction(
+    const TestPlan *plan,
+    MemoryManager *memory_manager,
+    Profiler *profiler,
+    uint32_t warmup_reps,
+    uint32_t work_reps,
+    RawSampleSet *out_samples,
+    CacheEviction *eviction
 );
 
 /**

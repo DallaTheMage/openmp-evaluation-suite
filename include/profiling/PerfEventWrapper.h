@@ -143,16 +143,20 @@ int perf_counter_open_process(
 
 
 /**
- * @brief Close a perf event file descriptor.
- *
- * Closing an invalid descriptor is ignored by this interface.
- *
- * @param fd
- *     File descriptor returned by perf_counter_open_process().
- *
- * @note
- *     This function is NULL-independent because it operates directly
- *     on a file descriptor.
+ * @brief Open a disabled perf event attached to a specific Linux thread.
+ * @param type Linux perf event type.
+ * @param config Event selector for the specified type.
+ * @param tid Linux thread identifier to monitor.
+ * @param group_fd Group leader descriptor, or -1 for a new group.
+ * @return Non-negative event descriptor on success, or -1 on syscall failure.
+ * @note Kernel and hypervisor events are excluded; enabled/running time is reported.
+ */
+int perf_counter_open_thread(uint32_t type, uint64_t config,
+                             pid_t tid, int group_fd);
+
+/**
+ * @brief Close a perf-event descriptor, ignoring negative values.
+ * @param fd File descriptor to close; negative values are ignored.
  */
 void perf_counter_close(int fd);
 

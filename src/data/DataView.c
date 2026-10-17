@@ -201,5 +201,11 @@ DataView create_data_view(
     initialize_metadata(&view, type, config);
     recompute_metadata(&view);
 
+    /* Reject invalid 2D/3D geometry at construction, before any kernel. */
+    if ((type == VIEW_2D && !shape_2d_validate(&view)) ||
+        (type == VIEW_3D && !shape_3d_validate(&view))) {
+        return (DataView){0};
+    }
+
     return view;
 }

@@ -38,6 +38,7 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "core/TestPlan.h"
@@ -159,7 +160,25 @@ static bool initialize_test_set_view(
         size
     );
 
-    return test_set->view.buffer != NULL;
+    if (test_set->view.buffer == NULL) {
+        if (type == VIEW_2D) {
+            fprintf(stderr,
+                    "[TestPlan] Invalid 2D view: window=%llu, cols=%llu. "
+                    "Require window >= cols and window %% cols == 0.\n",
+                    (unsigned long long)size,
+                    (unsigned long long)view_config.v2d.cols);
+        } else if (type == VIEW_3D) {
+            fprintf(stderr,
+                    "[TestPlan] Invalid 3D view: window=%llu, depth=%llu, cols=%llu. "
+                    "Require window to be a positive multiple of depth*cols "
+                    "(without overflow).\n",
+                    (unsigned long long)size,
+                    (unsigned long long)view_config.v3d.depth,
+                    (unsigned long long)view_config.v3d.cols);
+        }
+        return false;
+    }
+    return true;
 }
 
 

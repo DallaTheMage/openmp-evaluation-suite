@@ -1,5 +1,36 @@
+/*
+ * Copyright (C) 2026
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file Generator.c
+ * @brief Deterministic generation of benchmark input values using xoshiro256.
+ *
+ * Implementation details are kept separate from the public API contracts
+ * documented in the corresponding header.
+ */
+
 #include "data/Generator.h"
 
+/** @brief Advance SplitMix64 to derive a generator seed word.
+ * @param sm_state Mutable SplitMix64 state.
+ * @return Next mixed 64-bit word.
+ */
 static uint64_t splitmix64_next(uint64_t *sm_state) {
     uint64_t z = (*sm_state += 0x9e3779b97f4a7c15ULL);
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -7,6 +38,10 @@ static uint64_t splitmix64_next(uint64_t *sm_state) {
     return z ^ (z >> 31);
 }
 
+/** @brief Initialize the xoshiro state from a deterministic seed.
+ * @param state State to initialize.
+ * @param seed User-provided seed.
+ */
 static void generator_init(xoshiro256_state *state, uint64_t seed) {
     uint64_t sm_state = seed;
     state->s[0] = splitmix64_next(&sm_state);

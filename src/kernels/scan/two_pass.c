@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <omp.h>
+#include <stdio.h>
 
 #if OPENMP_HAS_TWO_PASS_SCAN
 
@@ -207,6 +208,7 @@ KernelStatus kernel_2d_two_pass_scan(
     Profiler *profiler,
     PerformanceMetric *metric)
 {
+
     const uint64_t total =
         view->meta.v2d.rows * view->meta.v2d.cols;
 
