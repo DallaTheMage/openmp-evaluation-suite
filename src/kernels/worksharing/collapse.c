@@ -29,6 +29,7 @@
 #include "config/openmp.h"
 #include "profiling/Profiler.h"
 #include "core/TestPlan.h"
+#include "kernels/common/Slowdown.h"
 
 #if OPENMP_HAS_3_0
 /* ============================================================================
@@ -63,6 +64,7 @@ KernelStatus kernel_2d_collapse(DataView *view,
         for (uint64_t c = 0; c < cols; ++c) {
             const uint64_t offset = r * cols + c;
             pool[offset] = pool[offset] * 2.0 + 1.0;
+            SLOWDOWN_AFTER_UPDATE(offset);
         }
     }
 
@@ -107,6 +109,7 @@ KernelStatus kernel_3d_collapse(DataView *view,
             for (uint64_t d = 0; d < depth; ++d) {
                 const uint64_t offset = (r * cols + c) * depth + d;
                 pool[offset] = pool[offset] * 2.0 + 1.0;
+                SLOWDOWN_AFTER_UPDATE(offset);
             }
         }
     }

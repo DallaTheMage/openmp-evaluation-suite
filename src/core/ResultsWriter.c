@@ -370,8 +370,6 @@ static int find_weak_baseline(
     size_t *baseline_set_index,
     const TestCase **baseline_case) {
 
-    uint32_t best_threads = UINT32_MAX;
-
     if (plan == NULL ||
         scaled_group == NULL ||
         scaled_case == NULL ||
@@ -406,11 +404,11 @@ static int find_weak_baseline(
                             &group->cases.data[case_index];
 
                         if (candidate->chunk_size == scaled_case->chunk_size &&
-                            candidate->num_threads < scaled_case->num_threads &&
-                            candidate->num_threads < best_threads) {
-                            best_threads = candidate->num_threads;
+                            candidate->num_threads == 1U &&
+                            scaled_case->num_threads > 1U) {
                             *baseline_set_index = set_index;
                             *baseline_case = candidate;
+                            return 1;
                         }
                     }
                 }
@@ -559,8 +557,10 @@ static int write_metadata(FILE *file, const Configuration *config) {
         write_metadata_u64(file, "warmup_reps", config->benchmark.warmup_reps) != 0 ||
         write_metadata_u64(file, "work_reps", config->benchmark.work_reps) != 0 ||
         write_metadata_u64(file, "generation_seed", config->benchmark.generation_seed) != 0 ||
+        write_metadata_u64(file, "slowdown_factor", config->benchmark.slowdown_factor) != 0 ||
         write_metadata_u64(file, "problem_size_elements", config->derived.problem_size_elements) != 0 ||
-        write_metadata_u64(file, "size_per_thread", config->derived.size_per_thread) != 0) return -1;
+        write_metadata_u64(file, "size_per_thread", config->derived.size_per_thread) != 0 ||
+        write_metadata_u64(file, "view_2d_cols", config->shapes[VIEW_2D].v2d.cols) != 0) return -1;
     return ferror(file) ? -1 : 0;
 }
 

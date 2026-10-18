@@ -442,7 +442,7 @@ static int run_application(const Configuration *config)
         run_benchmark_suite(
             memory_manager,
             config,
-            "full_scale",
+            "Full_scale",
             SCALING_STRONG,
             0
         ) != 0
@@ -454,7 +454,7 @@ static int run_application(const Configuration *config)
         run_benchmark_suite(
             memory_manager,
             config,
-            "proportional",
+            "Proportional",
             SCALING_WEAK,
             1
         ) != 0

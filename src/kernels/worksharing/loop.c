@@ -29,6 +29,7 @@
 #include "config/openmp.h"
 #include "profiling/Profiler.h"
 #include "core/TestPlan.h"
+#include "kernels/common/Slowdown.h"
 
 #if OPENMP_HAS_2_0
 /* ============================================================================
@@ -62,6 +63,7 @@ KernelStatus kernel_2d_loop(DataView *view,
         const uint64_t offset = r * cols;
         for (uint64_t c = 0; c < cols; ++c) {
             pool[offset + c] = pool[offset + c] * 2.0 + 1.0;
+            SLOWDOWN_AFTER_UPDATE(offset + c);
         }
     }
 
@@ -105,6 +107,7 @@ KernelStatus kernel_3d_loop(DataView *view,
             const uint64_t offset = (r * cols + c) * depth;
             for (uint64_t d = 0; d < depth; ++d) {
                 pool[offset + d] = pool[offset + d] * 2.0 + 1.0;
+                SLOWDOWN_AFTER_UPDATE(offset + d);
             }
         }
     }
@@ -147,6 +150,7 @@ KernelStatus kernel_aos_loop(DataView *view,
         const uint64_t base = i * struct_size;
         for (uint64_t f = 0; f < struct_size; ++f) {
             pool[base + f] = pool[base + f] * 2.0 + 1.0;
+            SLOWDOWN_AFTER_UPDATE(base + f);
         }
     }
 
@@ -188,6 +192,7 @@ KernelStatus kernel_soa_loop(DataView *view,
         const uint64_t field_offset = f * num_elems;
         for (uint64_t i = 0; i < num_elems; ++i) {
             pool[field_offset + i] = pool[field_offset + i] * 2.0 + 1.0;
+            SLOWDOWN_AFTER_UPDATE(field_offset + i);
         }
     }
 
@@ -234,6 +239,7 @@ KernelStatus kernel_aosoa_loop(DataView *view,
             const uint64_t field_base = tile_base + f * vl;
             for (uint64_t v = 0; v < vl; ++v) {
                 pool[field_base + v] = pool[field_base + v] * 2.0 + 1.0;
+                SLOWDOWN_AFTER_UPDATE(field_base + v);
             }
         }
     }

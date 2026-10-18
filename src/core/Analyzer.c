@@ -244,15 +244,16 @@ bool analyzer_compute_scaling(
         baseline->kernel != scaled->kernel ||
         baseline->test_case_id != baseline_point->uid ||
         scaled->test_case_id != scaled_point->uid ||
-        baseline_point->num_threads == 0U ||
-        scaled_point->num_threads == 0U) {
+        baseline_point->num_threads != 1U ||
+        scaled_point->num_threads <= 1U) {
         return false;
     }
 
     baseline_time = baseline->wall_time_sec.mean;
     scaled_time   = scaled->wall_time_sec.mean;
 
-    if (baseline_time <= 0.0 || scaled_time <= 0.0) {
+    if (!isfinite(baseline_time) || !isfinite(scaled_time) ||
+        baseline_time <= 0.0 || scaled_time <= 0.0) {
         return false;
     }
 
@@ -287,10 +288,12 @@ bool analyzer_compute_weak_scaling(
         || out_metrics    == NULL
         || baseline_work  == UINT64_C(0)
         || scaled_work    == UINT64_C(0)
-        || baseline_point->num_threads == 0U
+        || baseline_point->num_threads != 1U
         || scaled_point->num_threads   == 0U
         || scaled_point->num_threads   <= baseline_point->num_threads
         || baseline->kernel != scaled->kernel
+        || !isfinite(baseline_time)
+        || !isfinite(scaled_time)
         || baseline_time    <= 0.0
         || scaled_time      <= 0.0) {
         return false;

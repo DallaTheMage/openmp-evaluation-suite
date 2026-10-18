@@ -275,15 +275,21 @@
  * The default value is consistent with the default problem size and
  * thread list:
  *
- *     2^25 elements/thread
- *     2^28 elements at 8 threads
+ *     2^19 elements/thread (fallback when no configuration is supplied)
+ *     2^22 elements at 8 threads
  */
 
 #ifndef SIZE_PER_THREAD_LOG2
     #define SIZE_PER_THREAD_LOG2 19U
 #endif
 
-#define SIZE_PER_THREAD UINT64_C(1) << SIZE_PER_THREAD_LOG2
+#if SIZE_PER_THREAD_LOG2 >= 63U
+    #error "SIZE_PER_THREAD_LOG2 must be less than 63"
+#endif
+
+#ifndef SIZE_PER_THREAD
+    #define SIZE_PER_THREAD (UINT64_C(1) << SIZE_PER_THREAD_LOG2)
+#endif
 
 /**
  * @brief Alignment requested for benchmark data allocations.
