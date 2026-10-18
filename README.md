@@ -2,8 +2,6 @@
 
 A compiler-agnostic C benchmark suite for evaluating OpenMP implementations on shared-memory CPUs. It supports fixed-size and proportional-workload scaling experiments, OpenMP constructs, algorithmic kernels, statistical measurements, and optional hardware and energy diagnostics.
 
-> **Project status:** Research software under active development. The default configuration is intended for initial testing, not as a ready-made scientifically representative experiment.
-
 ## Contents
 
 1. [Requirements](#requirements)
