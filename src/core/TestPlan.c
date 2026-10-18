@@ -74,9 +74,9 @@ static bool make_view_create_config(
     ViewType type,
     uint64_t size) {
 
-    if (destination == NULL ||
-        source == NULL ||
-        size == UINT64_C(0)) {
+    if (destination == NULL
+        || source == NULL
+        || size == UINT64_C(0)) {
         return false;
     }
 
@@ -135,7 +135,6 @@ static bool initialize_test_set_view(
     const Configuration *config,
     ViewType type,
     uint64_t size) {
-
     ViewCreateConfig view_config;
 
     if (test_set == NULL ||
@@ -191,9 +190,7 @@ static void destroy_kernel_group(KernelTestGroup *group) {
     if (group == NULL) {
         return;
     }
-
     free(group->cases.data);
-
     group->cases.data = NULL;
     group->cases.count = 0U;
 }
@@ -231,7 +228,6 @@ static void destroy_test_set(TestSet *test_set) {
     if (test_set == NULL) {
         return;
     }
-
     destroy_kernel_groups(&test_set->kernels);
     test_set->view = (DataView){0};
 }
@@ -268,10 +264,7 @@ static bool populate_kernel_group(
     group->kernel = kernel_type;
 
     if (fixed_thread_count != 0U) {
-        for (size_t i = 0U;
-             i < config->execution.threads.count;
-             ++i) {
-
+        for (size_t i = 0U; i < config->execution.threads.count; ++i) {
             if (config->execution.threads.data[i] ==
                 fixed_thread_count) {
                 case_count = config->execution.chunk_sizes.count;
@@ -297,52 +290,31 @@ static bool populate_kernel_group(
          */
         ++test_set->kernels.count;
     } else {
-        if (case_count >
-            SIZE_MAX / sizeof(*group->cases.data)) {
+        if (case_count > (SIZE_MAX / sizeof(*group->cases.data))) {
             return false;
         }
-
-        group->cases.data = calloc(
-            case_count,
-            sizeof(*group->cases.data)
-        );
-
+        group->cases.data = calloc(case_count, sizeof(*group->cases.data));
         if (group->cases.data == NULL) {
             return false;
         }
-
-        for (size_t i = 0U;
-             i < config->execution.threads.count;
-             ++i) {
-
-            const uint32_t num_threads =
-                config->execution.threads.data[i];
+        for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+            const uint32_t num_threads = config->execution.threads.data[i];
 
             /*
              * A zero fixed_thread_count means that all configured thread
              * counts are included. Otherwise, include only the matching
              * thread count.
              */
-            if (fixed_thread_count == 0U ||
-                num_threads == fixed_thread_count) {
-
-                for (size_t c = 0U;
-                     c < config->execution.chunk_sizes.count;
-                     ++c) {
-
-                    TestCase *test_case =
-                        &group->cases.data[case_index];
-
-                    test_case->uid = (TestCaseUID)case_index;
+            if (fixed_thread_count == 0U || num_threads == fixed_thread_count) {
+                for (size_t c = 0U; c < config->execution.chunk_sizes.count; ++c) {
+                    TestCase *test_case    = &group->cases.data[case_index];
+                    test_case->uid         = (TestCaseUID)case_index;
                     test_case->num_threads = num_threads;
-                    test_case->chunk_size =
-                        config->execution.chunk_sizes.data[c];
-
+                    test_case->chunk_size  = config->execution.chunk_sizes.data[c];
                     ++case_index;
                 }
             }
         }
-
         group->cases.count = case_index;
         ++test_set->kernels.count;
     }
@@ -374,13 +346,8 @@ static bool populate_test_set_kernels(
         return false;
     }
 
-    for (size_t kernel = 0U;
-         kernel < (size_t)KERNEL_COUNT;
-         ++kernel) {
-
-        if (kernel_registry_is_available(
-                test_set->view.type,
-                (KernelType)kernel)) {
+    for (size_t kernel = 0U; kernel < (size_t)KERNEL_COUNT; ++kernel) {
+        if (kernel_registry_is_available(test_set->view.type, (KernelType)kernel)) {
             ++group_count;
         }
     }
@@ -398,22 +365,10 @@ static bool populate_test_set_kernels(
         return false;
     }
 
-    for (size_t kernel = 0U;
-         kernel < (size_t)KERNEL_COUNT;
-         ++kernel) {
-
+    for (size_t kernel = 0U; kernel < (size_t)KERNEL_COUNT; ++kernel) {
         const KernelType kernel_type = (KernelType)kernel;
-
-        if (kernel_registry_is_available(
-                test_set->view.type,
-                kernel_type)) {
-
-            if (!populate_kernel_group(
-                    test_set,
-                    config,
-                    kernel_type,
-                    fixed_thread_count)) {
-
+        if (kernel_registry_is_available(test_set->view.type, kernel_type)) {
+            if (!populate_kernel_group(test_set, config, kernel_type, fixed_thread_count)) {
                 destroy_kernel_groups(&test_set->kernels);
                 return false;
             }
@@ -506,31 +461,17 @@ static TestPlan *build_test_plan(
             return NULL;
         }
 
-        for (size_t type_index = 0U;
-             type_index < (size_t)VIEW_TYPE_COUNT;
-             ++type_index) {
-
-            TestSet *test_set = &plan->data[set_index];
+        for (size_t type_index = 0U; type_index < (size_t)VIEW_TYPE_COUNT; ++type_index) {
+            TestSet *test_set   = &plan->data[set_index];
             const ViewType type = (ViewType)type_index;
+            test_set->uid       = (TestSetUID)set_index;
 
-            test_set->uid = (TestSetUID)set_index;
-
-            if (!initialize_test_set_view(
-                    test_set,
-                    buffer,
-                    config,
-                    type,
-                    sizes[i])) {
-
+            if (!initialize_test_set_view(test_set, buffer, config, type, sizes[i])) {
                 destroy_test_plan(plan);
                 return NULL;
             }
 
-            if (!populate_test_set_kernels(
-                    test_set,
-                    config,
-                    fixed_thread_count)) {
-
+            if (!populate_test_set_kernels(test_set,config,fixed_thread_count)) {
                 destroy_test_plan(plan);
                 return NULL;
             }
@@ -549,8 +490,7 @@ static TestPlan *build_test_plan(
 
 bool test_plan_max_workload(
     const TestPlan *plan,
-    size_t *out_elements)
-{
+    size_t *out_elements) {
     size_t maximum = 0U;
 
     if (plan == NULL ||
@@ -561,16 +501,13 @@ bool test_plan_max_workload(
 
     for (size_t i = 0U; i < plan->count; ++i) {
         const uint64_t size = plan->data[i].view.window.size;
-
         if (size > (uint64_t)SIZE_MAX) {
             return false;
         }
-
         if ((size_t)size > maximum) {
             maximum = (size_t)size;
         }
     }
-
     *out_elements = maximum;
     return true;
 }
@@ -578,8 +515,7 @@ bool test_plan_max_workload(
 
 bool test_plan_rebind_buffer(
     TestPlan *plan,
-    DataBuffer *buffer)
-{
+    DataBuffer *buffer) {
     if (plan == NULL ||
         buffer == NULL ||
         (plan->count > 0U && plan->data == NULL)) {
@@ -645,17 +581,10 @@ TestPlan *generate_proportional_test_plan(
         return NULL;
     }
 
-    for (size_t i = 0U;
-         i < config->execution.threads.count;
-         ++i) {
-
-        const uint64_t threads =
-            (uint64_t)config->execution.threads.data[i];
-
-        if (threads == UINT64_C(0) ||
-            config->derived.size_per_thread >
-                UINT64_MAX / threads) {
-
+    for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+        const uint64_t threads = (uint64_t)config->execution.threads.data[i];
+        if (threads == UINT64_C(0)
+            || config->derived.size_per_thread > UINT64_MAX / threads) {
             free(sizes);
             return NULL;
         }
@@ -761,9 +690,7 @@ bool validate_test_plan(const TestPlan *plan) {
             return false;
         }
 
-        for (size_t group_index = 0U;
-             group_index < test_set->kernels.count;
-             ++group_index) {
+        for (size_t group_index = 0U; group_index < test_set->kernels.count; ++group_index) {
 
             const KernelTestGroup *group =
                 &test_set->kernels.data[group_index];
@@ -780,13 +707,8 @@ bool validate_test_plan(const TestPlan *plan) {
                 return false;
             }
 
-            for (size_t case_index = 0U;
-                 case_index < group->cases.count;
-                 ++case_index) {
-
-                const TestCase *test_case =
-                    &group->cases.data[case_index];
-
+            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
+                const TestCase *test_case = &group->cases.data[case_index];
                 if (test_case->uid != (TestCaseUID)case_index ||
                     test_case->num_threads == 0U ||
                     test_case->chunk_size == UINT64_C(0)) {
