@@ -24,6 +24,7 @@
 #ifndef KERNELS_ALGORITHMS_GEMM_H
 #define KERNELS_ALGORITHMS_GEMM_H
 #include "kernels/common/Kernel.h"
+#include <stdlib.h>
 /**
  * @brief Measure a row-parallel dense matrix product C = A * B.
  *
@@ -45,7 +46,7 @@
 KernelStatus kernel_2d_gemm(DataView *view, const struct TestCase *test_case,
                            struct Profiler *profiler, struct PerformanceMetric *metric);
 
-static inline free_gemm_components(double *b, double *c) {
+static inline void free_gemm_components(double *b, double *c) {
     free(b);
     free(c);
 }

@@ -69,6 +69,10 @@ HELP
 load_build_configuration "$@"
 configure_toolchain
 
+if [[ -v 'MACROS[SIZE_PER_THREAD_LOG2]' ]]; then
+    info "Per-thread workload: 2^${MACROS[SIZE_PER_THREAD_LOG2]} elements"
+fi
+
 # ------------------------------------------------------------
 # Build compiler flags
 # ------------------------------------------------------------

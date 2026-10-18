@@ -74,7 +74,7 @@ cat > "$OUTPUT_FILE" <<CONFIG
 COMPILERNAME=${DEFAULT_COMPILER}
 THREAD_LIST=${THREAD_LIST}
 PROBLEM_LOG2_SIZE=${MAX_PROBLEM_SIZE}U
-SIZE_PER_THREAD=${SIZE_PER_THREAD}ULL
+SIZE_PER_THREAD_LOG2=${SIZE_PER_THREAD_LOG2}U
 MEMORY_ALIGNMENT=64U
 
 # Detected last-level data/unified cache size, in bytes.
@@ -149,4 +149,5 @@ else
 fi
 
 echo "    Main size: 2^${MAX_PROBLEM_SIZE} elements"
+echo "    Per-thread size: 2^${SIZE_PER_THREAD_LOG2} elements"
 echo "    Tested threads: ${THREAD_LIST}"

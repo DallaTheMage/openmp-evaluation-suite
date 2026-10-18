@@ -44,8 +44,8 @@
 /* Internal helpers                                                          */
 /* ========================================================================= */
 
-static inline copy_string(char* target, const char* string) {
-    (void)snprintf(target, sizeof(target), "%s", string);
+static inline void copy_string(char *target, size_t capacity, const char *string) {
+    (void)snprintf(target, capacity, "%s", string);
 }
 
 /**
@@ -186,11 +186,11 @@ Configuration load_configuration(void) {
     /* Build metadata                                                        */
     /* --------------------------------------------------------------------- */
 
-    copy_string(config.build.compiler_family,  OES_COMPILER_FAMILY);
-    copy_string(config.build.compiler_name,    OES_COMPILER_NAME);
-    copy_string(config.build.compiler_version, OES_COMPILER_VERSION);
-    copy_string(config.build.compiler_flags,   OES_COMPILER_FLAGS);
-    copy_string(config.build.openmp_version,   OPENMP_VERSION_STRING);
+    copy_string(config.build.compiler_family, sizeof(config.build.compiler_family), OES_COMPILER_FAMILY);
+    copy_string(config.build.compiler_name, sizeof(config.build.compiler_name), OES_COMPILER_NAME);
+    copy_string(config.build.compiler_version, sizeof(config.build.compiler_version), OES_COMPILER_VERSION);
+    copy_string(config.build.compiler_flags, sizeof(config.build.compiler_flags), OES_COMPILER_FLAGS);
+    copy_string(config.build.openmp_version, sizeof(config.build.openmp_version), OPENMP_VERSION_STRING);
 
     /* --------------------------------------------------------------------- */
     /* Execution configuration                                               */

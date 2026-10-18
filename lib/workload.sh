@@ -67,7 +67,7 @@ fi
 # ---------------------------------------------------------------------------
 
 # Keep proportional workloads valid for the largest configured thread count:
-# SIZE_PER_THREAD * LOGICAL_CORES must fit in the original buffer and budget.
+# (2^SIZE_PER_THREAD_LOG2) * LOGICAL_CORES must fit in the original buffer and budget.
 # Choose the largest power of two that satisfies this constraint; there is no
 # arbitrary minimum or fixed initial workload size.
 per_thread_limit=$(( (1 << MAX_PROBLEM_SIZE) / LOGICAL_CORES ))
@@ -76,10 +76,10 @@ if (( per_thread_limit < 1 )); then
     exit 1
 fi
 
-SIZE_PER_THREAD=1
+SIZE_PER_THREAD_LOG2=0
 for (( exp=1; exp<=62; exp++ )); do
     if (( (1 << exp) <= per_thread_limit )); then
-        SIZE_PER_THREAD=$(( 1 << exp ))
+        SIZE_PER_THREAD_LOG2=$exp
     else
         break
     fi

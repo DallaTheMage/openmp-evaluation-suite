@@ -24,6 +24,7 @@
 #ifndef KERNELS_ALGORITHMS_CG_H
 #define KERNELS_ALGORITHMS_CG_H
 #include "kernels/common/Kernel.h"
+#include <stdlib.h>
 
 #define CG_STEPS 12U
 
@@ -46,7 +47,7 @@
 KernelStatus kernel_2d_cg(DataView *view, const struct TestCase *test_case,
                             struct Profiler *profiler, struct PerformanceMetric *metric);
 
-static inline spd_five_point_dirichlet(size_t i, size_t j, size_t rows, size_t cols, const double *x, double *y) {
+static inline void spd_five_point_dirichlet(size_t i, size_t j, size_t rows, size_t cols, const double *x, double *y) {
     size_t z = (i * cols) + j;
     double v = 4.0 * x[z];
     if(i) {
@@ -64,7 +65,7 @@ static inline spd_five_point_dirichlet(size_t i, size_t j, size_t rows, size_t c
     y[z] = v;
 }
 
-static inline free_cg_components(double* x, double* r, double* p, double* ap, double* check) {
+static inline void free_cg_components(double* x, double* r, double* p, double* ap, double* check) {
     free(x);
     free(r);
     free(p);

@@ -24,6 +24,7 @@
 #ifndef KERNELS_ALGORITHMS_JACOBI_H
 #define KERNELS_ALGORITHMS_JACOBI_H
 #include "kernels/common/Kernel.h"
+#include <stdlib.h>
 
 #define JACOBI_STEPS 8U
 
@@ -46,7 +47,7 @@
 KernelStatus kernel_2d_jacobi(DataView *view, const struct TestCase *test_case,
                             struct Profiler *profiler, struct PerformanceMetric *metric);
 
-static inline free_jacobi_components(double *a, double *b, double *ref, double *tmp) {
+static inline void free_jacobi_components(double *a, double *b, double *ref, double *tmp) {
     free(a);
     free(b);
     free(ref);

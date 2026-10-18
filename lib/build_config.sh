@@ -114,6 +114,57 @@ for param in "${CLI_PARAMS[@]}"; do
 
 done
 
+# SIZE_PER_THREAD is derived in params.h; never define it directly.
+if [[ -v 'MACROS[SIZE_PER_THREAD]' ]]; then
+    error "SIZE_PER_THREAD is derived; configure SIZE_PER_THREAD_LOG2 instead"
+fi
+
+# Verify unsigned C integer exponents and workload capacity.
+validate_log2() {
+    local name="$1" value="$2" digits
+    [[ "$value" =~ ^([0-9]+)(U|UL|ULL)?$ ]] ||
+        error "$name must be an unsigned decimal integer (optional C suffix)"
+    digits="${BASH_REMATCH[1]}"
+    digits="${digits#"${digits%%[!0]*}"}"
+    [[ -n "$digits" ]] || digits=0
+    (( ${#digits} <= 2 )) || error "$name must be between 0 and 62"
+    (( 10#$digits <= 62 )) || error "$name must be between 0 and 62"
+    LOG2_VALUE=$((10#$digits))
+}
+
+if [[ -v 'MACROS[SIZE_PER_THREAD_LOG2]' ]]; then
+    validate_log2 SIZE_PER_THREAD_LOG2 "${MACROS[SIZE_PER_THREAD_LOG2]}"
+    thread_exp=$LOG2_VALUE
+else
+    # Current params.h default, used only if the configuration omits the value.
+    thread_exp=19
+fi
+
+if [[ -v 'MACROS[PROBLEM_LOG2_SIZE]' ]]; then
+    validate_log2 PROBLEM_LOG2_SIZE "${MACROS[PROBLEM_LOG2_SIZE]}"
+    problem_exp=$LOG2_VALUE
+    if [[ -v 'MACROS[THREAD_LIST]' && "${MACROS[RUN_PROPORTIONAL]:-1}" != 0 ]]; then
+        (( thread_exp <= problem_exp )) || error "Per-thread workload exceeds problem size"
+        list="${MACROS[THREAD_LIST]}"
+        [[ "$list" != ,* && "$list" != *, && "$list" != *,,* ]] || error "Malformed THREAD_LIST"
+        IFS=',' read -r -a counts <<< "$list"
+        max_threads=0
+        for entry in "${counts[@]}"; do
+            [[ "$entry" =~ ^[0-9]+$ ]] || error "Invalid thread count: $entry"
+            digits="${entry#"${entry%%[!0]*}"}"
+            [[ -n "$digits" ]] || digits=0
+            (( ${#digits} <= 15 )) || error "Thread count is too large: $entry"
+            count=$((10#$digits))
+            (( count > 0 )) || error "Thread count must be positive"
+            if (( count > max_threads )); then max_threads=$count; fi
+        done
+        capacity_exp=$((problem_exp - thread_exp))
+        if (( capacity_exp < 63 && max_threads > (1 << capacity_exp) )); then
+            error "Proportional workload exceeds problem buffer: 2^$thread_exp x $max_threads > 2^$problem_exp"
+        fi
+    fi
+fi
+
 # ------------------------------------------------------------
 # Backward compatibility:
 # CHOSEN_SCHEDULE=static/dynamic/guided

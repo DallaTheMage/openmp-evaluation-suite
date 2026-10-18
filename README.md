@@ -1,0 +1,303 @@
+# OpenMP Evaluation Suite
+
+A compiler-agnostic C benchmark suite for evaluating OpenMP implementations on shared-memory CPUs. It supports fixed-size and proportional-workload scaling experiments, OpenMP constructs, algorithmic kernels, statistical measurements, and optional hardware and energy diagnostics.
+
+> **Project status:** Research software under active development. The default configuration is intended for initial testing, not as a ready-made scientifically representative experiment.
+
+## Contents
+
+1. [Requirements](#requirements)
+2. [Quick start](#quick-start)
+3. [Building the suite](#building-the-suite)
+4. [Automatic configuration](#automatic-configuration)
+5. [Configuration reference](#configuration-reference)
+6. [Running benchmarks and collecting results](#running-benchmarks-and-collecting-results)
+7. [Experimental methodology and reproducibility](#experimental-methodology-and-reproducibility)
+8. [Project structure](#project-structure)
+9. [Troubleshooting](#troubleshooting)
+10. [License](#license)
+
+## Requirements
+
+- Linux, Bash, GNU Make, and standard command-line utilities.
+- A C compiler supporting C99 and OpenMP (for example GCC, Clang, or Intel `icx`).
+- A compatible OpenMP runtime library.
+- Sufficient RAM for the selected dataset and kernels.
+- Optional: Linux `perf_event` interfaces and RAPL support for hardware/energy measurements, subject to CPU support and permissions.
+
+Check your environment:
+
+```bash
+bash --version
+make --version
+gcc --version
+```
+
+Some Clang installations require a separately installed OpenMP runtime (`libomp`). Availability of energy readings and performance counters depends on the host platform and permissions.
+
+## Quick start
+
+Run commands **from the repository root** so relative output paths resolve as intended.
+
+```bash
+# Compile using default.conf
+./build.sh
+
+# Run the executable reported by the build script
+./build/cc/main
+```
+
+The binary location depends on the selected compiler: `build/<compiler-name>/main`. For example, if `COMPILERNAME=gcc`, run `./build/gcc/main`. Always use the exact executable path printed by `build.sh`.
+
+To generate a hardware-aware configuration:
+
+```bash
+./autotune.sh
+./build.sh autotune.conf
+./build/cc/main   # replace cc with the compiler name shown by build.sh
+```
+
+The autotuner **does not run the benchmarks** or search for the fastest settings. It detects system resources and generates conservative workload parameters.
+
+If needed, enable script execution:
+
+```bash
+chmod +x build.sh autotune.sh
+```
+
+## Building the suite
+
+The supported entry point is `build.sh`:
+
+```bash
+./build.sh                                   # use default.conf
+./build.sh autotune.conf                     # use a specific configuration
+./build.sh --config autotune.conf            # equivalent explicit syntax
+./build.sh WORK_REPS=10U                     # override one parameter
+./build.sh autotune.conf THREAD_LIST=1,2,4 WORK_REPS=10U
+VERBOSE=1 ./build.sh                         # show complete build commands
+./build.sh --help
+```
+
+**Precedence:** command-line `KEY=VALUE` overrides the configuration file; the `CC` environment variable overrides `COMPILERNAME`.
+
+Choose a compiler explicitly:
+
+```bash
+CC=gcc ./build.sh
+CC=clang ./build.sh
+CC=icx ./build.sh
+```
+
+Customize compiler settings:
+
+```bash
+OPT_LEVEL=-O3 ./build.sh
+VERBOSE=1 OPT_LEVEL=-O0 ./build.sh
+OPENMP_CFLAGS="-fopenmp" OPENMP_LDFLAGS="-fopenmp" ./build.sh
+```
+
+`OPENMP_LIBS` can supply additional OpenMP-related libraries. The build script configures the OpenMP toolchain based on the selected compiler. Supported `OPT_LEVEL` values are `-O0`, `-O1`, `-O2`, `-O3`, `-Os`, `-Og`, and `-Ofast`.
+
+The build script cleans the previous build before recompiling. You can invoke GNU Make directly, but doing so **does not automatically load** the `.conf` file and pass its values as compiler macros:
+
+```bash
+make
+make clean       # remove build artifacts
+make erase       # remove benchmark output
+```
+
+**Warning:** `make erase` deletes saved output. Back up experiment results first.
+
+## Automatic configuration
+
+Run `autotune.sh` with an optional output filename:
+
+```bash
+./autotune.sh                       # writes autotune.conf
+./autotune.sh experiment.conf       # writes a custom configuration
+./build.sh experiment.conf
+```
+
+The autotuner detects the number of logical CPUs, available memory, a default compiler, and an estimated last-level cache (LLC) size. It selects:
+
+- `THREAD_LIST`: thread counts based on the available logical CPUs.
+- `PROBLEM_LOG2_SIZE`: the main dataset size exponent.
+- `SIZE_PER_THREAD_LOG2`: the per-thread workload exponent for proportional scaling.
+- `WINDOWS_LOG2_LIST`: admissible working-set window sizes.
+- Cache eviction, scheduling, and repetition settings.
+
+Its conservative memory budget is approximately **25% of detected available RAM**, using an estimate of **64 bytes per logical element**. This is a heuristic, not a guarantee that every kernel will fit comfortably in memory. Inspect the generated configuration before running large experiments.
+
+**Important:** autotuning overwrites the chosen output file. Use separate filenames for experiments you want to preserve.
+
+### Why `SIZE_PER_THREAD_LOG2`?
+
+In the updated configuration pipeline, specify workload sizes as base-2 exponents:
+
+```ini
+PROBLEM_LOG2_SIZE=20U
+SIZE_PER_THREAD_LOG2=18U
+THREAD_LIST=1,2
+```
+
+These values mean:
+
+- Main dataset: `2^20 = 1,048,576` elements.
+- Per-thread workload: `2^18 = 262,144` elements.
+- Proportional workload with two threads: `2 × 2^18 = 524,288` elements.
+
+`SIZE_PER_THREAD` is **derived internally in `include/config/params.h`**. Do not define it directly in `.conf` files. The updated configuration validation checks that the largest proportional workload fits the configured dataset:
+
+```text
+max(THREAD_LIST) × 2^SIZE_PER_THREAD_LOG2 <= 2^PROBLEM_LOG2_SIZE
+```
+
+If your checkout predates the workload-alignment patches, check that both `autotune.sh` and `lib/workload.sh` use `SIZE_PER_THREAD_LOG2`, rather than the former `SIZE_PER_THREAD` setting.
+
+## Configuration reference
+
+`default.conf` provides a conservative starting point. `autotune.conf` is generated for the current host. The format is one `KEY=VALUE` pair per line, with `#` comments, comma-separated lists, and optional C integer suffixes such as `U` and `ULL`. Do **not** use shell-style `export KEY=VALUE` statements.
+
+| Parameter | Purpose |
+| --- | --- |
+| `COMPILERNAME` | C compiler executable |
+| `THREAD_LIST` | Comma-separated thread counts |
+| `CHOSEN_SCHEDULE_ID` | OpenMP schedule: 1=static, 2=dynamic, 3=guided |
+| `CHUNK_SIZE_LIST` | OpenMP chunk sizes to test |
+| `PROBLEM_LOG2_SIZE` | Base-2 exponent of the main dataset size |
+| `SIZE_PER_THREAD_LOG2` | Base-2 exponent of the per-thread workload |
+| `WINDOWS_LOG2_LIST` | Base-2 working-set window sizes |
+| `MEMORY_ALIGNMENT` | Allocation alignment in bytes |
+| `RUN_FULL_SCALE` | Enable fixed-size scaling tests (1/0) |
+| `RUN_PROPORTIONAL` | Enable proportional-workload tests (1/0) |
+| `WARMUP_REPS` | Warm-up iterations excluded from measurements |
+| `WORK_REPS` | Measured iterations per configuration |
+| `GENERATION_SEED` | Seed for reproducible input generation |
+| `DETECTED_LLC_SIZE_BYTES` | Detected LLC size in bytes; 0 if unknown |
+| `CACHE_EVICTION_ENABLED` | Enable cache eviction between runs (1/0) |
+| `CACHE_EVICTION_MULTIPLIER` | Eviction buffer size relative to LLC |
+| `CACHE_EVICTION_STRIDE_BYTES` | Access stride within the eviction buffer |
+| `ENABLE_HW_COUNTERS` | Enable experimental `perf_event` counters (1/0) |
+| `SLOWDOWN_FACTOR` | Legacy parameter; may be unused |
+
+A small example configuration for smoke testing:
+
+```ini
+COMPILERNAME=gcc
+THREAD_LIST=1,2
+CHOSEN_SCHEDULE_ID=1U
+CHUNK_SIZE_LIST=64U
+PROBLEM_LOG2_SIZE=20U
+SIZE_PER_THREAD_LOG2=18U
+WINDOWS_LOG2_LIST=12U,14U,16U,18U
+MEMORY_ALIGNMENT=64U
+RUN_FULL_SCALE=1
+RUN_PROPORTIONAL=1
+WARMUP_REPS=2U
+WORK_REPS=3U
+GENERATION_SEED=12345ULL
+CACHE_EVICTION_ENABLED=0U
+ENABLE_HW_COUNTERS=0
+```
+
+Other parameters can use the defaults supplied by the project; for reproducible research, save the complete effective configuration alongside your results.
+
+**Configuration values are passed as C preprocessor macros at build time.** Changing a `.conf` file does **not** change an already compiled executable. Rebuild after every configuration change.
+
+## Running benchmarks and collecting results
+
+After a successful build, run the executable path printed by `build.sh`, from the repository root:
+
+```bash
+./build/gcc/main
+```
+
+The suite constructs test plans for the enabled modes:
+
+- **Full-scale / strong scaling:** keep the dataset size fixed while varying the thread count.
+- **Proportional / weak-scaling-like:** increase the number of elements in proportion to the number of threads.
+
+The proportional mode aims to keep the amount of work per thread approximately constant; the computational cost per element may still differ between kernels.
+
+Results are written under the `output/` directory, with subdirectories determined by the benchmark/reporting modules. The program prints the actual output location during execution. Inspect the generated CSV files for the specific columns, units, and test identifiers rather than assuming a universal output filename.
+
+To archive a completed experiment:
+
+```bash
+mkdir -p experiments/run-01
+cp autotune.conf experiments/run-01/config.conf
+cp -a output experiments/run-01/output
+```
+
+Copy the results **after** the run finishes and before executing `make erase`.
+
+## Experimental methodology and reproducibility
+
+For meaningful compiler and runtime comparisons:
+
+1. Record the CPU, operating system, compiler and OpenMP runtime versions, compiler flags, and full `.conf` file.
+2. Include `1` in `THREAD_LIST` to establish a scaling baseline.
+3. Keep datasets, random seeds, and workload parameters consistent across comparisons.
+4. Increase `WARMUP_REPS` and `WORK_REPS` beyond smoke-test values when collecting thesis-quality measurements.
+5. Document thread affinity (`OMP_PROC_BIND`, `OMP_PLACES`), background system load, and thermal conditions.
+6. Clearly report any differences in compiler optimization levels.
+7. Check support and permissions before interpreting energy readings or hardware counter results.
+
+Example with explicit affinity:
+
+```bash
+OMP_PROC_BIND=close OMP_PLACES=cores ./build/gcc/main
+```
+
+OpenMP affinity settings are interpreted by the runtime and may behave differently depending on the machine topology.
+
+## Project structure
+
+```text
+.
+├── autotune.sh             # hardware detection and .conf generation
+├── build.sh                # configuration-aware compilation
+├── default.conf            # conservative default configuration
+├── autotune.conf           # generated configuration (when present)
+├── Makefile                # compilation and cleanup
+├── lib/
+│   ├── common.sh           # shared shell utilities
+│   ├── hardware.sh         # hardware resource detection
+│   ├── workload.sh         # workload selection
+│   ├── build_config.sh     # configuration parsing and validation
+│   └── toolchain.sh        # compiler and OpenMP setup
+├── include/                # C headers, macros, interfaces
+├── src/
+│   ├── core/               # planning, dispatch, analysis, reporting
+│   ├── data/               # buffers, memory, input generation
+│   ├── kernels/            # OpenMP constructs and algorithms
+│   ├── profiling/          # timing, energy, hardware counters
+│   └── main.c              # benchmark orchestration
+├── build/                  # generated binaries and object files
+└── output/                 # benchmark results
+```
+
+## Troubleshooting
+
+**`Permission denied` when running a script:** run `chmod +x build.sh autotune.sh`, or invoke it with `bash ./build.sh`.
+
+**Compiler not found / OpenMP unavailable:** verify `CC`, `COMPILERNAME`, the OpenMP runtime installation, and the relevant flags. Run `VERBOSE=1 ./build.sh` to inspect the build commands.
+
+**Error indicating `SIZE_PER_THREAD` is derived:** replace the old `SIZE_PER_THREAD=...` configuration entry with `SIZE_PER_THREAD_LOG2=...`.
+
+**Proportional workload exceeds the dataset:** decrease `SIZE_PER_THREAD_LOG2`, reduce the maximum thread count, or increase `PROBLEM_LOG2_SIZE` if sufficient RAM is available.
+
+**C compilation errors involving `free_*` or `copy_string`:** ensure the fixes to the kernel headers and `Configuration.c` have been applied to your checkout.
+
+**Configuration edits do not affect execution:** rebuild with `./build.sh file.conf`; the settings are compile-time macros.
+
+**Missing energy readings or hardware counters:** confirm that the CPU, kernel interfaces, and permissions support the requested measurements. `ENABLE_HW_COUNTERS=0` disables the experimental hardware counters, not wall-clock timing.
+
+**Noisy benchmark timings:** increase the repetition count, reduce background activity, pin threads consistently, and repeat measurements under controlled conditions.
+
+## License
+
+The project includes a `LICENSE` file describing its **GNU General Public License** terms. Refer to that file for the complete conditions and redistribution requirements.
+
+---
