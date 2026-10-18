@@ -129,30 +129,6 @@ Its conservative memory budget is approximately **25% of detected available RAM*
 
 **Important:** autotuning overwrites the chosen output file. Use separate filenames for experiments you want to preserve.
 
-### Why `SIZE_PER_THREAD_LOG2`?
-
-In the updated configuration pipeline, specify workload sizes as base-2 exponents:
-
-```ini
-PROBLEM_LOG2_SIZE=20U
-SIZE_PER_THREAD_LOG2=18U
-THREAD_LIST=1,2
-```
-
-These values mean:
-
-- Main dataset: `2^20 = 1,048,576` elements.
-- Per-thread workload: `2^18 = 262,144` elements.
-- Proportional workload with two threads: `2 × 2^18 = 524,288` elements.
-
-`SIZE_PER_THREAD` is **derived internally in `include/config/params.h`**. Do not define it directly in `.conf` files. The updated configuration validation checks that the largest proportional workload fits the configured dataset:
-
-```text
-max(THREAD_LIST) × 2^SIZE_PER_THREAD_LOG2 <= 2^PROBLEM_LOG2_SIZE
-```
-
-If your checkout predates the workload-alignment patches, check that both `autotune.sh` and `lib/workload.sh` use `SIZE_PER_THREAD_LOG2`, rather than the former `SIZE_PER_THREAD` setting.
-
 ## Configuration reference
 
 `default.conf` provides a conservative starting point. `autotune.conf` is generated for the current host. The format is one `KEY=VALUE` pair per line, with `#` comments, comma-separated lists, and optional C integer suffixes such as `U` and `ULL`. Do **not** use shell-style `export KEY=VALUE` statements.
