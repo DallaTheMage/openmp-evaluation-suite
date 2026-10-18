@@ -54,7 +54,9 @@ static const uint64_t configs[HW_PERF_COUNT_MAX] = {
 
 void hw_counters_cleanup(HWCounters *hw)
 {
-    if (!hw) return;
+    if (!hw) {
+        return;
+    }
     for (size_t t = 0; t < hw->thread_count; ++t)
         for (int i = 0; i < HW_PERF_COUNT_MAX; ++i)
             perf_counter_close(hw->threads[t].fds[i]);
@@ -66,22 +68,32 @@ void hw_counters_cleanup(HWCounters *hw)
 
 int hw_counters_init(HWCounters *hw)
 {
-    if (!hw) return -1;
+    if (!hw) {
+        return -1;
+    }
     memset(hw, 0, sizeof(*hw));
     DIR *dir = opendir("/proc/self/task");
-    if (!dir) return -1;
+    if (!dir) {
+        return -1;
+    }
     struct dirent *entry;
     size_t capacity = 0;
     while ((entry = readdir(dir)) != NULL) {
         char *end;
         errno = 0;
         long tid = strtol(entry->d_name, &end, 10);
-        if (errno || *end != '\0' || tid <= 0 || tid > INT_MAX) continue;
+        if (errno || *end != '\0' || tid <= 0 || tid > INT_MAX){
+            continue;
+        }
         if (hw->thread_count == capacity) {
-            if (capacity > SIZE_MAX / (2 * sizeof(*hw->threads))) goto fail;
+            if (capacity > SIZE_MAX / (2 * sizeof(*hw->threads))) {
+                goto fail;
+            }
             size_t next = capacity ? capacity * 2 : 8;
             HWThreadCounters *tmp = realloc(hw->threads, next * sizeof(*tmp));
-            if (!tmp) goto fail;
+            if (!tmp) {
+                goto fail;
+            }
             hw->threads = tmp;
             capacity = next;
         }
@@ -91,12 +103,19 @@ int hw_counters_init(HWCounters *hw)
         for (int i = 0; i < HW_PERF_COUNT_MAX; ++i) {
             th->fds[i] = perf_counter_open_thread(types[i], configs[i],
                                                  (pid_t)tid, th->leader_fd);
-            if (th->fds[i] < 0) goto fail;
-            if (i == 0) th->leader_fd = th->fds[i];
+            if (th->fds[i] < 0) {
+                goto fail;
+            }
+            if (i == 0) {
+                th->leader_fd = th->fds[i];
+            }
         }
     }
     closedir(dir);
-    if (!hw->thread_count) { hw_counters_cleanup(hw); return -1; }
+    if (!hw->thread_count) {
+        hw_counters_cleanup(hw);
+        return -1;
+    }
     hw->is_initialized = true;
     return 0;
 fail:
@@ -107,7 +126,9 @@ fail:
 
 int hw_counters_start(HWCounters *hw)
 {
-    if (!hw || !hw->is_initialized) return -1;
+    if (!hw || !hw->is_initialized) {
+        return -1;
+    }
     size_t started = 0;
     for (size_t t = 0; t < hw->thread_count; ++t) {
         int fd = hw->threads[t].leader_fd;
@@ -130,29 +151,35 @@ typedef struct PerfRead {
     uint64_t value, time_enabled, time_running;
 } PerfRead;
 
-int hw_counters_stop(HWCounters *hw, HWCountersData *data)
-{
-    if (!hw || !hw->is_initialized || !data) return -1;
+int hw_counters_stop(HWCounters *hw, HWCountersData *data) {
+    if (!hw || !hw->is_initialized || !data) {
+        return -1;
+    }
     memset(data, 0, sizeof(*data));
     for (size_t t = 0; t < hw->thread_count; ++t)
         if (ioctl(hw->threads[t].leader_fd, PERF_EVENT_IOC_DISABLE,
-                  PERF_IOC_FLAG_GROUP) == -1) return -1;
+                  PERF_IOC_FLAG_GROUP) == -1) {
+            return -1;
+        }
     uint64_t totals[HW_PERF_COUNT_MAX] = {0};
     for (size_t t = 0; t < hw->thread_count; ++t) {
         for (int i = 0; i < HW_PERF_COUNT_MAX; ++i) {
             PerfRead r;
             if (read(hw->threads[t].fds[i], &r, sizeof(r)) != (ssize_t)sizeof(r)
-                || r.time_running == 0) return -1;
+                || r.time_running == 0) {
+                return -1;
+            }
             long double scaled = (long double)r.value *
                 (long double)r.time_enabled / (long double)r.time_running;
-            if (scaled < 0 || scaled > (long double)UINT64_MAX - totals[i])
+            if ((scaled < 0) || scaled > ((long double)UINT64_MAX - totals[i])) {
                 return -1;
+            }
             totals[i] += (uint64_t)(scaled + 0.5L);
         }
     }
-    data->cycles = totals[HW_PERF_CYCLES];
+    data->cycles       = totals[HW_PERF_CYCLES];
     data->instructions = totals[HW_PERF_INSTRUCTIONS];
-    data->l1d_misses = totals[HW_PERF_L1D_MISSES];
-    data->llc_misses = totals[HW_PERF_LLC_MISSES];
+    data->l1d_misses   = totals[HW_PERF_L1D_MISSES];
+    data->llc_misses   = totals[HW_PERF_LLC_MISSES];
     return 0;
 }

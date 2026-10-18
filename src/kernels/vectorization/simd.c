@@ -51,7 +51,10 @@
 /* --------------------------------------------------------------------------
  * VIEW_2D
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_2d_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_simd_memory(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -90,7 +93,10 @@ KernelStatus kernel_2d_simd_memory(DataView *view, const TestCase *test_case, Pr
 /* --------------------------------------------------------------------------
  * VIEW_3D
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_3d_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_3d_simd_memory(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -132,7 +138,10 @@ KernelStatus kernel_3d_simd_memory(DataView *view, const TestCase *test_case, Pr
 /* --------------------------------------------------------------------------
  * VIEW_AOS
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_aos_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aos_simd_memory(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -171,7 +180,10 @@ KernelStatus kernel_aos_simd_memory(DataView *view, const TestCase *test_case, P
 /* --------------------------------------------------------------------------
  * VIEW_SOA
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_soa_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_soa_simd_memory(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -210,7 +222,10 @@ KernelStatus kernel_soa_simd_memory(DataView *view, const TestCase *test_case, P
 /* --------------------------------------------------------------------------
  * VIEW_AOSOA
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_aosoa_simd_memory(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aosoa_simd_memory(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -267,7 +282,10 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view, const TestCase *test_case,
 /* --------------------------------------------------------------------------
  * VIEW_2D
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_2d_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_simd_compute(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -313,7 +331,10 @@ KernelStatus kernel_2d_simd_compute(DataView *view, const TestCase *test_case, P
 /* --------------------------------------------------------------------------
  * VIEW_3D
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_3d_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_3d_simd_compute(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -362,7 +383,10 @@ KernelStatus kernel_3d_simd_compute(DataView *view, const TestCase *test_case, P
 /* --------------------------------------------------------------------------
  * VIEW_AOS
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_aos_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aos_simd_compute(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -408,7 +432,10 @@ KernelStatus kernel_aos_simd_compute(DataView *view, const TestCase *test_case, 
 /* --------------------------------------------------------------------------
  * VIEW_SOA
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_soa_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_soa_simd_compute(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
@@ -454,7 +481,10 @@ KernelStatus kernel_soa_simd_compute(DataView *view, const TestCase *test_case, 
 /* --------------------------------------------------------------------------
  * VIEW_AOSOA
  * -------------------------------------------------------------------------- */
-KernelStatus kernel_aosoa_simd_compute(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_aosoa_simd_compute(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     const uint32_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;

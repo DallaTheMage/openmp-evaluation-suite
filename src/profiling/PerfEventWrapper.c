@@ -49,8 +49,8 @@ int perf_counter_open_process(uint32_t type, uint64_t config, int group_fd) {
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(struct perf_event_attr));
 
-    pe.type = type;
-    pe.size = sizeof(struct perf_event_attr);
+    pe.type   = type;
+    pe.size   = sizeof(struct perf_event_attr);
     pe.config = config;
 
     /* Initially disabled; hw_counters_start() enables the counter explicitly. */
@@ -66,7 +66,7 @@ int perf_counter_open_process(uint32_t type, uint64_t config, int group_fd) {
 
     /* Exclude kernel and hypervisor execution to measure user-space benchmark code only. */
     pe.exclude_kernel = 1;
-    pe.exclude_hv = 1;
+    pe.exclude_hv     = 1;
 
     /*
      * pid = 0: Monitor the current process and inheriting child threads.

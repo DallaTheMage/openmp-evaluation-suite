@@ -31,23 +31,21 @@
 
 
 int profiler_init(Profiler *p) {
-#if ENABLE_HW_COUNTERS
+    #if ENABLE_HW_COUNTERS
     int hw_status;
-#endif
+    #endif
     int rapl_status;
-
     if (p == NULL) {
         return -1;
     }
-
     memset(p, 0, sizeof(*p));
 
-#if ENABLE_HW_COUNTERS
+    #if ENABLE_HW_COUNTERS
     hw_status = hw_counters_init(&p->hw);
     if (hw_status != 0) {
         hw_counters_cleanup(&p->hw);
     }
-#endif
+    #endif
 
     rapl_status = rapl_power_init(&p->rapl);
     if (rapl_status != 0) {
@@ -105,7 +103,7 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric)
             rapl_power_cleanup(&p->rapl);
         } else {
             pkg_valid = true;
-            dram_valid = p->rapl.fd_dram >= 0 && isfinite(rapl_data.energy_dram_joules);
+            dram_valid = (p->rapl.fd_dram >= 0) && isfinite(rapl_data.energy_dram_joules);
         }
     }
 
@@ -113,34 +111,33 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric)
 
     memset(metric, 0, sizeof(*metric));
     metric->wall_time_sec = stop_wtime - p->start_wtime;
-    metric->cycles = hw_data.cycles;
-    metric->instructions = hw_data.instructions;
-    metric->l1d_misses = hw_data.l1d_misses;
-    metric->llc_misses = hw_data.llc_misses;
+    metric->cycles        = hw_data.cycles;
+    metric->instructions  = hw_data.instructions;
+    metric->l1d_misses    = hw_data.l1d_misses;
+    metric->llc_misses    = hw_data.llc_misses;
 
-    metric->ipc = metric->cycles > 0U
-        ? (double) metric->instructions / (double) metric->cycles
+    metric->ipc = (metric->cycles > 0U)
+        ? (double)metric->instructions / (double)metric->cycles
         : 0.0;
 
-    metric->l1d_miss_ratio = metric->instructions > 0U
-        ? (double) metric->l1d_misses / (double) metric->instructions
+    metric->l1d_miss_ratio = (metric->instructions > 0U)
+        ? (double)metric->l1d_misses / (double)metric->instructions
         : 0.0;
 
-    metric->llc_miss_ratio = metric->instructions > 0U
-        ? (double) metric->llc_misses / (double) metric->instructions
+    metric->llc_miss_ratio = (metric->instructions > 0U)
+        ? (double)metric->llc_misses / (double)metric->instructions
         : 0.0;
 
     metric->energy_dram_joules = dram_valid ? rapl_data.energy_dram_joules : NAN;
-    metric->energy_pkg_joules = pkg_valid ? rapl_data.energy_pkg_joules : NAN;
-    metric->hw_counters_valid = hw_valid;
-    metric->energy_pkg_valid = pkg_valid;
-    metric->energy_dram_valid = dram_valid;
+    metric->energy_pkg_joules  = pkg_valid ? rapl_data.energy_pkg_joules : NAN;
+    metric->hw_counters_valid  = hw_valid;
+    metric->energy_pkg_valid   = pkg_valid;
+    metric->energy_dram_valid  = dram_valid;
     if (!hw_valid) {
-        metric->ipc = NAN;
+        metric->ipc            = NAN;
         metric->l1d_miss_ratio = NAN;
         metric->llc_miss_ratio = NAN;
     }
-
     return 0;
 }
 

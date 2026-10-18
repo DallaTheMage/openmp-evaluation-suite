@@ -52,11 +52,11 @@ static int validate_rows(const double *a, const double *b,
         for (size_t j = 0; j < n; ++j) {
             double expected = 0.0;
             for (size_t k = 0; k < n; ++k) {
-                expected += a[i * n + k] * b[k * n + j];
+                expected += a[(i * n) + k] * b[(k * n) + j];
             }
-            double actual = c[i * n + j];
-            if (!isfinite(actual) ||
-                fabs(actual - expected) > 1e-10 * fmax(1.0, fabs(expected))) {
+            double actual = c[(i * n) + j];
+            if (!isfinite(actual)
+                || fabs(actual - expected) > 1e-10 * fmax(1.0, fabs(expected))) {
                 return 0;
             }
         }
@@ -74,27 +74,26 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
     }
     const uint64_t rows = view->meta.v2d.rows;
     const uint64_t cols = view->meta.v2d.cols;
-    if (rows > SIZE_MAX || cols > SIZE_MAX ||
-        cols > SIZE_MAX / sizeof(double) ||
-        rows > SIZE_MAX / cols ||
-        cols > SIZE_MAX / cols ||
-        rows * cols > SIZE_MAX / sizeof(double) ||
-        cols * cols > SIZE_MAX / sizeof(double) ||
-        view->window.size < rows * cols ||
+    if ((rows > SIZE_MAX) || (cols > SIZE_MAX) ||
+        cols > (SIZE_MAX / sizeof(double)) ||
+        rows > (SIZE_MAX / cols) ||
+        cols > (SIZE_MAX / cols) ||
+        (rows * cols) > (SIZE_MAX / sizeof(double)) ||
+        (cols * cols) > (SIZE_MAX / sizeof(double)) ||
+        view->window.size < (rows * cols) ||
         view->window.offset > view->buffer->element_count ||
-        rows * cols > view->buffer->element_count - view->window.offset) {
+        (rows * cols) > (view->buffer->element_count - view->window.offset)) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    const size_t m = (size_t)rows;
-    const size_t n = (size_t)cols;
+    const size_t m          = (size_t)rows;
+    const size_t n          = (size_t)cols;
     const size_t b_elements = n * n;
     const size_t c_elements = m * n;
-    const double *a = view->buffer->pool + view->window.offset;
-    double *b = malloc(b_elements * sizeof(*b));
-    double *c = malloc(c_elements * sizeof(*c));
+    const double *a         = view->buffer->pool + view->window.offset;
+    double *b               = malloc(b_elements * sizeof(*b));
+    double *c               = malloc(c_elements * sizeof(*c));
     if (b == NULL || c == NULL) {
-        free(b);
-        free(c);
+        free_gemm_components(b, c);
         return KERNEL_STATUS_ALLOCATION_FAILURE;
     }
     for (size_t k = 0; k < n; ++k) {
@@ -104,8 +103,7 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
     }
     memset(c, 0, c_elements * sizeof(*c));
     if (profiler_start(profiler) != 0) {
-        free(b);
-        free(c);
+        free_gemm_components(b, c);
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     /* Each output row has one writer. Traversing B and C by rows improves
@@ -114,20 +112,19 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
      */
     #pragma omp parallel for num_threads(test_case->num_threads) schedule(CHOSEN_SCHEDULE, test_case->chunk_size)
     for (size_t i = 0; i < m; ++i) {
-        double *restrict c_row = c + i * n;
-        const double *restrict a_row = a + i * n;
+        double *restrict c_row = c + (i * n);
+        const double *restrict a_row = a + (i * n);
         for (size_t k = 0; k < n; ++k) {
             const double aik = a_row[k];
-            const double *restrict b_row = b + k * n;
+            const double *restrict b_row = b + (k * n);
             for (size_t j = 0; j < n; ++j) {
                 c_row[j] += aik * b_row[j];
             }
         }
     }
     const int stop_result = profiler_stop(profiler, metric);
-    int valid = stop_result == 0 && validate_rows(a, b, c, m, n);
-    free(b);
-    free(c);
+    int valid = (stop_result == 0) && validate_rows(a, b, c, m, n);
+    free_gemm_components(b, c);
     if (stop_result != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }

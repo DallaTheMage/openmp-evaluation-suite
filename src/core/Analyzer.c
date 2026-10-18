@@ -208,11 +208,7 @@ AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sam
         const RawSample *sample = &samples[i];
         if (i != 0U &&
             !analyzer_same_experiment(&samples[i - 1U], sample)) {
-            finalize_group(
-                &result[group_index],
-                &samples[i - 1U],
-                &accumulator
-            );
+            finalize_group(&result[group_index], &samples[i - 1U], &accumulator);
             ++group_index;
             group_accumulator_init(&accumulator);
         }
@@ -284,19 +280,19 @@ bool analyzer_compute_weak_scaling(
     const double scaled_time   = scaled != NULL ? scaled->wall_time_sec.mean : 0.0;
     double work_ratio;
 
-    if (baseline == NULL ||
-        baseline_point == NULL ||
-        scaled == NULL ||
-        scaled_point == NULL ||
-        out_metrics == NULL ||
-        baseline_work == UINT64_C(0) ||
-        scaled_work == UINT64_C(0) ||
-        baseline_point->num_threads == 0U ||
-        scaled_point->num_threads == 0U ||
-        scaled_point->num_threads <= baseline_point->num_threads ||
-        baseline->kernel != scaled->kernel ||
-        baseline_time <= 0.0 ||
-        scaled_time <= 0.0) {
+    if (baseline          == NULL
+        || baseline_point == NULL
+        || scaled         == NULL
+        || scaled_point   == NULL
+        || out_metrics    == NULL
+        || baseline_work  == UINT64_C(0)
+        || scaled_work    == UINT64_C(0)
+        || baseline_point->num_threads == 0U
+        || scaled_point->num_threads   == 0U
+        || scaled_point->num_threads   <= baseline_point->num_threads
+        || baseline->kernel != scaled->kernel
+        || baseline_time    <= 0.0
+        || scaled_time      <= 0.0) {
         return false;
     }
 

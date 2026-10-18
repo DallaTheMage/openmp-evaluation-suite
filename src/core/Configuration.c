@@ -44,6 +44,10 @@
 /* Internal helpers                                                          */
 /* ========================================================================= */
 
+static inline copy_string(char* target, const char* string) {
+    (void)snprintf(target, sizeof(target), "%s", string);
+}
+
 /**
  * @brief Copy a uint32_t configuration list into owned storage.
  *
@@ -53,32 +57,21 @@
  *
  * @return 1 on success, 0 on invalid input or allocation failure.
  */
-static int copy_u32_list(
-    ConfigU32List *destination,
-    const uint32_t *source,
-    size_t count)
-{
+static int copy_u32_list(ConfigU32List *destination, const uint32_t *source, size_t count) {
     uint32_t *data;
-
     if (destination == NULL || source == NULL || count == 0U) {
         return 0;
     }
-
     if (count > SIZE_MAX / sizeof(*data)) {
         return 0;
     }
-
     data = malloc(count * sizeof(*data));
-
     if (data == NULL) {
         return 0;
     }
-
     memcpy(data, source, count * sizeof(*data));
-
     destination->data = data;
     destination->count = count;
-
     return 1;
 }
 
@@ -92,32 +85,21 @@ static int copy_u32_list(
  *
  * @return 1 on success, 0 on invalid input or allocation failure.
  */
-static int copy_u64_list(
-    ConfigU64List *destination,
-    const uint64_t *source,
-    size_t count)
-{
+static int copy_u64_list(ConfigU64List *destination, const uint64_t *source, size_t count) {
     uint64_t *data;
-
     if (destination == NULL || source == NULL || count == 0U) {
         return 0;
     }
-
-    if (count > SIZE_MAX / sizeof(*data)) {
+    if (count > (SIZE_MAX / sizeof(*data))) {
         return 0;
     }
-
     data = malloc(count * sizeof(*data));
-
     if (data == NULL) {
         return 0;
     }
-
     memcpy(data, source, count * sizeof(*data));
-
     destination->data = data;
     destination->count = count;
-
     return 1;
 }
 
@@ -161,7 +143,7 @@ static int materialize_window_sizes(ConfigU64List *destination) {
         data[i] = window_size;
     }
 
-    destination->data = data;
+    destination->data  = data;
     destination->count = count;
 
     return 1;
@@ -204,71 +186,34 @@ Configuration load_configuration(void) {
     /* Build metadata                                                        */
     /* --------------------------------------------------------------------- */
 
-    (void)snprintf(
-        config.build.compiler_family,
-        sizeof(config.build.compiler_family),
-        "%s",
-        OES_COMPILER_FAMILY);
-
-    (void)snprintf(
-        config.build.compiler_name,
-        sizeof(config.build.compiler_name),
-        "%s",
-        OES_COMPILER_NAME);
-
-    (void)snprintf(
-        config.build.compiler_version,
-        sizeof(config.build.compiler_version),
-        "%s",
-        OES_COMPILER_VERSION);
-
-    (void)snprintf(
-        config.build.compiler_flags,
-        sizeof(config.build.compiler_flags),
-        "%s",
-        OES_COMPILER_FLAGS);
-
-    (void)snprintf(
-        config.build.openmp_version,
-        sizeof(config.build.openmp_version),
-        "%s",
-        OPENMP_VERSION_STRING);
-
+    copy_string(config.build.compiler_family,  OES_COMPILER_FAMILY);
+    copy_string(config.build.compiler_name,    OES_COMPILER_NAME);
+    copy_string(config.build.compiler_version, OES_COMPILER_VERSION);
+    copy_string(config.build.compiler_flags,   OES_COMPILER_FLAGS);
+    copy_string(config.build.openmp_version,   OPENMP_VERSION_STRING);
 
     /* --------------------------------------------------------------------- */
     /* Execution configuration                                               */
     /* --------------------------------------------------------------------- */
 
-    config.execution.problem_size_log2 =
-        (uint64_t)PROBLEM_LOG2_SIZE;
-
+    config.execution.problem_size_log2 = (uint64_t)PROBLEM_LOG2_SIZE;
 
     /* --------------------------------------------------------------------- */
     /* Benchmark configuration                                               */
     /* --------------------------------------------------------------------- */
 
-    config.benchmark.warmup_reps =
-        (uint32_t)WARMUP_REPS;
-
-    config.benchmark.work_reps =
-        (uint32_t)WORK_REPS;
-
-    config.benchmark.slowdown_factor =
-        (uint32_t)SLOWDOWN_FACTOR;
-
-    config.benchmark.generation_seed =
-        (uint64_t)GENERATION_SEED;
+    config.benchmark.warmup_reps     = (uint32_t)WARMUP_REPS;
+    config.benchmark.work_reps       = (uint32_t)WORK_REPS;
+    config.benchmark.slowdown_factor = (uint32_t)SLOWDOWN_FACTOR;
+    config.benchmark.generation_seed = (uint64_t)GENERATION_SEED;
 
 
     /* --------------------------------------------------------------------- */
     /* Memory configuration                                                  */
     /* --------------------------------------------------------------------- */
 
-    config.memory.alignment =
-        (size_t)MEMORY_ALIGNMENT;
-
-    config.memory.detected_llc_size_bytes =
-        (uint64_t)DETECTED_LLC_SIZE_BYTES;
+    config.memory.alignment               = (size_t)MEMORY_ALIGNMENT;
+    config.memory.detected_llc_size_bytes = (uint64_t)DETECTED_LLC_SIZE_BYTES;
 
     /*
      * AUX_BUFFER_SIZE is expressed in double elements.
@@ -279,22 +224,15 @@ Configuration load_configuration(void) {
         return (Configuration){0};
     }
 
-    config.memory.aux_buffer_size =
-        (size_t)AUX_BUFFER_SIZE;
-
+    config.memory.aux_buffer_size = (size_t)AUX_BUFFER_SIZE;
 
     /* --------------------------------------------------------------------- */
     /* Cache eviction configuration                                          */
     /* --------------------------------------------------------------------- */
 
-    config.memory.cache_eviction.enabled =
-        (uint32_t)CACHE_EVICTION_ENABLED;
-
-    config.memory.cache_eviction.multiplier =
-        (uint32_t)CACHE_EVICTION_MULTIPLIER;
-
-    config.memory.cache_eviction.stride_bytes =
-        (size_t)CACHE_EVICTION_STRIDE_BYTES;
+    config.memory.cache_eviction.enabled      = (uint32_t)CACHE_EVICTION_ENABLED;
+    config.memory.cache_eviction.multiplier   = (uint32_t)CACHE_EVICTION_MULTIPLIER;
+    config.memory.cache_eviction.stride_bytes = (size_t)CACHE_EVICTION_STRIDE_BYTES;
 
     /*
      * Validate cache eviction parameters.
@@ -302,9 +240,9 @@ Configuration load_configuration(void) {
      * enabled must be either 0 or 1.
      * multiplier and stride must be strictly positive.
      */
-    if (config.memory.cache_eviction.enabled > 1U ||
-        config.memory.cache_eviction.multiplier == 0U ||
-        config.memory.cache_eviction.stride_bytes == 0U) {
+    if (config.memory.cache_eviction.enabled > 1U
+        || config.memory.cache_eviction.multiplier == 0U
+        || config.memory.cache_eviction.stride_bytes == 0U) {
 
         fprintf(
             stderr,
@@ -323,16 +261,12 @@ Configuration load_configuration(void) {
      * 3. The resulting size is representable by size_t.
      */
     if (config.memory.cache_eviction.enabled != 0U) {
+        const uint64_t llc_bytes  = config.memory.detected_llc_size_bytes;
+        const uint64_t multiplier = (uint64_t)config.memory.cache_eviction.multiplier;
 
-        const uint64_t llc_bytes =
-            config.memory.detected_llc_size_bytes;
-
-        const uint64_t multiplier =
-            (uint64_t)config.memory.cache_eviction.multiplier;
-
-        if (llc_bytes == 0U ||
-            llc_bytes > UINT64_MAX / multiplier ||
-            llc_bytes * multiplier > (uint64_t)SIZE_MAX) {
+        if ((llc_bytes == 0U)
+            || (llc_bytes > (UINT64_MAX / multiplier))
+            || ((llc_bytes * multiplier) > (uint64_t)SIZE_MAX)) {
 
             fprintf(
                 stderr,
@@ -349,42 +283,23 @@ Configuration load_configuration(void) {
     /* DataView shape configuration                                          */
     /* --------------------------------------------------------------------- */
 
-    config.shapes[VIEW_2D].v2d.cols =
-        (uint64_t)CONFIG_VIEW_2D_COLS;
-
-    config.shapes[VIEW_3D].v3d.depth =
-        (uint64_t)CONFIG_VIEW_3D_DEPTH;
-
-    config.shapes[VIEW_3D].v3d.cols =
-        (uint64_t)CONFIG_VIEW_3D_COLS;
-
-    config.shapes[VIEW_AOS].aos.struct_size =
-        (uint64_t)CONFIG_VIEW_AOS_STRUCT_SIZE;
-
-    config.shapes[VIEW_SOA].soa.num_fields =
-        (uint64_t)CONFIG_VIEW_SOA_NUM_FIELDS;
-
-    config.shapes[VIEW_AOSOA].aosoa.vector_length =
-        (uint64_t)CONFIG_VIEW_AOSOA_VECTOR_LEN;
-
-    config.shapes[VIEW_AOSOA].aosoa.num_fields =
-        (uint64_t)CONFIG_VIEW_AOSOA_NUM_FIELDS;
-
+    config.shapes[VIEW_2D].v2d.cols               = (uint64_t)CONFIG_VIEW_2D_COLS;
+    config.shapes[VIEW_3D].v3d.depth              = (uint64_t)CONFIG_VIEW_3D_DEPTH;
+    config.shapes[VIEW_3D].v3d.cols               = (uint64_t)CONFIG_VIEW_3D_COLS;
+    config.shapes[VIEW_AOS].aos.struct_size       = (uint64_t)CONFIG_VIEW_AOS_STRUCT_SIZE;
+    config.shapes[VIEW_SOA].soa.num_fields        = (uint64_t)CONFIG_VIEW_SOA_NUM_FIELDS;
+    config.shapes[VIEW_AOSOA].aosoa.vector_length = (uint64_t)CONFIG_VIEW_AOSOA_VECTOR_LEN;
+    config.shapes[VIEW_AOSOA].aosoa.num_fields    = (uint64_t)CONFIG_VIEW_AOSOA_NUM_FIELDS;
 
     /* --------------------------------------------------------------------- */
     /* Thread configuration                                                  */
     /* --------------------------------------------------------------------- */
-
     {
-        static const uint32_t default_threads[] = {
-            THREAD_LIST
-        };
-
+        static const uint32_t default_threads[] = { THREAD_LIST };
         if (!copy_u32_list(
                 &config.execution.threads,
                 default_threads,
                 ARRAY_SIZE(default_threads))) {
-
             destroy_configuration(&config);
             return (Configuration){0};
         }
@@ -396,20 +311,15 @@ Configuration load_configuration(void) {
     /* --------------------------------------------------------------------- */
 
     {
-        static const uint64_t default_chunks[] = {
-            CHUNK_SIZE_LIST
-        };
-
+        static const uint64_t default_chunks[] = { CHUNK_SIZE_LIST };
         if (!copy_u64_list(
                 &config.execution.chunk_sizes,
                 default_chunks,
                 ARRAY_SIZE(default_chunks))) {
-
             destroy_configuration(&config);
             return (Configuration){0};
         }
     }
-
 
     /* --------------------------------------------------------------------- */
     /* Window configuration                                                  */
@@ -420,13 +330,11 @@ Configuration load_configuration(void) {
         return (Configuration){0};
     }
 
-
     /* --------------------------------------------------------------------- */
     /* Derived metrics                                                       */
     /* --------------------------------------------------------------------- */
 
     finalize_configuration_metrics(&config);
-
     return config;
 }
 
@@ -438,7 +346,6 @@ void destroy_configuration(Configuration *config) {
     if (config == NULL) {
         return;
     }
-
     free(config->execution.threads.data);
     free(config->execution.window_sizes.data);
     free(config->execution.chunk_sizes.data);

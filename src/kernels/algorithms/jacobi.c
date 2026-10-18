@@ -52,7 +52,6 @@ static int valid_view(const DataView *v, const TestCase *tc,
     return 1;
 }
 
-#define JACOBI_STEPS 8U
 /** @brief Apply one Jacobi stencil step, preserving fixed boundary cells. */
 static void serial_step(const double *in, double *out, size_t rows, size_t cols) {
     memcpy(out, in, (rows * cols * sizeof(*out)));
@@ -67,21 +66,18 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
     if (!valid_view(view, tc, profiler, metric, 3)) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    size_t rows = (size_t)view->meta.v2d.rows;
-    size_t cols = (size_t)view->meta.v2d.cols;
-    size_t count = rows * cols;
-    size_t bytes = count * sizeof(double);
+    size_t rows         = (size_t)view->meta.v2d.rows;
+    size_t cols         = (size_t)view->meta.v2d.cols;
+    size_t count        = rows * cols;
+    size_t bytes        = count * sizeof(double);
     const double *input = view->buffer->pool + view->window.offset;
-    double *a = malloc(bytes);
-    double *b = malloc(bytes);
-    double *ref = malloc(bytes);
-    double *tmp = malloc(bytes);
+    double *a           = malloc(bytes);
+    double *b           = malloc(bytes);
+    double *ref         = malloc(bytes);
+    double *tmp         = malloc(bytes);
 
     if (!a || !b || !ref || !tmp) {
-        free(a);
-        free(b);
-        free(ref);
-        free(tmp);
+        free_jacobi_components(a, b, ref, tmp);
         return KERNEL_STATUS_ALLOCATION_FAILURE;
     }
     memcpy(a, input, bytes);
@@ -89,10 +85,7 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
     /* Boundary values never change; prefill both workspaces before timing. */
     memcpy(b, input, bytes);
     if (profiler_start(profiler) != 0) {
-        free(a);
-        free(b);
-        free(ref);
-        free(tmp);
+        free_jacobi_components(a, b, ref, tmp);
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     for (unsigned step = 0; step < JACOBI_STEPS; ++step) {
@@ -104,8 +97,8 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
             }
         }
         double *swap = a;
-        a = b;
-        b = swap;
+        a            = b;
+        b            = swap;
     }
     int stop = profiler_stop(profiler, metric);
     /* Independent serial reference, excluded from the timed region. */
@@ -123,10 +116,7 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
                 break;
         }
     }
-    free(a);
-    free(b);
-    free(ref);
-    free(tmp);
+    free_jacobi_components(a, b, ref, tmp);
     if(stop != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }

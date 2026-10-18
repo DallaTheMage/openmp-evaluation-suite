@@ -39,6 +39,7 @@
 #include <math.h>
 #include <dirent.h>
 #include <limits.h>
+#include <linux/limits.h>
 
 #define RAPL_ROOT "/sys/class/powercap/intel-rapl"
 
@@ -47,15 +48,25 @@ static int read_value(int fd, double *value) {
     char buffer[64], *end;
     ssize_t n;
     double parsed;
-    if (fd < 0 || value == NULL || lseek(fd, 0, SEEK_SET) < 0) return -1;
+    if ((fd < 0)|| (value == NULL) || (lseek(fd, 0, SEEK_SET) < 0)) {
+        return -1;
+    }
     n = read(fd, buffer, sizeof(buffer) - 1);
-    if (n <= 0) return -1;
+    if (n <= 0) {
+        return -1;
+    }
     buffer[n] = '\0';
     errno = 0;
     parsed = strtod(buffer, &end);
-    if (errno != 0 || end == buffer || !isfinite(parsed) || parsed < 0) return -1;
-    while (*end == ' ' || *end == '\n' || *end == '\t') ++end;
-    if (*end != '\0') return -1;
+    if (errno != 0 || end == buffer || !isfinite(parsed) || parsed < 0) {
+        return -1;
+    }
+    while (*end == ' ' || *end == '\n' || *end == '\t') {
+        ++end;
+    }
+    if (*end != '\0') {
+        return -1;
+    }
     *value = parsed;
     return 0;
 }
@@ -63,7 +74,9 @@ static int read_value(int fd, double *value) {
 static int read_path(const char *path, double *value) {
     int fd = open(path, O_RDONLY);
     int status;
-    if (fd < 0) return -1;
+    if (fd < 0) {
+        return -1;
+    }
     status = read_value(fd, value);
     close(fd);
     return status;
@@ -72,18 +85,29 @@ static int read_path(const char *path, double *value) {
 static int find_named_domain(const char *parent, const char *expected, char *path, size_t length) {
     DIR *directory = opendir(parent);
     struct dirent *entry;
-    if (!directory) return -1;
+    if (!directory) {
+        return -1;
+    }
     while ((entry = readdir(directory)) != NULL) {
-        char name_path[PATH_MAX], domain_name[80];
-        int fd;
+        char    name_path[PATH_MAX];
+        char    domain_name[80];
+        int     fd;
         ssize_t n;
-        if (strncmp(entry->d_name, "intel-rapl:", 11) != 0) continue;
-        if (snprintf(name_path, sizeof(name_path), "%s/%s/name", parent, entry->d_name) >= (int)sizeof(name_path)) continue;
+        if (strncmp(entry->d_name, "intel-rapl:", 11) != 0) {
+            continue;
+        }
+        if (snprintf(name_path, sizeof(name_path), "%s/%s/name", parent, entry->d_name) >= (int)sizeof(name_path)) {
+            continue;
+        }
         fd = open(name_path, O_RDONLY);
-        if (fd < 0) continue;
+        if (fd < 0) {
+            continue;
+        }
         n = read(fd, domain_name, sizeof(domain_name) - 1);
         close(fd);
-        if (n <= 0) continue;
+        if (n <= 0) {
+            continue;
+        }
         domain_name[n] = '\0';
         domain_name[strcspn(domain_name, "\r\n")] = '\0';
         if (strcmp(domain_name, expected) == 0) {
@@ -101,21 +125,31 @@ static int open_domain(const char *directory, double *maximum) {
     char filename[PATH_MAX];
     int fd;
     if (snprintf(filename, sizeof(filename), "%s/max_energy_range_uj", directory) >= (int)sizeof(filename) ||
-        read_path(filename, maximum) != 0 || *maximum <= 0) return -1;
-    if (snprintf(filename, sizeof(filename), "%s/energy_uj", directory) >= (int)sizeof(filename)) return -1;
+        read_path(filename, maximum) != 0 || *maximum <= 0) {
+        return -1;
+    }
+    if (snprintf(filename, sizeof(filename), "%s/energy_uj", directory) >= (int)sizeof(filename)) {
+        return -1;
+    }
     fd = open(filename, O_RDONLY);
     return fd;
 }
 
 int rapl_power_init(RaplPower *rapl) {
     char pkg[PATH_MAX], dram[PATH_MAX];
-    if (!rapl) return -1;
+    if (!rapl) {
+        return -1;
+    }
     memset(rapl, 0, sizeof(*rapl));
     rapl->fd_pkg = rapl->fd_dram = -1;
     /* First package domain: multi-package aggregation is not yet supported. */
-    if (find_named_domain(RAPL_ROOT, "package-0", pkg, sizeof(pkg)) != 0) return -1;
+    if (find_named_domain(RAPL_ROOT, "package-0", pkg, sizeof(pkg)) != 0) {
+        return -1;
+    }
     rapl->fd_pkg = open_domain(pkg, &rapl->max_energy_pkg_uj);
-    if (rapl->fd_pkg < 0) return -1;
+    if (rapl->fd_pkg < 0) {
+        return -1;
+    }
     if (find_named_domain(pkg, "dram", dram, sizeof(dram)) == 0) {
         rapl->fd_dram = open_domain(dram, &rapl->max_energy_dram_uj);
     }
@@ -125,8 +159,12 @@ int rapl_power_init(RaplPower *rapl) {
 }
 
 int rapl_power_start(RaplPower *rapl) {
-    if (!rapl || !rapl->is_supported) return -1;
-    if (read_value(rapl->fd_pkg, &rapl->start_energy_pkg_uj) != 0) return -1;
+    if (!rapl || !rapl->is_supported) {
+        return -1;
+    }
+    if (read_value(rapl->fd_pkg, &rapl->start_energy_pkg_uj) != 0) {
+        return -1;
+    }
     if (rapl->fd_dram >= 0 && read_value(rapl->fd_dram, &rapl->start_energy_dram_uj) != 0) {
         close(rapl->fd_dram);
         rapl->fd_dram = -1; /* Optional domain: retain package measurement. */
@@ -140,8 +178,12 @@ static double energy_delta(double start, double stop, double maximum) {
 
 int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
     double stop_pkg, stop_dram;
-    if (!rapl || !rapl->is_supported || !data) return -1;
-    if (read_value(rapl->fd_pkg, &stop_pkg) != 0) return -1;
+    if (!rapl || !rapl->is_supported || !data) {
+        return -1;
+    }
+    if (read_value(rapl->fd_pkg, &stop_pkg) != 0) {
+        return -1;
+    }
     data->energy_pkg_joules = energy_delta(rapl->start_energy_pkg_uj, stop_pkg,
                                          rapl->max_energy_pkg_uj) * rapl->scale_pkg;
     data->energy_dram_joules = NAN;
@@ -158,9 +200,15 @@ int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
 }
 
 void rapl_power_cleanup(RaplPower *rapl) {
-    if (!rapl) return;
-    if (rapl->fd_pkg >= 0) close(rapl->fd_pkg);
-    if (rapl->fd_dram >= 0) close(rapl->fd_dram);
+    if (!rapl) {
+        return;
+    }
+    if (rapl->fd_pkg >= 0) {
+        close(rapl->fd_pkg);
+    }
+    if (rapl->fd_dram >= 0) {
+        close(rapl->fd_dram);
+    }
     rapl->fd_pkg = rapl->fd_dram = -1;
     rapl->is_supported = false;
 }

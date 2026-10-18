@@ -36,46 +36,30 @@
 static int valid_view(const DataView *v, const TestCase *tc,
                       const Profiler *profiler, const PerformanceMetric *metric,
                       size_t min_side) {
-    if (!v || !tc || !profiler || !metric || !v->buffer || !v->buffer->pool ||
-        v->type != VIEW_2D || !tc->num_threads || !tc->chunk_size ||
-        v->meta.v2d.rows < min_side || v->meta.v2d.cols < min_side) {
-
+    if (!v || !tc || !profiler || !metric || !v->buffer || !v->buffer->pool
+        || (v->type != VIEW_2D) || !tc->num_threads || !tc->chunk_size
+        || (v->meta.v2d.rows < min_side) || (v->meta.v2d.cols < min_side)) {
         return 0;
     }
 
-    const uint64_t r = v->meta.v2d.rows, c = v->meta.v2d.cols;
+    const uint64_t r = v->meta.v2d.rows;
+    const uint64_t c = v->meta.v2d.cols;
 
-    if (r > SIZE_MAX || c > SIZE_MAX || r > SIZE_MAX / c ||
-        r*c > SIZE_MAX / sizeof(double) || v->window.size < r*c ||
-        v->window.offset > v->buffer->element_count ||
-        r*c > v->buffer->element_count - v->window.offset) {
-
+    if ((r > SIZE_MAX) || (c > SIZE_MAX) || (r > (SIZE_MAX / c))
+        || ((r * c) > (SIZE_MAX / sizeof(double)))
+        || (v->window.size < (r * c))
+        || (v->window.offset > v->buffer->element_count)
+        || ((r * c) > (v->buffer->element_count - v->window.offset))) {
         return 0;
     }
     return 1;
 }
 
-#define CG_STEPS 12U
-
 /** @brief Apply the SPD five-point Dirichlet Poisson matrix without CSR storage. */
 static void poisson_apply(const double *x, double *y, size_t rows, size_t cols) {
     for (size_t i = 0; i < rows; ++i) {
         for (size_t j = 0; j < cols; ++j) {
-            size_t z = i * cols + j;
-            double v = 4.0 * x[z];
-            if(i) {
-                v -= x[z - cols];
-            }
-            if(i+1<rows) {
-                v -= x[z + cols];
-            }
-            if(j) {
-                v -= x[z - 1];
-            }
-            if((j + 1) < cols) {
-                v -= x[z + 1];
-            }
-            y[z] = v;
+            spd_five_point_dirichlet(i, j, rows, cols, x, y);
         }
     }
 }
@@ -86,24 +70,10 @@ static void poisson_apply_parallel(
     size_t rows,
     size_t cols,
     const TestCase *tc) {
-    #pragma omp parallel for num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE,tc->chunk_size)
+    #pragma omp parallel for num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
     for(size_t i = 0; i < rows; ++i) {
         for(size_t j = 0; j < cols; ++j) {
-            size_t z = (i * cols) + j;
-            double v = 4.0 * x[z];
-            if(i) {
-                v -= x[z - cols];
-            }
-            if((i + 1) < rows) {
-                v -= x[z + cols];
-            }
-            if(j) {
-                v -= x[z - 1];
-            }
-            if(j+1<cols) {
-                v -= x[z + 1];
-            }
-            y[z] = v;
+            spd_five_point_dirichlet(i, j, rows, cols, x, y);
         }
     }
 }
@@ -125,11 +95,7 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
     double *check = malloc(bytes);
 
     if(!x || !r || !p || !ap || !check) {
-        free(x);
-        free(r);
-        free(p);
-        free(ap);
-        free(check);
+        free_cg_components(x, r, p, ap, check);
         return KERNEL_STATUS_ALLOCATION_FAILURE;
     }
 
@@ -144,24 +110,16 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
     }
     double rr = 0.0;
     for(size_t z = 0; z < count; ++z) {
-        rr+=r[z]*r[z];
+        rr += r[z] * r[z];
     }
     if(!isfinite(rr) || rr <= 0.0) {
-        free(x);
-        free(r);
-        free(p);
-        free(ap);
-        free(check);
+        free_cg_components(x, r, p, ap, check);
         return KERNEL_STATUS_EXECUTION_FAILURE;
     }
     const double initial_rr = rr;
     int valid = 1;
     if(profiler_start(profiler) != 0) {
-        free(x);
-        free(r);
-        free(p);
-        free(ap);
-        free(check);
+        free_cg_components(x, r, p, ap, check);
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     for(unsigned it = 0; it < CG_STEPS; ++it) {
@@ -172,7 +130,7 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
             pap += p[z] * ap[z];
         }
         if(!isfinite(pap) || pap <= 0.0 || !isfinite(rr)) {
-            valid=0;
+            valid = 0;
             break;
         }
         double alpha = rr / pap;
@@ -184,19 +142,19 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
             new_rr += r[z] * r[z];
         }
         if(!isfinite(new_rr)) {
-            valid=0;
+            valid = 0;
             break;
         }
         /* Numerical termination only avoids division by zero on tiny systems. */
-        if(new_rr <= 1e-26*initial_rr) {
-            rr=new_rr;
+        if(new_rr <= (1e-26 * initial_rr)) {
+            rr = new_rr;
             break;
         }
         /* The regular benchmark uses a fixed iteration count. */
         double beta = new_rr / rr;
         #pragma omp parallel for num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
-        for(size_t z = 0;z < count; ++z) {
-            p[z] = r[z] + beta * p[z];
+        for(size_t z = 0; z < count; ++z) {
+            p[z] = r[z] + (beta * p[z]);
         }
         rr = new_rr;
     }
@@ -213,17 +171,13 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
             double d = rhs - check[z];
             true_rr += d * d;
         }
-        if(!isfinite(true_rr) || !isfinite(rr) ||
-           fabs(sqrt(true_rr) - sqrt(rr)) > (1e-7 * fmax(1.0, sqrt(initial_rr)))) {
-
-            valid=0;
+        if(!isfinite(true_rr) || !isfinite(rr)
+            || fabs(sqrt(true_rr) - sqrt(rr)) > (1e-7 * fmax(1.0, sqrt(initial_rr)))
+        ) {
+            valid = 0;
         }
     }
-    free(x);
-    free(r);
-    free(p);
-    free(ap);
-    free(check);
+    free_cg_components(x, r, p, ap, check);
     if(stop != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }

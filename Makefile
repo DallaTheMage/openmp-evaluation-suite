@@ -1,4 +1,3 @@
-#
 # Copyright (C) 2026
 #
 # This file is part of the OpenMP compiler-agnostic benchmark suite.
@@ -15,89 +14,49 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
 
-# ============================================================
+# =============================================================================
 # OpenMP Evaluation Suite - Makefile
-# ============================================================
+# =============================================================================
+# build.sh supplies toolchain-specific flags and configuration macros.
+# The defaults below also permit direct invocation of GNU Make.
 
-# Compiler can be overridden from the command line.
-# Example: make CC=clang
-CC ?= gcc
+.DEFAULT_GOAL := all
 
-# Default flags.
-# build.sh normally overrides these values.
+# GNU Make already defines CC=cc unless explicitly overridden.
+CC ?= cc
 CFLAGS ?= -O2 -g -Wall -Wextra -Wpedantic -std=c99 \
-          -D_GNU_SOURCE \
-          -Iinclude \
-          -Isrc/microroutines \
-          -fopenmp \
-          -MMD -MP
-
+          -D_GNU_SOURCE -Iinclude -Isrc/microroutines \
+          -fopenmp -MMD -MP
 LDFLAGS ?= -fopenmp
-LDLIBS  ?= -lm
+LDLIBS ?= -lm
 
-# ------------------------------------------------------------
-# Build directories
-# ------------------------------------------------------------
-
-# Separate output directories by compiler executable name.
-# Examples:
-#   build/gcc/
-#   build/clang/
-#   build/icx/
-
+# Keep build products for different compiler names separate.
 BUILD_DIR := build/$(notdir $(CC))
 TARGET    := $(BUILD_DIR)/main
 
-# ------------------------------------------------------------
-# Source files
-# ------------------------------------------------------------
-
-SRC := $(shell find src -name '*.c')
-OBJ := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC))
-DEP := $(OBJ:.o=.d)
-
-# ------------------------------------------------------------
-# Targets
-# ------------------------------------------------------------
+# Preserve the source layout below the compiler-specific build directory.
+SOURCES := $(shell find src -type f -name '*.c')
+OBJECTS := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
+DEPS    := $(OBJECTS:.o=.d)
 
 .PHONY: all clean erase
 
 all: $(TARGET)
 
-# ------------------------------------------------------------
-# Link executable
-# ------------------------------------------------------------
-
-$(TARGET): $(OBJ)
-	@mkdir -p $(@D)
-	$(CC) $(OBJ) $(LDFLAGS) -o $@ $(LDLIBS)
-
-# ------------------------------------------------------------
-# Compile source files
-# ------------------------------------------------------------
+$(TARGET): $(OBJECTS)
+	@mkdir -p "$(@D)"
+	$(CC) $(OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/%.o: src/%.c
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	@mkdir -p "$(@D)"
+	$(CC) $(CFLAGS) -c "$<" -o "$@"
 
-# ------------------------------------------------------------
-# Automatic header dependencies
-# ------------------------------------------------------------
-
--include $(DEP)
-
-# ------------------------------------------------------------
-# Clean build artifacts
-# ------------------------------------------------------------
+# Header changes trigger incremental recompilation.
+-include $(DEPS)
 
 clean:
 	rm -rf build
-
-# ------------------------------------------------------------
-# Remove generated results
-# ------------------------------------------------------------
 
 erase:
 	rm -rf output

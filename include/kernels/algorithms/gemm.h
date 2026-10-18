@@ -44,4 +44,9 @@
  */
 KernelStatus kernel_2d_gemm(DataView *view, const struct TestCase *test_case,
                            struct Profiler *profiler, struct PerformanceMetric *metric);
+
+static inline free_gemm_components(double *b, double *c) {
+    free(b);
+    free(c);
+}
 #endif

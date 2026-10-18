@@ -70,7 +70,7 @@ const KernelDescriptor
                 [KERNEL_ATOMIC]    = { kernel_2d_atomic },
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY] = { kernel_2d_simd_memory },
+                [KERNEL_SIMD_MEMORY]  = { kernel_2d_simd_memory },
                 [KERNEL_SIMD_COMPUTE] = { kernel_2d_simd_compute },
         #endif
         #if OPENMP_HAS_TASKLOOP
@@ -101,7 +101,7 @@ const KernelDescriptor
                 [KERNEL_ATOMIC]   = { kernel_3d_atomic },
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY] = { kernel_3d_simd_memory },
+                [KERNEL_SIMD_MEMORY]  = { kernel_3d_simd_memory },
                 [KERNEL_SIMD_COMPUTE] = { kernel_3d_simd_compute },
         #endif
         #if OPENMP_HAS_TASKLOOP
@@ -124,7 +124,7 @@ const KernelDescriptor
                 [KERNEL_TASK] = { kernel_aos_task },
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY] = { kernel_aos_simd_memory },
+                [KERNEL_SIMD_MEMORY]  = { kernel_aos_simd_memory },
                 [KERNEL_SIMD_COMPUTE] = { kernel_aos_simd_compute },
         #endif
         #if OPENMP_HAS_TASKLOOP
@@ -147,7 +147,7 @@ const KernelDescriptor
                 [KERNEL_TASK] = { kernel_soa_task },
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY] = { kernel_soa_simd_memory },
+                [KERNEL_SIMD_MEMORY]  = { kernel_soa_simd_memory },
                 [KERNEL_SIMD_COMPUTE] = { kernel_soa_simd_compute },
         #endif
         #if OPENMP_HAS_TASKLOOP
@@ -170,7 +170,7 @@ const KernelDescriptor
                 [KERNEL_TASK] = { kernel_aosoa_task },
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY] = { kernel_aosoa_simd_memory },
+                [KERNEL_SIMD_MEMORY]  = { kernel_aosoa_simd_memory },
                 [KERNEL_SIMD_COMPUTE] = { kernel_aosoa_simd_compute },
         #endif
         #if OPENMP_HAS_TASKLOOP

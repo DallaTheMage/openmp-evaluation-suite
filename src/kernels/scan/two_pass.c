@@ -68,16 +68,12 @@ static KernelStatus run_twopass_omp(
     double *offsets;
     int stop_status;
 
-    if (pool == NULL ||
-        total == 0U ||
-        profiler == NULL ||
-        metric == NULL) {
+    if (pool == NULL || total == 0U
+        || profiler == NULL || metric == NULL) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
 
-    if (num_threads == 0U) {
-        num_threads = 1U;
-    }
+    num_threads = (num_threads == 0U) ? 1U : num_threads;
 
     /*
      * Allocate the offsets outside the measured region.
@@ -99,26 +95,14 @@ static KernelStatus run_twopass_omp(
     #pragma omp parallel num_threads(num_threads) \
         default(none) shared(pool, total, offsets)
     {
-        const uint64_t tid =
-            (uint64_t)omp_get_thread_num();
-
-        const uint64_t nth =
-            (uint64_t)omp_get_num_threads();
-
-        const uint64_t items_per_thread =
-            total / nth;
-
-        const uint64_t remainder =
-            total % nth;
-
-        const uint64_t start =
-            tid * items_per_thread +
+        const uint64_t tid              = (uint64_t)omp_get_thread_num();
+        const uint64_t nth              = (uint64_t)omp_get_num_threads();
+        const uint64_t items_per_thread = total / nth;
+        const uint64_t remainder        = total % nth;
+        const uint64_t start = (tid * items_per_thread) +
             (tid < remainder ? tid : remainder);
-
-        const uint64_t count =
-            items_per_thread +
+        const uint64_t count = items_per_thread +
             (tid < remainder ? UINT64_C(1) : UINT64_C(0));
-
         const uint64_t end = start + count;
 
         /*
@@ -158,12 +142,10 @@ static KernelStatus run_twopass_omp(
         #pragma omp single
         {
             double running = 0.0;
-
             for (uint64_t t = 0U; t < nth; ++t) {
                 const double tmp = offsets[t];
-
-                offsets[t] = running;
-                running += tmp;
+                offsets[t]       = running;
+                running         += tmp;
             }
         }
 
@@ -209,8 +191,7 @@ KernelStatus kernel_2d_two_pass_scan(
     PerformanceMetric *metric)
 {
 
-    const uint64_t total =
-        view->meta.v2d.rows * view->meta.v2d.cols;
+    const uint64_t total = view->meta.v2d.rows * view->meta.v2d.cols;
 
     return run_twopass_omp(
         view->buffer->pool,

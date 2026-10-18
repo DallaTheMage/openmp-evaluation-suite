@@ -49,16 +49,14 @@ int cache_eviction_init(
     }
 
     memset(ctx, 0, sizeof(*ctx));
-
-    size_bytes = llc_bytes * multiplier;
-
+    size_bytes  = llc_bytes * multiplier;
     ctx->buffer = (unsigned char *)malloc(size_bytes);
 
     if (ctx->buffer == NULL) {
         return -1;
     }
 
-    ctx->size_bytes = size_bytes;
+    ctx->size_bytes   = size_bytes;
     ctx->stride_bytes = stride_bytes;
 
     /*
@@ -69,14 +67,12 @@ int cache_eviction_init(
      */
     for (i = 0U; i < size_bytes; ++i) {
         ctx->buffer[i] =
-            (unsigned char)((i * 13U + 7U) & 255U);
+            (unsigned char)(((i * 13U) + 7U) & 255U);
     }
-
     return 0;
 }
 
-void cache_eviction_run(CacheEviction *ctx)
-{
+void cache_eviction_run(CacheEviction *ctx) {
     size_t i;
     uint64_t sum = 0U;
 
@@ -92,10 +88,7 @@ void cache_eviction_run(CacheEviction *ctx)
      * Reading one byte per cache line is intended
      * to perturb the cache hierarchy.
      */
-    for (i = 0U;
-         i < ctx->size_bytes;
-         i += ctx->stride_bytes) {
-
+    for (i = 0U; i < ctx->size_bytes; i += ctx->stride_bytes) {
         sum += ctx->buffer[i];
     }
 
@@ -110,8 +103,6 @@ void cache_eviction_destroy(CacheEviction *ctx)
     if (ctx == NULL) {
         return;
     }
-
     free(ctx->buffer);
-
     memset(ctx, 0, sizeof(*ctx));
 }

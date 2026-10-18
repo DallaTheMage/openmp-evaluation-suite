@@ -24,6 +24,9 @@
 #ifndef KERNELS_ALGORITHMS_JACOBI_H
 #define KERNELS_ALGORITHMS_JACOBI_H
 #include "kernels/common/Kernel.h"
+
+#define JACOBI_STEPS 8U
+
 /**
  * @brief Measure Jacobi 2D on a VIEW_2D double-precision input.
  *
@@ -42,4 +45,11 @@
  */
 KernelStatus kernel_2d_jacobi(DataView *view, const struct TestCase *test_case,
                             struct Profiler *profiler, struct PerformanceMetric *metric);
+
+static inline free_jacobi_components(double *a, double *b, double *ref, double *tmp) {
+    free(a);
+    free(b);
+    free(ref);
+    free(tmp);
+}
 #endif

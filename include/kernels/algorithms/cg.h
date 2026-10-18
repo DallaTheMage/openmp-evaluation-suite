@@ -24,6 +24,9 @@
 #ifndef KERNELS_ALGORITHMS_CG_H
 #define KERNELS_ALGORITHMS_CG_H
 #include "kernels/common/Kernel.h"
+
+#define CG_STEPS 12U
+
 /**
  * @brief Measure Conjugate Gradient on a VIEW_2D double-precision input.
  *
@@ -42,4 +45,30 @@
  */
 KernelStatus kernel_2d_cg(DataView *view, const struct TestCase *test_case,
                             struct Profiler *profiler, struct PerformanceMetric *metric);
+
+static inline spd_five_point_dirichlet(size_t i, size_t j, size_t rows, size_t cols, const double *x, double *y) {
+    size_t z = (i * cols) + j;
+    double v = 4.0 * x[z];
+    if(i) {
+        v -= x[z - cols];
+    }
+    if((i + 1) < rows) {
+        v -= x[z + cols];
+    }
+    if(j) {
+        v -= x[z - 1];
+    }
+    if((j + 1) < cols) {
+        v -= x[z + 1];
+    }
+    y[z] = v;
+}
+
+static inline free_cg_components(double* x, double* r, double* p, double* ap, double* check) {
+    free(x);
+    free(r);
+    free(p);
+    free(ap);
+    free(check);
+}
 #endif

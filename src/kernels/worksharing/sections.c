@@ -42,7 +42,10 @@
  * @param metric Output measurement populated by the profiler.
  * @return Kernel execution status; propagates profiler failures.
  */
-KernelStatus kernel_2d_sections(DataView *view, const TestCase *test_case, Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_sections(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     const uint16_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
