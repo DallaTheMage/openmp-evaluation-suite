@@ -28,11 +28,8 @@ CLI_PARAMS=()
 VERBOSE="${VERBOSE:-0}"
 declare -A MACROS=()
 
-# shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
-# shellcheck source=lib/build_config.sh
 source "${SCRIPT_DIR}/lib/build_config.sh"
-# shellcheck source=lib/toolchain.sh
 source "${SCRIPT_DIR}/lib/toolchain.sh"
 
 usage() {

@@ -52,8 +52,7 @@ static const uint64_t configs[HW_PERF_COUNT_MAX] = {
         (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
 };
 
-void hw_counters_cleanup(HWCounters *hw)
-{
+void hw_counters_cleanup(HWCounters *hw) {
     if (!hw) {
         return;
     }
@@ -66,8 +65,7 @@ void hw_counters_cleanup(HWCounters *hw)
     hw->is_initialized = false;
 }
 
-int hw_counters_init(HWCounters *hw)
-{
+int hw_counters_init(HWCounters *hw) {
     if (!hw) {
         return -1;
     }
@@ -124,8 +122,7 @@ fail:
     return -1;
 }
 
-int hw_counters_start(HWCounters *hw)
-{
+int hw_counters_start(HWCounters *hw) {
     if (!hw || !hw->is_initialized) {
         return -1;
     }

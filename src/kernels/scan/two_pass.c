@@ -63,8 +63,7 @@ static KernelStatus run_twopass_omp(
     uint64_t total,
     uint16_t num_threads,
     Profiler *profiler,
-    PerformanceMetric *metric)
-{
+    PerformanceMetric *metric) {
     double *offsets;
     int stop_status;
 
@@ -188,8 +187,7 @@ KernelStatus kernel_2d_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
-    PerformanceMetric *metric)
-{
+    PerformanceMetric *metric) {
 
     const uint64_t total = view->meta.v2d.rows * view->meta.v2d.cols;
 
@@ -213,8 +211,7 @@ KernelStatus kernel_3d_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
-    PerformanceMetric *metric)
-{
+    PerformanceMetric *metric) {
     const uint64_t total =
         view->meta.v3d.height *
         view->meta.v3d.cols *
@@ -266,8 +263,7 @@ KernelStatus kernel_soa_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
-    PerformanceMetric *metric)
-{
+    PerformanceMetric *metric) {
     const uint64_t total =
         view->meta.soa.field_length *
         view->meta.soa.num_fields;
@@ -292,20 +288,15 @@ KernelStatus kernel_aosoa_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
-    PerformanceMetric *metric)
-{
-    const uint64_t vl =
-        view->meta.aosoa.vector_length;
-
+    PerformanceMetric *metric) {
+    const uint64_t vl = view->meta.aosoa.vector_length;
     if (vl == 0U) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-
     const uint64_t total =
         view->meta.aosoa.num_blocks *
         view->meta.aosoa.num_fields *
         vl;
-
     return run_twopass_omp(
         view->buffer->pool,
         total,

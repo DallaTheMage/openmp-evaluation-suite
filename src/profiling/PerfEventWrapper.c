@@ -33,8 +33,7 @@ int sys_perf_event_open(
     int                     cpu,
     int                     group_fd,
     unsigned long           flags
-)
-{
+) {
     return (int) syscall(
         __NR_perf_event_open,
         hw_event,
@@ -83,8 +82,7 @@ void perf_counter_close(int fd) {
 
 
 int perf_counter_open_thread(uint32_t type, uint64_t config,
-                             pid_t tid, int group_fd)
-{
+                             pid_t tid, int group_fd) {
     struct perf_event_attr pe;
     memset(&pe, 0, sizeof(pe));
     pe.type = type;
