@@ -61,6 +61,8 @@ typedef enum KernelType {
     KERNEL_GEMM,
     KERNEL_JACOBI,
     KERNEL_CG,
+    KERNEL_LOOP_SOA_INNER,
+    KERNEL_REDUCTION_SOA_INNER,
 
     /** Number of valid kernel identifiers. */
     KERNEL_COUNT

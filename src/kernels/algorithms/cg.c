@@ -30,30 +30,10 @@
 #include "core/TestPlan.h"
 #include "profiling/Profiler.h"
 #include "kernels/algorithms/cg.h"
+#include "kernels/algorithms/ViewValidation.h"
 
 #if OPENMP_HAS_2_0
-/** @brief Check VIEW_2D bounds and byte-size arithmetic before allocation. */
-static int valid_view(const DataView *v, const TestCase *tc,
-                      const Profiler *profiler, const PerformanceMetric *metric,
-                      size_t min_side) {
-    if (!v || !tc || !profiler || !metric || !v->buffer || !v->buffer->pool
-        || (v->type != VIEW_2D) || !tc->num_threads || !tc->chunk_size
-        || (v->meta.v2d.rows < min_side) || (v->meta.v2d.cols < min_side)) {
-        return 0;
-    }
 
-    const uint64_t r = v->meta.v2d.rows;
-    const uint64_t c = v->meta.v2d.cols;
-
-    if ((r > SIZE_MAX) || (c > SIZE_MAX) || (r > (SIZE_MAX / c))
-        || ((r * c) > (SIZE_MAX / sizeof(double)))
-        || (v->window.size < (r * c))
-        || (v->window.offset > v->buffer->element_count)
-        || ((r * c) > (v->buffer->element_count - v->window.offset))) {
-        return 0;
-    }
-    return 1;
-}
 
 /** @brief Apply the SPD five-point Dirichlet Poisson matrix without CSR storage. */
 static void poisson_apply(const double *x, double *y, size_t rows, size_t cols) {
@@ -80,7 +60,7 @@ static void poisson_apply_parallel(
 
 KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
                           Profiler *profiler,PerformanceMetric *metric) {
-    if(!valid_view(view,tc, profiler,metric, 2)) {
+    if(!kernel_valid_2d_view(view,tc, profiler,metric, 2)) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
     size_t rows  = (size_t)view->meta.v2d.rows;

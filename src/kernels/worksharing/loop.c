@@ -249,4 +249,40 @@ KernelStatus kernel_aosoa_loop(DataView *view,
     }
     return KERNEL_STATUS_OK;
 }
+
+
+/* Diagnostic variant: parallelize the inner element dimension of SoA. */
+KernelStatus kernel_soa_loop_inner(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint16_t num_threads = test_case->num_threads;
+    const uint32_t chunk = test_case->chunk_size;
+    double *restrict pool = view->buffer->pool;
+    const uint64_t num_elems = view->meta.soa.field_length;
+    const uint64_t num_fields = view->meta.soa.num_fields;
+
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel num_threads(num_threads)
+    {
+        for (uint64_t f = 0; f < num_fields; ++f) {
+            const uint64_t field_offset = f * num_elems;
+            #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
+            for (uint64_t i = 0; i < num_elems; ++i) {
+                const uint64_t offset = field_offset + i;
+                pool[offset] = pool[offset] * 2.0 + 1.0;
+                SLOWDOWN_AFTER_UPDATE(offset);
+            }
+        }
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
 #endif /* OPENMP_HAS_2_0 */

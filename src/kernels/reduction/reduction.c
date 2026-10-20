@@ -26,6 +26,7 @@
  */
 
 #include "kernels/reduction/reduction.h"
+#include "kernels/common/BenchmarkValidation.h"
 #include "config/openmp.h"
 #include "profiling/Profiler.h"
 #include "core/TestPlan.h"
@@ -71,6 +72,9 @@ KernelStatus kernel_2d_reduction(DataView *view,
     }
     volatile double result = sum;
     (void)result;
+#if BENCH_VALIDATE_RESULTS
+    benchmark_validation_reduction_sum = sum;
+#endif
     return KERNEL_STATUS_OK;
 
 }
@@ -119,6 +123,9 @@ KernelStatus kernel_3d_reduction(DataView *view,
     }
     volatile double result = sum;
     (void)result;
+#if BENCH_VALIDATE_RESULTS
+    benchmark_validation_reduction_sum = sum;
+#endif
     return KERNEL_STATUS_OK;
 
 }
@@ -143,7 +150,7 @@ KernelStatus kernel_aos_reduction(DataView *view,
     const double *restrict pool = view->buffer->pool;
     const uint64_t num_elems    = view->meta.aos.num_structs;
     const uint64_t struct_size  = view->meta.aos.struct_size;
-    double sum = 0.0;
+    double sum                  = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
@@ -164,6 +171,9 @@ KernelStatus kernel_aos_reduction(DataView *view,
     }
     volatile double result = sum;
     (void)result;
+#if BENCH_VALIDATE_RESULTS
+    benchmark_validation_reduction_sum = sum;
+#endif
     return KERNEL_STATUS_OK;
 
 }
@@ -183,12 +193,12 @@ KernelStatus kernel_soa_reduction(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint16_t num_threads  = test_case->num_threads;
+    const uint32_t chunk        = test_case->chunk_size;
     const double *restrict pool = view->buffer->pool;
-    const uint64_t num_elems = view->meta.soa.field_length;
-    const uint64_t num_fields = view->meta.soa.num_fields;
-    double sum = 0.0;
+    const uint64_t num_elems    = view->meta.soa.field_length;
+    const uint64_t num_fields   = view->meta.soa.num_fields;
+    double sum                  = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
@@ -209,6 +219,9 @@ KernelStatus kernel_soa_reduction(DataView *view,
     }
     volatile double result = sum;
     (void)result;
+#if BENCH_VALIDATE_RESULTS
+    benchmark_validation_reduction_sum = sum;
+#endif
     return KERNEL_STATUS_OK;
 
 }
@@ -261,6 +274,49 @@ KernelStatus kernel_aosoa_reduction(DataView *view,
     }
     volatile double result = sum;
     (void)result;
+#if BENCH_VALIDATE_RESULTS
+    benchmark_validation_reduction_sum = sum;
+#endif
+    return KERNEL_STATUS_OK;
+}
+
+
+
+/* Diagnostic variant: reduce SoA by parallelizing the element dimension. */
+KernelStatus kernel_soa_reduction_inner(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint16_t num_threads  = test_case->num_threads;
+    const uint32_t chunk        = test_case->chunk_size;
+    const double *restrict pool = view->buffer->pool;
+    const uint64_t num_elems    = view->meta.soa.field_length;
+    const uint64_t num_fields   = view->meta.soa.num_fields;
+    double sum                  = 0.0;
+
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel num_threads(num_threads) reduction(+:sum)
+    {
+        for (uint64_t f = 0; f < num_fields; ++f) {
+            const uint64_t field_offset = f * num_elems;
+            #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
+            for (uint64_t i = 0; i < num_elems; ++i) {
+                sum += pool[field_offset + i];
+            }
+        }
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    volatile double result = sum;
+    (void)result;
+    #if BENCH_VALIDATE_RESULTS
+    benchmark_validation_reduction_sum = sum;
+    #endif
     return KERNEL_STATUS_OK;
 }
 

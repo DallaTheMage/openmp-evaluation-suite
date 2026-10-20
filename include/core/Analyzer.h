@@ -57,7 +57,6 @@
 #include "kernels/KernelRegistry.h"
 #include "profiling/Profiler.h"
 
-
 /**
  * @brief One raw measurement produced by a benchmark execution.
  *
@@ -75,7 +74,6 @@ typedef struct RawSample {
     PerformanceMetric metric;
 } RawSample;
 
-
 /**
  * @brief Dynamically allocated collection of raw benchmark samples.
  *
@@ -85,7 +83,6 @@ typedef struct RawSampleSet {
     RawSample *samples;
     size_t     count;
 } RawSampleSet;
-
 
 /**
  * @brief Statistical summary of one measured quantity.
@@ -101,7 +98,6 @@ typedef struct Metrics {
     double mean;
     double variance;
 } Metrics;
-
 
 /**
  * @brief Aggregated measurements belonging to one experiment.
@@ -133,7 +129,6 @@ typedef struct AggregatedSample {
     Metrics energy_dram_joules;
 } AggregatedSample;
 
-
 /**
  * @brief Scaling metrics computed between two benchmark configurations.
  *
@@ -154,7 +149,6 @@ typedef enum ScalingMode {
     SCALING_WEAK = 1
 } ScalingMode;
 
-
 /**
  * @brief Metrics computed for one scaling comparison.
  *
@@ -170,7 +164,6 @@ typedef struct ScalingMetrics {
     double efficiency;
     double overhead_sec;
 } ScalingMetrics;
-
 
 /**
  * @brief Aggregate raw benchmark samples by experiment identity.
@@ -207,7 +200,6 @@ AggregatedSample *analyzer_aggregate_samples(
     size_t           sample_count,
     size_t          *out_count
 );
-
 
 /**
  * @brief Compute scaling metrics between two aggregated experiments.
@@ -247,7 +239,6 @@ bool analyzer_compute_scaling(
     ScalingMetrics         *out_metrics
 );
 
-
 /**
  * @brief Compute weak-scaling metrics between two proportional experiments.
  *
@@ -285,7 +276,6 @@ bool analyzer_compute_weak_scaling(
     ScalingMetrics         *out_metrics
 );
 
-
 /**
  * @brief Check whether two raw samples belong to the same test case.
  *
@@ -303,7 +293,6 @@ bool analyzer_same_test_case(
     const RawSample *a,
     const RawSample *b
 );
-
 
 /**
  * @brief Check whether two raw samples belong to the same experiment.
@@ -323,7 +312,6 @@ bool analyzer_same_experiment(
     const RawSample *b
 );
 
-
 /**
  * @brief Check whether two aggregated samples represent the same experiment.
  *
@@ -339,6 +327,5 @@ bool analyzer_same_experiment_aggregate(
     const AggregatedSample *a,
     const AggregatedSample *b
 );
-
 
 #endif /* CORE_ANALYZER_H */

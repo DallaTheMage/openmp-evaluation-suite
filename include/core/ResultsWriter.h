@@ -68,29 +68,14 @@
  * The function creates or replaces the five CSV files associated with the
  * current FileManager test directory.
  *
- * @param manager
- *     Initialized FileManager with a current test selected.
- *
- * @param plan
- *     Complete test plan used for the benchmark run.
- *
- * @param samples
- *     Raw benchmark measurements.
- *
- * @param aggregated
- *     Aggregated measurements produced by analyzer_aggregate_samples().
- *
- * @param aggregated_count
- *     Number of elements in @p aggregated.
- *
- * @param config
- *     Effective configuration, including compilation metadata.
- *
- * @param scaling_mode
- *     Selects strong-scaling or weak-scaling output for scaling.csv.
- *
- * @return
- *     0 on success, non-zero on invalid input or an I/O error.
+ * @param manager Initialized FileManager with a current test selected.
+ * @param plan Complete test plan used for the benchmark run.
+ * @param samples Raw benchmark measurements.
+ * @param aggregated Aggregated measurements produced by analyzer_aggregate_samples().
+ * @param aggregated_count Number of elements in @p aggregated.
+ * @param config Effective configuration, including compilation metadata.
+ * @param scaling_mode Selects strong-scaling or weak-scaling output for scaling.csv.
+ * @return 0 on success, non-zero on invalid input or an I/O error.
  *
  * @pre manager != NULL.
  * @pre plan != NULL.

@@ -88,4 +88,6 @@ KernelStatus kernel_soa_reduction(DataView *view, const struct TestCase *test_ca
  */
 KernelStatus kernel_aosoa_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
+KernelStatus kernel_soa_reduction_inner(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+
 #endif /* KERNELS_REDUCTION_H */

@@ -36,100 +36,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
 #include <stddef.h>
 
 #include "core/Dispatcher.h"
+#include "utils/Names.h"
+#include "core/internal/DispatchExecution.h"
+#include "core/internal/DispatchValidation.h"
 #include "kernels/KernelRegistry.h"
 
 /* ========================================================================== */
 /* Internal helpers                                                           */
 /* ========================================================================== */
-
-/**
- * @brief Convert a view type to a human-readable string.
- *
- * @param type View type.
- * @return Constant string describing the view type.
- */
-static const char *view_type_to_string(ViewType type)
-{
-    switch (type) {
-        case VIEW_1D:
-            return "1D";
-
-        case VIEW_2D:
-            return "2D";
-
-        case VIEW_3D:
-            return "3D";
-
-        case VIEW_AOS:
-            return "AoS";
-
-        case VIEW_SOA:
-            return "SoA";
-
-        case VIEW_AOSOA:
-            return "AoSoA";
-
-        default:
-            return "Unknown";
-    }
-}
-
-/**
- * @brief Convert a kernel type to a human-readable string.
- *
- * @param type Kernel type.
- * @return Constant string describing the kernel.
- */
-static const char *kernel_type_to_string(KernelType type)
-{
-    switch (type) {
-        case KERNEL_LOOP:
-            return "Loop";
-        case KERNEL_COLLAPSE:
-            return "Collapse";
-        case KERNEL_SECTIONS:
-            return "Sections";
-        case KERNEL_SIMD_MEMORY:
-            return "SIMD Memory";
-        case KERNEL_SIMD_COMPUTE:
-            return "SIMD Compute";
-        case KERNEL_MASTER:
-            return "Master";
-        case KERNEL_MASKED:
-            return "Masked";
-        case KERNEL_ATOMIC:
-            return "Atomic";
-        case KERNEL_CRITICAL:
-            return "Critical";
-        case KERNEL_ORDERED:
-            return "Ordered";
-        case KERNEL_SYNC:
-            return "Sync";
-        case KERNEL_REDUCTION:
-            return "Reduction";
-        case KERNEL_TASK:
-            return "Task";
-        case KERNEL_TASKLOOP:
-            return "Taskloop";
-        case KERNEL_NATIVE_SCAN:
-            return "Native Scan";
-        case KERNEL_GEMM:
-            return "GEMM";
-        case KERNEL_JACOBI:
-            return "Jacobi 2D";
-        case KERNEL_CG:
-            return "Conjugate Gradient";
-        case KERNEL_TWO_PASS_SCAN:
-            return "Two-Pass Scan";
-        default:
-            return "Unknown";
-    }
-}
 
 /**
  * @brief Check whether a size_t multiplication would overflow.
@@ -176,62 +94,6 @@ static int size_add_overflow(
 }
 
 /**
- * @brief Validate the structural fields required by the dispatcher.
- *
- * This function validates the plan structure and ensures that every
- * requested kernel implementation is available.
- *
- * Logical window bounds are checked when the window is restored by the
- * memory manager.
- *
- * @param plan Test plan to validate.
- * @param work_reps Number of measured repetitions.
- * @return Dispatch status.
- */
-static DispatchStatus validate_plan_for_dispatch(
-    const TestPlan *plan,
-    uint32_t work_reps) {
-    if (plan == NULL || work_reps == 0U) {
-        return DISPATCH_INVALID_ARGUMENT;
-    }
-    if (plan->count != 0U && plan->data == NULL) {
-        return DISPATCH_INVALID_ARGUMENT;
-    }
-    for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
-        const TestSet *set = &plan->data[set_index];
-        if (set->view.buffer == NULL) {
-            return DISPATCH_INVALID_ARGUMENT;
-        }
-        if (set->kernels.count != 0U && set->kernels.data == NULL) {
-            return DISPATCH_INVALID_ARGUMENT;
-        }
-        for (size_t group_index = 0U; group_index < set->kernels.count; ++group_index) {
-            const KernelTestGroup *group = &set->kernels.data[group_index];
-            const KernelFunc function = kernel_registry_get_function(
-                                            set->view.type,
-                                            group->kernel
-                                        );
-            if (function == NULL) {
-                return DISPATCH_KERNEL_UNAVAILABLE;
-            }
-
-            if (group->cases.count != 0U && group->cases.data == NULL) {
-                return DISPATCH_INVALID_ARGUMENT;
-            }
-
-            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
-                const TestCase *test_case = &group->cases.data[case_index];
-                if (test_case->num_threads == 0U) {
-                    return DISPATCH_INVALID_ARGUMENT;
-                }
-            }
-        }
-    }
-
-    return DISPATCH_OK;
-}
-
-/**
  * @brief Count all measured samples required by a test plan.
  *
  * Warm-up repetitions are not included in the sample count.
@@ -272,139 +134,123 @@ static DispatchStatus count_samples(
     return DISPATCH_OK;
 }
 
-/**
- * @brief Restore a logical window and execute one kernel invocation.
- *
- * The original view identifies a window in the original dataset.
- * The memory manager copies that window into the beginning of its working
- * buffer, outside the kernel profiling interval.
- *
- * The kernel receives a local copy of the original view. Its buffer points
- * to the working buffer, and its window offset is zero.
- *
- * The original view and test plan are not modified.
- *
- * @param function Kernel function.
- * @param view Original logical data view.
- * @param test_case Test case configuration.
- * @param memory_manager Manager used to restore working data.
- * @param profiler Profiler instance.
- * @param metric Destination for the performance metric.
- * @return Dispatch status.
- */
-static DispatchStatus execute_kernel(
-    KernelFunc function,
-    const DataView *view,
+/* Run one configuration; warm-ups and validation remain outside measured samples. */
+static DispatchStatus dispatch_execute_test_case(
+    const TestSet *set,
+    const KernelTestGroup *group,
     const TestCase *test_case,
+    KernelFunc function,
     MemoryManager *memory_manager,
     Profiler *profiler,
-    PerformanceMetric *metric,
-    CacheEviction *eviction) {
-
-    KernelStatus kernel_status;
-    DataView execution_view;
-    DataBuffer *working_buffer;
-
-    if (function == NULL ||
-        view == NULL ||
-        test_case == NULL ||
-        memory_manager == NULL ||
-        profiler == NULL ||
-        metric == NULL) {
-        return DISPATCH_INVALID_ARGUMENT;
-    }
-
-    /*
-     * A new measurement must not start while another measurement is active.
-     */
-    if (profiler->is_running) {
-        return DISPATCH_PROFILER_FAILURE;
-    }
-
-    /*
-     * Restore the requested logical window into the working buffer.
-     * The memory manager validates the offset and size against both buffers.
-     */
-    if (view->window.size > (uint64_t)SIZE_MAX ||
-        memory_manager_restore_window(
-            memory_manager,
-            view->window.offset,
-            (size_t)view->window.size) != 0) {
-        return DISPATCH_MEMORY_PREPARATION_FAILURE;
-    }
-
-    /*
-     * Retrieve the working buffer after restoration.
-     */
-    working_buffer = memory_manager_work_buffer(memory_manager);
-
-    if (working_buffer == NULL ||
-        working_buffer->pool == NULL ||
-        working_buffer->element_count < (size_t)view->window.size) {
-        return DISPATCH_MEMORY_PREPARATION_FAILURE;
-    }
-
-    /*
-     * Preserve the original view metadata while redirecting the kernel to
-     * the compact working buffer.
-     *
-     * The logical window begins at zero in this buffer because the requested
-     * source window has already been copied to its beginning.
-     */
-    execution_view = *view;
-    execution_view.buffer = working_buffer;
-    execution_view.window.offset = UINT64_C(0);
-
-    /*
-     * Cache eviction is executed after restoring the
-     * working data and before entering the kernel.
-     *
-     * The kernel's profiling interval does not include
-     * this operation.
-     */
-    if (eviction != NULL) {
-        cache_eviction_run(eviction);
-    }
-
-    /*
-     * Initialize the destination metric before calling the kernel.
-     */
-    memset(metric, 0, sizeof(*metric));
-
-    kernel_status = function(
-        &execution_view,
-        test_case,
-        profiler,
-        metric
+    uint32_t warmup_reps,
+    uint32_t work_reps,
+    RawSampleSet *out_samples,
+    CacheEviction *eviction,
+    size_t *sample_index)
+{
+    const DataView view = set->view;
+    DispatchStatus status;
+    const size_t sample_count = out_samples->count;
+    double total_wall_time = 0.0;
+    const size_t experiment_index = ((*sample_index) / (size_t)work_reps) + 1U;
+    const size_t experiment_count = sample_count / (size_t)work_reps;
+    const double window_gib =
+        (double)view.window.size *
+        ((double)sizeof(double) / 1073741824.0);
+    printf(
+        "[Dispatcher] Experiment %zu/%zu\n"
+        "    View       : %s\n"
+        "    Kernel     : %s\n"
+        "    Threads    : %u\n"
+        "    Chunk size : %llu\n"
+        "    Offset     : %llu\n"
+        "    Window     : %llu elements (%.2f GiB)\n",
+        experiment_index,
+        experiment_count,
+        utils_view_type_name(view.type),
+        utils_kernel_type_name(group->kernel),
+        test_case->num_threads,
+        (unsigned long long)test_case->chunk_size,
+        (unsigned long long)view.window.offset,
+        (unsigned long long)view.window.size,
+        window_gib
     );
+    fflush(stdout);
+
+    #if BENCH_VALIDATE_RESULTS
+    /* One extra invocation per configuration. Its metric is discarded.
+     * The kernel's internal timing still runs, but the verification
+     * itself happens strictly AFTER profiler_stop(). */
+    if (group->kernel == KERNEL_LOOP ||
+        group->kernel == KERNEL_REDUCTION ||
+        group->kernel == KERNEL_LOOP_SOA_INNER ||
+        group->kernel == KERNEL_REDUCTION_SOA_INNER) {
+        PerformanceMetric validation_metric;
+        status = dispatch_execute_kernel(
+            function, &view, test_case, memory_manager,
+            profiler, &validation_metric, eviction);
+        if (status == DISPATCH_OK) {
+            status = dispatch_validate_loop_or_reduction(
+                group->kernel, &view, memory_manager);
+        }
+        if (status != DISPATCH_OK) {
+            return status;
+        }
+    }
+    #endif
 
     /*
-     * A kernel must leave the profiler stopped, regardless of its status.
+     * Execute warm-up repetitions without storing their metrics.
      */
-    if (profiler->is_running) {
-        return DISPATCH_PROFILER_FAILURE;
+    for (uint32_t warmup = 0U; warmup < warmup_reps; ++warmup) {
+        PerformanceMetric warmup_metric;
+        status = dispatch_execute_kernel(
+            function,
+            &view,
+            test_case,
+            memory_manager,
+            profiler,
+            &warmup_metric,
+            eviction
+        );
+        if (status != DISPATCH_OK) {
+            return status;
+        }
     }
 
     /*
-     * Translate the kernel result into the dispatcher's public status.
+     * Execute measured repetitions and store their metrics.
      */
-    switch (kernel_status) {
-        case KERNEL_STATUS_OK:
-            return DISPATCH_OK;
-
-        case KERNEL_STATUS_PROFILER_FAILURE:
-            return DISPATCH_PROFILER_FAILURE;
-
-        case KERNEL_STATUS_INVALID_ARGUMENT:
-            return DISPATCH_INVALID_ARGUMENT;
-
-        case KERNEL_STATUS_ALLOCATION_FAILURE:
-            return DISPATCH_ALLOCATION_FAILURE;
-
-        case KERNEL_STATUS_EXECUTION_FAILURE:
-        default:
-            return DISPATCH_KERNEL_EXECUTION_FAILURE;
+    for (uint32_t run_id = 0U; run_id < work_reps; ++run_id) {
+        RawSample *sample = &out_samples->samples[(*sample_index)];
+        status = dispatch_execute_kernel(
+            function,
+            &view,
+            test_case,
+            memory_manager,
+            profiler,
+            &sample->metric,
+            eviction
+        );
+        if (status != DISPATCH_OK) {
+            return status;
+        }
+        sample->test_set_id  = set->uid;
+        sample->test_case_id = test_case->uid;
+        sample->kernel       = group->kernel;
+        sample->run_id       = run_id;
+        total_wall_time     += sample->metric.wall_time_sec;
+        ++(*sample_index);
     }
+
+    printf(
+        "[Dispatcher] Experiment %zu/%zu completed "
+        "(average wall time: %.6f s)\n",
+        experiment_index,
+        experiment_count,
+        total_wall_time / (double)work_reps
+    );
+    fflush(stdout);    return DISPATCH_OK;
 }
 
 /* ========================================================================== */
@@ -470,7 +316,7 @@ DispatchStatus dispatch_test_plan_with_eviction(
     out_samples->samples = NULL;
     out_samples->count = 0U;
 
-    status = validate_plan_for_dispatch(plan, work_reps);
+    status = dispatch_validate_plan_for_dispatch(plan, work_reps);
 
     if (status != DISPATCH_OK) {
         return status;
@@ -509,7 +355,7 @@ DispatchStatus dispatch_test_plan_with_eviction(
 
         /*
          * Keep the original DataView unchanged.
-         * execute_kernel() creates a compact local view for each invocation.
+         * dispatch_execute_kernel() creates a compact local view for each invocation.
          */
         const DataView view = set->view;
 
@@ -522,86 +368,13 @@ DispatchStatus dispatch_test_plan_with_eviction(
 
             for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
                 const TestCase *test_case = &group->cases.data[case_index];
-                double total_wall_time = 0.0;
-                const size_t experiment_index = (sample_index / (size_t)work_reps) + 1U;
-                const size_t experiment_count = sample_count / (size_t)work_reps;
-                const double window_gib =
-                    (double)view.window.size *
-                    ((double)sizeof(double) / 1073741824.0);
-                printf(
-                    "[Dispatcher] Experiment %zu/%zu\n"
-                    "    View       : %s\n"
-                    "    Kernel     : %s\n"
-                    "    Threads    : %u\n"
-                    "    Chunk size : %llu\n"
-                    "    Offset     : %llu\n"
-                    "    Window     : %llu elements (%.2f GiB)\n",
-                    experiment_index,
-                    experiment_count,
-                    view_type_to_string(view.type),
-                    kernel_type_to_string(group->kernel),
-                    test_case->num_threads,
-                    (unsigned long long)test_case->chunk_size,
-                    (unsigned long long)view.window.offset,
-                    (unsigned long long)view.window.size,
-                    window_gib
-                );
-                fflush(stdout);
-
-                /*
-                 * Execute warm-up repetitions without storing their metrics.
-                 */
-                for (uint32_t warmup = 0U; warmup < warmup_reps; ++warmup) {
-                    PerformanceMetric warmup_metric;
-                    status = execute_kernel(
-                        function,
-                        &view,
-                        test_case,
-                        memory_manager,
-                        profiler,
-                        &warmup_metric,
-                        eviction
-                    );
-                    if (status != DISPATCH_OK) {
-                        dispatch_destroy_samples(out_samples);
-                        return status;
-                    }
+                status = dispatch_execute_test_case(
+                    set, group, test_case, function, memory_manager, profiler,
+                    warmup_reps, work_reps, out_samples, eviction, &sample_index);
+                if (status != DISPATCH_OK) {
+                    dispatch_destroy_samples(out_samples);
+                    return status;
                 }
-
-                /*
-                 * Execute measured repetitions and store their metrics.
-                 */
-                for (uint32_t run_id = 0U; run_id < work_reps; ++run_id) {
-                    RawSample *sample = &out_samples->samples[sample_index];
-                    status = execute_kernel(
-                        function,
-                        &view,
-                        test_case,
-                        memory_manager,
-                        profiler,
-                        &sample->metric,
-                        eviction
-                    );
-                    if (status != DISPATCH_OK) {
-                        dispatch_destroy_samples(out_samples);
-                        return status;
-                    }
-                    sample->test_set_id  = set->uid;
-                    sample->test_case_id = test_case->uid;
-                    sample->kernel       = group->kernel;
-                    sample->run_id       = run_id;
-                    total_wall_time     += sample->metric.wall_time_sec;
-                    ++sample_index;
-                }
-
-                printf(
-                    "[Dispatcher] Experiment %zu/%zu completed "
-                    "(average wall time: %.6f s)\n",
-                    experiment_index,
-                    experiment_count,
-                    total_wall_time / (double)work_reps
-                );
-                fflush(stdout);
             }
         }
     }

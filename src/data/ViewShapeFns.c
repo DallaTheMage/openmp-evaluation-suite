@@ -163,7 +163,9 @@ bool shape_aos_validate(const DataView *view) {
     if (struct_size == 0U) {
         return false;
     }
-    return view->meta.aos.num_structs == (view->window.size / struct_size);
+    return view->meta.aos.num_structs > 0U &&
+           view->window.size % struct_size == 0U &&
+           view->meta.aos.num_structs == (view->window.size / struct_size);
 }
 
 
@@ -199,7 +201,9 @@ bool shape_soa_validate(const DataView *view) {
     if (num_fields == 0U) {
         return false;
     }
-    return view->meta.soa.field_length == (view->window.size / num_fields);
+    return view->meta.soa.field_length > 0U &&
+           view->window.size % num_fields == 0U &&
+           view->meta.soa.field_length == (view->window.size / num_fields);
 }
 
 
@@ -245,5 +249,7 @@ bool shape_aosoa_validate(const DataView *view) {
     }
 
     block_size = num_fields * vector_length;
-    return view->meta.aosoa.num_blocks == (view->window.size / block_size);
+    return view->meta.aosoa.num_blocks > 0U &&
+           view->window.size % block_size == 0U &&
+           view->meta.aosoa.num_blocks == (view->window.size / block_size);
 }

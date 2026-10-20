@@ -88,4 +88,6 @@ KernelStatus kernel_soa_loop(DataView *view, const struct TestCase *test_case, s
  */
 KernelStatus kernel_aosoa_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
+KernelStatus kernel_soa_loop_inner(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+
 #endif /* KERNELS_WORKSHARING_LOOP_H */

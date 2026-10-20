@@ -38,6 +38,7 @@
 #include "config/openmp.h"
 #include "config/params.h"
 #include "core/Configuration.h"
+#include "utils/ArrayCopy.h"
 
 
 /* ========================================================================= */
@@ -58,18 +59,13 @@ static inline void copy_string(char *target, size_t capacity, const char *string
  * @return 1 on success, 0 on invalid input or allocation failure.
  */
 static int copy_u32_list(ConfigU32List *destination, const uint32_t *source, size_t count) {
-    uint32_t *data;
-    if (destination == NULL || source == NULL || count == 0U) {
+    if (destination == NULL) {
         return 0;
     }
-    if (count > SIZE_MAX / sizeof(*data)) {
-        return 0;
-    }
-    data = malloc(count * sizeof(*data));
+    uint32_t *data = utils_array_copy(source, count, sizeof(*data));
     if (data == NULL) {
         return 0;
     }
-    memcpy(data, source, count * sizeof(*data));
     destination->data = data;
     destination->count = count;
     return 1;
@@ -86,18 +82,13 @@ static int copy_u32_list(ConfigU32List *destination, const uint32_t *source, siz
  * @return 1 on success, 0 on invalid input or allocation failure.
  */
 static int copy_u64_list(ConfigU64List *destination, const uint64_t *source, size_t count) {
-    uint64_t *data;
-    if (destination == NULL || source == NULL || count == 0U) {
+    if (destination == NULL) {
         return 0;
     }
-    if (count > (SIZE_MAX / sizeof(*data))) {
-        return 0;
-    }
-    data = malloc(count * sizeof(*data));
+    uint64_t *data = utils_array_copy(source, count, sizeof(*data));
     if (data == NULL) {
         return 0;
     }
-    memcpy(data, source, count * sizeof(*data));
     destination->data = data;
     destination->count = count;
     return 1;

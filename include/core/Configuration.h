@@ -62,14 +62,12 @@
 
 /**
  * @brief Dynamically allocated array of 32-bit unsigned integers.
- *
  * Ownership belongs to Configuration.
  */
 typedef struct {
     uint32_t *data;
     size_t    count;
 } ConfigU32List;
-
 
 /**
  * @brief Dynamically allocated array of 64-bit unsigned integers.
@@ -80,7 +78,6 @@ typedef struct {
     uint64_t *data;
     size_t    count;
 } ConfigU64List;
-
 
 /* ========================================================================= */
 /* DataView shape configuration                                              */
@@ -93,7 +90,6 @@ typedef struct {
     uint64_t cols;
 } ViewShape2DConfig;
 
-
 /**
  * @brief Configuration parameters for a three-dimensional view.
  */
@@ -102,14 +98,12 @@ typedef struct {
     uint64_t cols;
 } ViewShape3DConfig;
 
-
 /**
  * @brief Configuration parameters for an Array-of-Structures view.
  */
 typedef struct {
     uint64_t struct_size;
 } ViewShapeAoSConfig;
-
 
 /**
  * @brief Configuration parameters for a Structure-of-Arrays view.
@@ -118,7 +112,6 @@ typedef struct {
     uint64_t num_fields;
 } ViewShapeSoAConfig;
 
-
 /**
  * @brief Configuration parameters for an Array-of-Structures-of-Arrays view.
  */
@@ -126,7 +119,6 @@ typedef struct {
     uint64_t vector_length;
     uint64_t num_fields;
 } ViewShapeAoSoAConfig;
-
 
 /**
  * @brief Shape-specific configuration.
@@ -142,7 +134,6 @@ typedef union {
     ViewShapeSoAConfig   soa;
     ViewShapeAoSoAConfig aosoa;
 } ViewShapeConfig;
-
 
 /* ========================================================================= */
 /* Build metadata                                                            */
@@ -161,7 +152,6 @@ typedef struct {
     char compiler_flags[256];
     char openmp_version[16];
 } BuildConfig;
-
 
 /* ========================================================================= */
 /* Execution configuration                                                   */
@@ -193,14 +183,12 @@ typedef struct {
 
     /**
      * @brief Chunk sizes used by scheduling policies that accept a chunk.
-     *
      * For example, dynamic and guided scheduling variants may use these
      * values. The list is harmless for static scheduling and allows the
      * same configuration model to describe multiple build variants.
      */
     ConfigU64List chunk_sizes;
 } ExecutionConfig;
-
 
 /* ========================================================================= */
 /* Benchmark configuration                                                   */
@@ -252,14 +240,12 @@ typedef struct {
 
     /**
      * @brief Detected last-level data/unified cache size, in bytes.
-     *
      * Zero means that cache detection was unavailable.
      */
     uint64_t detected_llc_size_bytes;
 
     /**
      * @brief Auxiliary buffer capacity, expressed in double elements.
-     *
      * The capacity is twice the detected LLC size divided by sizeof(double).
      * Zero means that no auxiliary buffer is configured.
      */
@@ -268,14 +254,12 @@ typedef struct {
     CacheEvictionConfig cache_eviction;
 } MemoryConfig;
 
-
 /* ========================================================================= */
 /* Derived configuration metrics                                             */
 /* ========================================================================= */
 
 /**
  * @brief Values derived from the global benchmark configuration.
- *
  * These values describe the global benchmark data pool and the configured
  * per-thread workload used by proportional scaling.
  */
@@ -300,7 +284,6 @@ typedef struct {
      */
     uint64_t size_per_thread;
 } DerivedMetrics;
-
 
 /* ========================================================================= */
 /* Complete configuration                                                    */
@@ -334,7 +317,6 @@ typedef struct {
     DerivedMetrics derived;
 } Configuration;
 
-
 /* ========================================================================= */
 /* Configuration lifecycle                                                   */
 /* ========================================================================= */
@@ -348,7 +330,6 @@ typedef struct {
  */
 Configuration load_configuration(void);
 
-
 /**
  * @brief Compute metrics derived from the configured problem size.
  *
@@ -359,7 +340,6 @@ Configuration load_configuration(void);
  */
 void finalize_configuration_metrics(Configuration *config);
 
-
 /**
  * @brief Release resources owned by a configuration.
  *
@@ -368,6 +348,5 @@ void finalize_configuration_metrics(Configuration *config);
  * @param config Configuration whose dynamically allocated members are freed.
  */
 void destroy_configuration(Configuration *config);
-
 
 #endif /* CORE_CONFIGURATION_H */

@@ -17,6 +17,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file Slowdown.h
+ * @brief Optional extra arithmetic work for amplified kernel benchmarks.
+ */
+
 #ifndef OES_KERNELS_COMMON_SLOWDOWN_H
 #define OES_KERNELS_COMMON_SLOWDOWN_H
 
@@ -24,7 +29,14 @@
 #include "config/params.h"
 
 #if SLOWDOWN_FACTOR > 0U
-/* The volatile, thread-local accumulator makes every arithmetic iteration
+/**
+ * @brief Execute extra local arithmetic for amplified benchmarks.
+ * @param token Value used to initialize local arithmetic state.
+ *
+ * The volatile accumulator makes the loop observable to the compiler,
+ * introducing extra local memory traffic rather than a precise delay.
+ *
+ * The volatile, thread-local accumulator makes every arithmetic iteration
  * observable to the C compiler, without touching benchmark output or shared
  * memory. It deliberately incurs local memory traffic; this is an amplified
  * microbenchmark, not a cycle-accurate CPU busy loop. */

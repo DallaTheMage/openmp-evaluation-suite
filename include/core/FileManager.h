@@ -51,30 +51,25 @@
 
 #include <stdio.h>
 
-
 /**
  * @brief Maximum length of a FileManager base directory.
  */
 #define FILE_MANAGER_BASE_DIR_MAX 256U
-
 
 /**
  * @brief Maximum length of a compiler name stored by FileManager.
  */
 #define FILE_MANAGER_COMPILER_NAME_MAX 32U
 
-
 /**
  * @brief Maximum length of an OpenMP schedule name stored by FileManager.
  */
 #define FILE_MANAGER_SCHEDULE_NAME_MAX 32U
 
-
 /**
  * @brief Maximum length of a benchmark test name.
  */
 #define FILE_MANAGER_TEST_NAME_MAX 64U
-
 
 /**
  * @brief File manager state for one benchmark output hierarchy.
@@ -91,7 +86,6 @@ typedef struct FileManager {
     char test_name[FILE_MANAGER_TEST_NAME_MAX];
 } FileManager;
 
-
 /**
  * @brief Create a FileManager for one benchmark build.
  *
@@ -106,14 +100,9 @@ typedef struct FileManager {
  * No directory is created by this function. Directory creation is
  * performed when a test is selected with set_current_test().
  *
- * @param base_dir
- *     Root directory for benchmark output. May be NULL.
- *
- * @param compiler_name
- *     Compiler name to include in the output hierarchy.
- *
- * @param schedule_name
- *     Compile-time OpenMP schedule name to include in the output hierarchy.
+ * @param base_dir Root directory for benchmark output. May be NULL.
+ * @param compiler_name Compiler name to include in the output hierarchy.
+ * @param schedule_name Compile-time OpenMP schedule name to include in the output hierarchy.
  *
  * @return
  *     Newly allocated FileManager on success.
@@ -124,27 +113,18 @@ typedef struct FileManager {
  *
  * @note The returned object is owned by the caller.
  */
-FileManager *create_file_manager(
-    const char *base_dir,
-    const char *compiler_name,
-    const char *schedule_name
-);
-
+FileManager *create_file_manager(const char *base_dir, const char *compiler_name, const char *schedule_name);
 
 /**
  * @brief Destroy a FileManager.
  *
  * All resources owned by the manager are released.
  *
- * @param manager
- *     FileManager to destroy.
+ * @param manager FileManager to destroy.
  *
  * @note Passing NULL is allowed and has no effect.
  */
-void destroy_file_manager(
-    FileManager *manager
-);
-
+void destroy_file_manager(FileManager *manager);
 
 /**
  * @brief Select the current benchmark test and create its output directory.
@@ -155,11 +135,8 @@ void destroy_file_manager(
  *
  * If the directory hierarchy already exists, this function succeeds.
  *
- * @param manager
- *     FileManager whose current test is being changed.
- *
- * @param test_name
- *     Name of the benchmark test.
+ * @param manager FileManager whose current test is being changed.
+ * @param test_name Name of the benchmark test.
  *
  * @return
  *     0 on success.
@@ -171,11 +148,7 @@ void destroy_file_manager(
  *
  * @post On success, manager->test_name contains the selected test name.
  */
-int set_current_test(
-    FileManager *manager,
-    const char *test_name
-);
-
+int set_current_test(FileManager *manager, const char *test_name);
 
 /**
  * @brief Open a CSV file in the current test directory.
@@ -188,11 +161,8 @@ int set_current_test(
  * Files are opened in write mode and therefore existing contents are
  * replaced.
  *
- * @param manager
- *     FileManager with a selected current test.
- *
- * @param filename
- *     CSV filename without a directory component.
+ * @param manager FileManager with a selected current test.
+ * @param filename CSV filename without a directory component.
  *
  * @return
  *     Open FILE stream on success.
@@ -205,11 +175,7 @@ int set_current_test(
  * @note The caller owns the returned FILE stream and must close it with
  *       fclose().
  */
-FILE *open_csv_file(
-    FileManager *manager,
-    const char *filename
-);
-
+FILE *open_csv_file(FileManager *manager, const char *filename);
 
 /** Open a CSV file at <base>/<compiler>/<schedule>/, shared by scaling modes. */
 FILE *open_schedule_csv_file(FileManager *manager, const char *filename);

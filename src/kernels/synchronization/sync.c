@@ -57,7 +57,7 @@ KernelStatus kernel_2d_sync(DataView *view,
 
     #pragma omp parallel num_threads(num_threads) default(none) shared(pool, rows, cols, chunk)
     {
-        #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
+        #pragma omp for schedule(CHOSEN_SCHEDULE, chunk) nowait
         for (uint64_t r = 0; r < rows; ++r) {
             const uint64_t offset = r * cols;
             for (uint64_t c = 0; c < cols; ++c) {
@@ -110,7 +110,7 @@ KernelStatus kernel_3d_sync(DataView *view,
 
     #pragma omp parallel num_threads(num_threads) default(none) shared(pool, rows, cols, depth, chunk)
     {
-        #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
+        #pragma omp for schedule(CHOSEN_SCHEDULE, chunk) nowait
         for (uint64_t r = 0; r < rows; ++r) {
             for (uint64_t c = 0; c < cols; ++c) {
                 const uint64_t offset = (r * cols + c) * depth;

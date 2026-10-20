@@ -201,9 +201,19 @@ DataView create_data_view(
     initialize_metadata(&view, type, config);
     recompute_metadata(&view);
 
-    /* Reject invalid 2D/3D geometry at construction, before any kernel. */
-    if ((type == VIEW_2D && !shape_2d_validate(&view)) ||
-        (type == VIEW_3D && !shape_3d_validate(&view))) {
+    /* Ensure every supported view covers its complete nonempty window. */
+    bool valid = false;
+    switch (type) {
+        case VIEW_1D:   valid = shape_1d_validate(&view); break;
+        case VIEW_2D:   valid = shape_2d_validate(&view); break;
+        case VIEW_3D:   valid = shape_3d_validate(&view); break;
+        case VIEW_AOS:  valid = shape_aos_validate(&view); break;
+        case VIEW_SOA:  valid = shape_soa_validate(&view); break;
+        case VIEW_AOSOA:valid = shape_aosoa_validate(&view); break;
+        case VIEW_TYPE_COUNT:
+        default:        break;
+    }
+    if (!valid) {
         return (DataView){0};
     }
 

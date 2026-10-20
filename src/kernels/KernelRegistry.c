@@ -142,6 +142,8 @@ const KernelDescriptor
         #if OPENMP_HAS_2_0
                 [KERNEL_LOOP]      = { kernel_soa_loop },
                 [KERNEL_REDUCTION] = { kernel_soa_reduction },
+                [KERNEL_LOOP_SOA_INNER] = { kernel_soa_loop_inner },
+                [KERNEL_REDUCTION_SOA_INNER] = { kernel_soa_reduction_inner },
         #endif
         #if OPENMP_HAS_3_0
                 [KERNEL_TASK] = { kernel_soa_task },
