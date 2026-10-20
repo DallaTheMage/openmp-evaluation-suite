@@ -1,7 +1,11 @@
 /*
- * Copyright (C) 2026
+ * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * This file is part of the OpenMP compiler-agnostic benchmark suite.
+ * Copyright (C) 2026 Lorenzo Dall'Ara
+ *
+ * This file is part of the OpenMP compiler-agnostic benchmark suite,
+ * developed as part of a Bachelor's thesis at the
+ * Alma Mater Studiorum - University of Bologna.
  *
  * The OpenMP Benchmark Suite is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
