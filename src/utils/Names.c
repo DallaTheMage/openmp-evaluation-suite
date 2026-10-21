@@ -26,13 +26,9 @@
  * @brief Human-readable names for views and kernels.
  */
 
-/* Shared human-readable labels for views and kernels.
- * CSV output deliberately retains its established spellings.
- */
 #include "utils/Names.h"
 
-const char *utils_view_type_name(ViewType type)
-{
+const char *utils_view_type_name(ViewType type) {
     switch (type) {
         case VIEW_1D:
             return "1D";

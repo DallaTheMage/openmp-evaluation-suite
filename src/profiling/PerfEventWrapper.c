@@ -26,55 +26,28 @@
  * @brief Low-level Linux perf-event wrappers.
  */
 
-#include "profiling/PerfEventWrapper.h"
 #include <string.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
-int sys_perf_event_open(
-    struct perf_event_attr *hw_event,
-    pid_t                   pid,
-    int                     cpu,
-    int                     group_fd,
-    unsigned long           flags
-) {
-    return (int) syscall(
-        __NR_perf_event_open,
-        hw_event,
-        pid,
-        cpu,
-        group_fd,
-        flags
-    );
+#include "profiling/PerfEventWrapper.h"
+
+typedef struct perf_event_attr perf_event_attr;
+
+int sys_perf_event_open(perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags) {
+    return (int) syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
 }
 
 int perf_counter_open_process(uint32_t type, uint64_t config, int group_fd) {
-    struct perf_event_attr pe;
-    memset(&pe, 0, sizeof(struct perf_event_attr));
-
-    pe.type   = type;
-    pe.size   = sizeof(struct perf_event_attr);
-    pe.config = config;
-
-    /* Initially disabled; hw_counters_start() enables the counter explicitly. */
-    pe.disabled = 1;
-
-    /*
-     * OPENMP / MULTITHREAD TRACKING:
-     * inherit = 1 allows child threads created by OpenMP parallel regions to
-     * inherit this counter configuration and contribute measurements through
-     * the inherited file descriptor.
-     */
-    pe.inherit = 1;
-
-    /* Exclude kernel and hypervisor execution to measure user-space benchmark code only. */
+    perf_event_attr pe;
+    memset(&pe, 0, sizeof(perf_event_attr));
+    pe.type           = type;
+    pe.size           = sizeof(perf_event_attr);
+    pe.config         = config;
+    pe.disabled       = 1;
+    pe.inherit        = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv     = 1;
-
-    /*
-     * pid = 0: Monitor the current process and inheriting child threads.
-     * cpu = -1: Monitor on any CPU on which the threads are scheduled.
-     */
     return sys_perf_event_open(&pe, 0, -1, group_fd, 0);
 }
 
@@ -84,19 +57,16 @@ void perf_counter_close(int fd) {
     }
 }
 
-
-int perf_counter_open_thread(uint32_t type, uint64_t config,
-                             pid_t tid, int group_fd) {
-    struct perf_event_attr pe;
+int perf_counter_open_thread(uint32_t type, uint64_t config, pid_t tid, int group_fd) {
+    perf_event_attr pe;
     memset(&pe, 0, sizeof(pe));
     pe.type = type;
     pe.size = sizeof(pe);
     pe.config = config;
     pe.disabled = 1;
-    pe.inherit = 1; /* Include threads created after this event is opened. */
+    pe.inherit = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
-    pe.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
-                     PERF_FORMAT_TOTAL_TIME_RUNNING;
+    pe.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING;
     return sys_perf_event_open(&pe, tid, -1, group_fd, 0);
 }

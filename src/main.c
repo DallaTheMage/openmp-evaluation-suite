@@ -46,40 +46,35 @@
  *
  * The MemoryManager is created once and shared by all enabled suites.
  * This permits reuse of its original buffer and working-buffer capacity.
- * A failure in one suite does not prevent the other enabled suite from
- * being attempted.
+ * A failure in one suite doesn't prevent the other enabled suite from being attempted.
  *
  * @param config Loaded benchmark configuration.
  *
  * @return EXIT_SUCCESS if every enabled suite succeeds;
  *         EXIT_FAILURE otherwise.
  */
-static int run_application(const Configuration *config)
-{
+static int run_application(const Configuration *config) {
     MemoryManager *memory_manager = NULL;
-
     int full_scale_failed = 0;
     int proportional_failed = 0;
     int exit_code = EXIT_FAILURE;
 
     if (config == NULL) {
         fprintf(stderr, "[Error] Invalid configuration\n");
-        goto cleanup;
+        memory_manager_destroy(memory_manager);
+        return exit_code;
     }
-
-     /* Ensure the configured dataset fits the address space. */
     if (config->derived.problem_size_elements == 0U ||
         config->derived.problem_size_elements > (uint64_t)SIZE_MAX) {
         fprintf(stderr, "[Error] Configured dataset size is invalid or not addressable\n");
-        goto cleanup;
+        memory_manager_destroy(memory_manager);
+        return exit_code;
     }
-
     printf(
         "[Main] Allocating and initializing original data buffer (%llu elements)\n",
         (unsigned long long)config->derived.problem_size_elements
     );
 
-     /* The manager owns the original buffer and the reusable working buffer. */
     memory_manager = memory_manager_create(
         (size_t)config->derived.problem_size_elements,
         config->memory.alignment,
@@ -88,24 +83,21 @@ static int run_application(const Configuration *config)
 
     if (memory_manager == NULL) {
         fprintf(stderr, "[Error] Unable to initialize memory manager\n");
-        goto cleanup;
+        memory_manager_destroy(memory_manager);
+        return exit_code;
     }
 
-    /*
-     * Suites are independent: try every enabled suite even if
-     * an earlier suite fails.
-     */
-#if RUN_FULL_SCALE
+    #if RUN_FULL_SCALE
     full_scale_failed = (
         run_benchmark_suite(memory_manager, config, "Full_scale", SCALING_STRONG, 0) != 0
     );
-#endif
+    #endif
 
-#if RUN_PROPORTIONAL
+    #if RUN_PROPORTIONAL
     proportional_failed = (
         run_benchmark_suite(memory_manager, config, "Proportional", SCALING_WEAK, 1) != 0
     );
-#endif
+    #endif
 
     if (full_scale_failed) {
         fprintf(stderr, "[Error] Full-scale (Strong Scaling) suite failed\n");
@@ -113,19 +105,9 @@ static int run_application(const Configuration *config)
     if (proportional_failed) {
         fprintf(stderr, "[Error] Proportional (Weak Scaling) suite failed\n");
     }
-
-    /*
-     * Success requires every enabled suite to have completed successfully.
-     */
     if (!full_scale_failed && !proportional_failed) {
         exit_code = EXIT_SUCCESS;
     }
-
-cleanup:
-    /*
-     * The manager is application-owned and is destroyed exactly once.
-     * memory_manager_destroy() must accept NULL.
-     */
     memory_manager_destroy(memory_manager);
     return exit_code;
 }
@@ -140,7 +122,6 @@ int main(void) {
     int exit_code;
     printf("[Main] Configuration loaded\n");
     exit_code = run_application(&config);
-    /* Configuration owns dynamically allocated lists and is released here. */
     destroy_configuration(&config);
     return exit_code;
 }

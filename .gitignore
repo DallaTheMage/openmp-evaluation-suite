@@ -10,3 +10,4 @@ autotune.conf
 TODO
 *.py
 grafici/
+.venv/

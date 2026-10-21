@@ -51,7 +51,6 @@
 #include <sys/syscall.h>
 #include <linux/perf_event.h>
 
-
 /**
  * @brief Invoke the Linux perf_event_open system call.
  *
@@ -61,27 +60,19 @@
  * The wrapper is used only while opening counters during setup; benchmark
  * hot paths do not invoke it.
  *
- * @param hw_event
- *     Pointer to the perf_event_attr structure describing the event.
+ * @param hw_event Pointer to the perf_event_attr structure describing the event.
  *
- * @param pid
- *     Process or thread identifier to which the event is attached.
+ * @param pid Process or thread identifier to which the event is attached.
  *
- * @param cpu
- *     CPU on which the event is monitored, or -1 when the event is
- *     attached to the specified process/thread independently of a
- *     particular CPU.
+ * @param cpu CPU on which the event is monitored, or -1 when the event is attached
+ *            to the specified process/thread independently of a particular CPU.
  *
- * @param group_fd
- *     File descriptor of the event-group leader, or -1 when creating
- *     a new group.
+ * @param group_fd File descriptor of the event-group leader, or -1 when creating a new group.
  *
- * @param flags
- *     perf_event_open flags.
+ * @param flags perf_event_open flags.
  *
- * @return
- *     A non-negative file descriptor on success.
- *     A negative value on failure.
+ * @return A non-negative file descriptor on success.
+ *         A negative value on failure.
  *
  * @pre hw_event != NULL.
  */
@@ -92,7 +83,6 @@ int sys_perf_event_open(
     int                     group_fd,
     unsigned long           flags
 );
-
 
 /**
  * @brief Descriptor and configuration of a perf event.
@@ -109,7 +99,6 @@ typedef struct PerfCounterFD {
     uint64_t config;
 } PerfCounterFD;
 
-
 /**
  * @brief Open a perf event for the current process.
  *
@@ -119,32 +108,16 @@ typedef struct PerfCounterFD {
  * The function does not select or interpret hardware events. The caller
  * is responsible for providing a valid perf event type and configuration.
  *
- * @param type
- *     Linux perf event type, for example PERF_TYPE_HARDWARE or
- *     PERF_TYPE_HW_CACHE.
+ * @param type Linux perf event type, for example PERF_TYPE_HARDWARE or PERF_TYPE_HW_CACHE.
  *
- * @param config
- *     Event-specific configuration value.
+ * @param config Event-specific configuration value.
  *
- * @param group_fd
- *     File descriptor of the group leader, or -1 to create a new group.
+ * @param group_fd File descriptor of the group leader, or -1 to create a new group.
  *
- * @return
- *     A non-negative file descriptor on success.
- *     A negative value on failure.
- *
- * @note
- *     The implementation may configure the event so that measurements
- *     include the OpenMP worker threads created by the benchmark process.
- *     The exact event semantics are determined by the implementation and
- *     Linux perf subsystem.
+ * @return A non-negative file descriptor on success.
+ *         A negative value on failure.
  */
-int perf_counter_open_process(
-    uint32_t type,
-    uint64_t config,
-    int      group_fd
-);
-
+int perf_counter_open_process( uint32_t type, uint64_t config, int group_fd);
 
 /**
  * @brief Open a disabled perf event attached to a specific Linux thread.
@@ -155,14 +128,12 @@ int perf_counter_open_process(
  * @return Non-negative event descriptor on success, or -1 on syscall failure.
  * @note Kernel and hypervisor events are excluded; enabled/running time is reported.
  */
-int perf_counter_open_thread(uint32_t type, uint64_t config,
-                             pid_t tid, int group_fd);
+int perf_counter_open_thread(uint32_t type, uint64_t config, pid_t tid, int group_fd);
 
 /**
  * @brief Close a perf-event descriptor, ignoring negative values.
  * @param fd File descriptor to close; negative values are ignored.
  */
 void perf_counter_close(int fd);
-
 
 #endif /* PROFILING_PERF_EVENT_WRAPPER_H */

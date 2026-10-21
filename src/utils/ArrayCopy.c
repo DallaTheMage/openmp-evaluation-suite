@@ -26,15 +26,18 @@
  * @brief Implementation of checked array allocation and copying.
  */
 
-#include "utils/ArrayCopy.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils/ArrayCopy.h"
+
 void *utils_array_copy(const void *source, size_t count, size_t element_size) {
-    if (source == NULL || count == 0U || element_size == 0U ||
-        count > SIZE_MAX / element_size) {
+    if (source == NULL
+        || count == 0U
+        || element_size == 0U
+        || (count > (SIZE_MAX / element_size))) {
         return NULL;
     }
     void *data = malloc(count * element_size);

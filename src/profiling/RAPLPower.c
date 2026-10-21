@@ -32,8 +32,6 @@
  *       RAPL measurements are restricted to package-0 and optional DRAM.
  */
 
-/* RAPLPower.c */
-#include "profiling/RAPLPower.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,9 +43,8 @@
 #include <limits.h>
 #include <linux/limits.h>
 
-#define RAPL_ROOT "/sys/class/powercap/intel-rapl"
+#include "profiling/RAPLPower.h"
 
-/* Reads must not confuse failure with a genuine zero reading. */
 static int read_value(int fd, double *value) {
     char buffer[64], *end;
     ssize_t n;
@@ -66,7 +63,7 @@ static int read_value(int fd, double *value) {
         return -1;
     }
     while (*end == ' ' || *end == '\n' || *end == '\t') {
-        ++end;
+        end++;
     }
     if (*end != '\0') {
         return -1;
@@ -181,7 +178,7 @@ static double energy_delta(double start, double stop, double maximum) {
 }
 
 int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
-    double stop_pkg, stop_dram;
+    double stop_pkg, stop_dram, delta;
     if (!rapl || !rapl->is_supported || !data) {
         return -1;
     }
@@ -193,8 +190,8 @@ int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
     data->energy_dram_joules = NAN;
     if (rapl->fd_dram >= 0) {
         if (read_value(rapl->fd_dram, &stop_dram) == 0) {
-            data->energy_dram_joules = energy_delta(rapl->start_energy_dram_uj, stop_dram,
-                                                   rapl->max_energy_dram_uj) * rapl->scale_dram;
+            delta = energy_delta(rapl->start_energy_dram_uj, stop_dram, rapl->max_energy_dram_uj);
+            data->energy_dram_joules = delta * rapl->scale_dram;
         } else {
             close(rapl->fd_dram);
             rapl->fd_dram = -1;
@@ -213,6 +210,7 @@ void rapl_power_cleanup(RaplPower *rapl) {
     if (rapl->fd_dram >= 0) {
         close(rapl->fd_dram);
     }
-    rapl->fd_pkg = rapl->fd_dram = -1;
+    rapl->fd_pkg  = -1;
+    rapl->fd_dram = -1;
     rapl->is_supported = false;
 }

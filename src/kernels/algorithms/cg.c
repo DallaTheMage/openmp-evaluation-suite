@@ -38,11 +38,10 @@
 
 #if OPENMP_HAS_2_0
 
-
 /** @brief Apply the SPD five-point Dirichlet Poisson matrix without CSR storage. */
 static void poisson_apply(const double *x, double *y, size_t rows, size_t cols) {
-    for (size_t i = 0; i < rows; ++i) {
-        for (size_t j = 0; j < cols; ++j) {
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
             spd_five_point_dirichlet(i, j, rows, cols, x, y);
         }
     }
@@ -59,15 +58,18 @@ static void poisson_apply_parallel(
         num_threads(tc->num_threads) \
         schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
         shared(cols, rows, tc, x, y)
-    for(size_t i = 0; i < rows; ++i) {
-        for(size_t j = 0; j < cols; ++j) {
+    for(size_t i = 0; i < rows; i++) {
+        for(size_t j = 0; j < cols; j++) {
             spd_five_point_dirichlet(i, j, rows, cols, x, y);
         }
     }
 }
 
-KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
-                          Profiler *profiler,PerformanceMetric *metric) {
+KernelStatus kernel_2d_cg(
+    DataView *view,
+    const TestCase *tc,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     if(!kernel_valid_2d_view(view,tc, profiler,metric, 2)) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
@@ -87,7 +89,6 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
         return KERNEL_STATUS_ALLOCATION_FAILURE;
     }
 
-    /* Bounded RHS avoids overflow and makes the workload deterministic. */
     const double *in = view->buffer->pool + view->window.offset;
     for(size_t z = 0; z < count; ++z) {
         r[z] = 0.25 + (double)(((z * 17U) + 3U) % 97U) / 97.0;
@@ -110,7 +111,7 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
         free_cg_components(x, r, p, ap, check);
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    for(unsigned it = 0; it < CG_STEPS; ++it) {
+    for(unsigned it = 0; it < CG_STEPS; it++) {
         poisson_apply_parallel(p, ap, rows, cols, tc);
         double pap = 0.0;
         #pragma omp parallel for \
@@ -119,7 +120,7 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
             num_threads(tc->num_threads) \
             schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
             shared(ap, count, p, tc)
-        for(size_t z = 0; z < count; ++z) {
+        for(size_t z = 0; z < count; z++) {
             pap += p[z] * ap[z];
         }
         if(!isfinite(pap) || pap <= 0.0 || !isfinite(rr)) {
@@ -134,7 +135,7 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
             num_threads(tc->num_threads) \
             schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
             shared(alpha, ap, count, p, r, tc, x)
-        for(size_t z = 0; z < count; ++z) {
+        for(size_t z = 0; z < count; z++) {
             x[z]   += alpha * p[z];
             r[z]   -= alpha * ap[z];
             new_rr += r[z] * r[z];
@@ -143,19 +144,17 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
             valid = 0;
             break;
         }
-        /* Numerical termination only avoids division by zero on tiny systems. */
         if(new_rr <= (1e-26 * initial_rr)) {
             rr = new_rr;
             break;
         }
-        /* The regular benchmark uses a fixed iteration count. */
         double beta = new_rr / rr;
         #pragma omp parallel for \
             default(none) \
             num_threads(tc->num_threads) \
             schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
             shared(beta, count, p, r, tc)
-        for(size_t z = 0; z < count; ++z) {
+        for(size_t z = 0; z < count; z++) {
             p[z] = r[z] + (beta * p[z]);
         }
         rr = new_rr;
@@ -163,9 +162,8 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
     int stop = profiler_stop(profiler, metric);
     if(valid) {
         poisson_apply(x, check, rows, cols);
-        /* Check the true residual independently of the updated r vector. */
         double true_rr = 0.0;
-        for(size_t z = 0; z < count; ++z) {
+        for(size_t z = 0; z < count; z++) {
             double rhs = 0.25 + (double)(((z * 17U) + 3U) % 97U) / 97.0;
             if(isfinite(in[z])) {
                 rhs += 0.01 * (in[z] / (1.0 + fabs(in[z])));

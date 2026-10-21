@@ -32,8 +32,6 @@
  *       during initialization; threads created later are not enumerated.
  */
 
-/* Aggregate perf counters across existing Linux threads and inherited children. */
-#include "profiling/HWCounters.h"
 #include <dirent.h>
 #include <errno.h>
 #include <limits.h>
@@ -43,10 +41,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "profiling/HWCounters.h"
+
 static const uint32_t types[HW_PERF_COUNT_MAX] = {
     PERF_TYPE_HARDWARE, PERF_TYPE_HARDWARE,
     PERF_TYPE_HW_CACHE, PERF_TYPE_HW_CACHE
 };
+
 static const uint64_t configs[HW_PERF_COUNT_MAX] = {
     PERF_COUNT_HW_CPU_CYCLES,
     PERF_COUNT_HW_INSTRUCTIONS,
@@ -60,9 +61,11 @@ void hw_counters_cleanup(HWCounters *hw) {
     if (!hw) {
         return;
     }
-    for (size_t t = 0; t < hw->thread_count; ++t)
-        for (int i = 0; i < HW_PERF_COUNT_MAX; ++i)
+    for (size_t t = 0; t < hw->thread_count; t++) {
+        for (int i = 0; i < HW_PERF_COUNT_MAX; i++) {
             perf_counter_close(hw->threads[t].fds[i]);
+        }
+    }
     free(hw->threads);
     hw->threads = NULL;
     hw->thread_count = 0;
@@ -84,29 +87,36 @@ int hw_counters_init(HWCounters *hw) {
         char *end;
         errno = 0;
         long tid = strtol(entry->d_name, &end, 10);
-        if (errno || *end != '\0' || tid <= 0 || tid > INT_MAX){
+        if (errno || (*end != '\0') || (tid <= 0) || (tid > INT_MAX)){
             continue;
         }
         if (hw->thread_count == capacity) {
-            if (capacity > SIZE_MAX / (2 * sizeof(*hw->threads))) {
-                goto fail;
+            if (capacity > (SIZE_MAX / (2 * sizeof(*hw->threads)))) {
+                closedir(dir);
+                hw_counters_cleanup(hw);
+                return -1;
             }
-            size_t next = capacity ? capacity * 2 : 8;
+            size_t next = capacity ? (capacity * 2) : 8;
             HWThreadCounters *tmp = realloc(hw->threads, next * sizeof(*tmp));
             if (!tmp) {
-                goto fail;
+                closedir(dir);
+                hw_counters_cleanup(hw);
+                return -1;
             }
             hw->threads = tmp;
             capacity = next;
         }
         HWThreadCounters *th = &hw->threads[hw->thread_count++];
-        for (int i = 0; i < HW_PERF_COUNT_MAX; ++i) th->fds[i] = -1;
+        for (int i = 0; i < HW_PERF_COUNT_MAX; i++){
+            th->fds[i] = -1;
+        }
         th->leader_fd = -1;
-        for (int i = 0; i < HW_PERF_COUNT_MAX; ++i) {
-            th->fds[i] = perf_counter_open_thread(types[i], configs[i],
-                                                 (pid_t)tid, th->leader_fd);
+        for (int i = 0; i < HW_PERF_COUNT_MAX; i++) {
+            th->fds[i] = perf_counter_open_thread(types[i], configs[i], (pid_t)tid, th->leader_fd);
             if (th->fds[i] < 0) {
-                goto fail;
+                closedir(dir);
+                hw_counters_cleanup(hw);
+                return -1;
             }
             if (i == 0) {
                 th->leader_fd = th->fds[i];
@@ -120,10 +130,6 @@ int hw_counters_init(HWCounters *hw) {
     }
     hw->is_initialized = true;
     return 0;
-fail:
-    closedir(dir);
-    hw_counters_cleanup(hw);
-    return -1;
 }
 
 int hw_counters_start(HWCounters *hw) {
@@ -131,23 +137,21 @@ int hw_counters_start(HWCounters *hw) {
         return -1;
     }
     size_t started = 0;
-    for (size_t t = 0; t < hw->thread_count; ++t) {
+    for (size_t t = 0; t < hw->thread_count; t++) {
         int fd = hw->threads[t].leader_fd;
         if (ioctl(fd, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP) == -1 ||
             ioctl(fd, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP) == -1) {
-            /* A failed enable may leave this group partially active. */
             (void)ioctl(fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
-            for (size_t j = 0; j < started; ++j)
-                (void)ioctl(hw->threads[j].leader_fd,
-                            PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
+            for (size_t j = 0; j < started; j++) {
+                (void)ioctl(hw->threads[j].leader_fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
+            }
             return -1;
         }
-        ++started;
+        started++;
     }
     return 0;
 }
 
-/* perf read format: raw count, time_enabled, time_running. */
 typedef struct PerfRead {
     uint64_t value, time_enabled, time_running;
 } PerfRead;
@@ -157,14 +161,13 @@ int hw_counters_stop(HWCounters *hw, HWCountersData *data) {
         return -1;
     }
     memset(data, 0, sizeof(*data));
-    for (size_t t = 0; t < hw->thread_count; ++t)
-        if (ioctl(hw->threads[t].leader_fd, PERF_EVENT_IOC_DISABLE,
-                  PERF_IOC_FLAG_GROUP) == -1) {
+    for (size_t t = 0; t < hw->thread_count; t++)
+        if (ioctl(hw->threads[t].leader_fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP) == -1) {
             return -1;
         }
     uint64_t totals[HW_PERF_COUNT_MAX] = {0};
-    for (size_t t = 0; t < hw->thread_count; ++t) {
-        for (int i = 0; i < HW_PERF_COUNT_MAX; ++i) {
+    for (size_t t = 0; t < hw->thread_count; t++) {
+        for (int i = 0; i < HW_PERF_COUNT_MAX; i++) {
             PerfRead r;
             if (read(hw->threads[t].fds[i], &r, sizeof(r)) != (ssize_t)sizeof(r)
                 || r.time_running == 0) {

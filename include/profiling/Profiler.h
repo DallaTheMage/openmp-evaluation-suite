@@ -83,9 +83,9 @@ typedef struct PerformanceMetric {
     double   llc_miss_ratio;     /* Last-level-cache miss ratio. */
     double   energy_pkg_joules;  /* Package energy consumed during the measurement, in joules. */
     double   energy_dram_joules; /* DRAM energy consumed during the measurement, in joules. */
-    bool hw_counters_valid;       /* False when perf counters are unavailable. */
-    bool energy_pkg_valid;       /* False when package energy was not collected. */
-    bool energy_dram_valid;      /* False when DRAM energy was not collected. */
+    bool     hw_counters_valid;  /* False when perf counters are unavailable. */
+    bool     energy_pkg_valid;   /* False when package energy was not collected. */
+    bool     energy_dram_valid;  /* False when DRAM energy was not collected. */
 } PerformanceMetric;
 
 /**
@@ -132,8 +132,7 @@ int profiler_init(Profiler *p);
  *
  * @param p Initialized profiler.
  *
- * @return 0 on success, non-zero when the profiler is NULL or already
- *         running.
+ * @return 0 on success, non-zero when the profiler is NULL or already running.
  *
  * @pre p != NULL
  * @pre profiler_init(p) has completed successfully.

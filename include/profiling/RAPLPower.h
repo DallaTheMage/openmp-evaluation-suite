@@ -46,6 +46,8 @@
 
 #include <stdbool.h>
 
+#define RAPL_ROOT "/sys/class/powercap/intel-rapl"
+
 /**
  * @brief Runtime state of the RAPL energy counters.
  *
