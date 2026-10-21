@@ -177,18 +177,12 @@ typedef struct ScalingMetrics {
  *
  * Statistical accumulation is performed using the statistics subsystem.
  *
- * @param samples
- *     Array of raw samples.
+ * @param samples Array of raw samples.
+ * @param sample_count Number of elements in @p samples.
+ * @param out_count Output location receiving the number of aggregated samples.
  *
- * @param sample_count
- *     Number of elements in @p samples.
- *
- * @param out_count
- *     Output location receiving the number of aggregated samples.
- *
- * @return
- *     Dynamically allocated array of AggregatedSample objects on success.
- *     NULL on invalid input or allocation failure.
+ * @return Dynamically allocated array of AggregatedSample objects on success.
+ *         NULL on invalid input or allocation failure.
  *
  * @pre If @p sample_count is greater than zero, @p samples must not be NULL.
  * @pre Samples are grouped contiguously by test set, test case and kernel.
@@ -213,23 +207,13 @@ AggregatedSample *analyzer_aggregate_samples(
  * parameters such as the number of threads required to compute scaling
  * efficiency.
  *
- * @param baseline
- *     Aggregated baseline measurement.
+ * @param baseline Aggregated baseline measurement.
+ * @param baseline_point Test case describing the baseline execution.
+ * @param scaled Aggregated scaled measurement.
+ * @param scaled_point Test case describing the scaled execution.
+ * @param out_metrics Output structure receiving the computed scaling metrics.
  *
- * @param baseline_point
- *     Test case describing the baseline execution.
- *
- * @param scaled
- *     Aggregated scaled measurement.
- *
- * @param scaled_point
- *     Test case describing the scaled execution.
- *
- * @param out_metrics
- *     Output structure receiving the computed scaling metrics.
- *
- * @return
- *     true when the metrics can be computed, false otherwise.
+ * @return true when the metrics can be computed, false otherwise.
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The two measurements must represent compatible experiments.
@@ -293,10 +277,7 @@ bool analyzer_compute_weak_scaling(
  *
  * @pre Both pointers must be non-NULL.
  */
-bool analyzer_same_test_case(
-    const RawSample *a,
-    const RawSample *b
-);
+bool analyzer_same_test_case(const RawSample *a, const RawSample *b);
 
 /**
  * @brief Check whether two raw samples belong to the same experiment.
@@ -311,10 +292,7 @@ bool analyzer_same_test_case(
  *
  * @pre Both pointers must be non-NULL.
  */
-bool analyzer_same_experiment(
-    const RawSample *a,
-    const RawSample *b
-);
+bool analyzer_same_experiment(const RawSample *a, const RawSample *b);
 
 /**
  * @brief Check whether two aggregated samples represent the same experiment.
@@ -327,9 +305,6 @@ bool analyzer_same_experiment(
  *
  * @pre Both pointers must be non-NULL.
  */
-bool analyzer_same_experiment_aggregate(
-    const AggregatedSample *a,
-    const AggregatedSample *b
-);
+bool analyzer_same_experiment_aggregate(const AggregatedSample *a, const AggregatedSample *b);
 
 #endif /* CORE_ANALYZER_H */

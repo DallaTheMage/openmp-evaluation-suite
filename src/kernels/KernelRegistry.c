@@ -54,6 +54,11 @@
  */
 const KernelDescriptor
     KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT] = {
+    [VIEW_1D] = {
+        #if OPENMP_HAS_2_0
+                [KERNEL_REDUCTION] = { kernel_1d_reduction }
+        #endif
+    },
     [VIEW_2D] = {
         #if OPENMP_HAS_2_0
                 [KERNEL_LOOP]      = { kernel_2d_loop },

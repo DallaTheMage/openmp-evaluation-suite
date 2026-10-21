@@ -81,14 +81,13 @@ int profiler_start(Profiler *p) {
 }
 
 
-int profiler_stop(Profiler *p, PerformanceMetric *metric)
-{
+int profiler_stop(Profiler *p, PerformanceMetric *metric) {
+    const double stop_wtime = omp_get_wtime();
     bool hw_valid = false;
     bool pkg_valid = false;
     bool dram_valid = false;
     HWCountersData hw_data  = {0};
     RaplPowerData rapl_data = {0};
-    const double stop_wtime = omp_get_wtime();
 
     if (p == NULL || !p->is_running || metric == NULL) {
         return -1;

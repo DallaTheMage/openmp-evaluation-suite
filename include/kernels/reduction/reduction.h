@@ -31,6 +31,12 @@
 
 #include "kernels/common/Kernel.h"
 
+KernelStatus kernel_1d_reduction(DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric
+);
+
 /**
  * @brief Execute the 2D reduction benchmark.
  *
@@ -42,7 +48,12 @@
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_2d_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_2d_reduction(DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric
+);
+
 /**
  * @brief Execute the 3D reduction benchmark.
  *
@@ -54,7 +65,12 @@ KernelStatus kernel_2d_reduction(DataView *view, const struct TestCase *test_cas
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
  */
-KernelStatus kernel_3d_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_3d_reduction(DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric
+);
+
 /**
  * @brief Execute the AOS reduction benchmark.
  *

@@ -171,11 +171,11 @@ bool analyzer_same_experiment(const RawSample *a, const RawSample *b) {
 
 
 bool analyzer_same_experiment_aggregate(const AggregatedSample *a, const AggregatedSample *b) {
-    return a != NULL &&
-           b != NULL &&
-           a->test_set_id == b->test_set_id &&
-           a->test_case_id == b->test_case_id &&
-           a->kernel == b->kernel;
+    return a != NULL
+           && b != NULL
+           && (a->test_set_id == b->test_set_id)
+           && (a->test_case_id == b->test_case_id)
+           && (a->kernel == b->kernel);
 }
 
 
