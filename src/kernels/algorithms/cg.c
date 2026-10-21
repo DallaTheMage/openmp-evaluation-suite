@@ -54,7 +54,11 @@ static void poisson_apply_parallel(
     size_t rows,
     size_t cols,
     const TestCase *tc) {
-    #pragma omp parallel for num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(tc->num_threads) \
+        schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
+        shared(cols, rows, tc, x, y)
     for(size_t i = 0; i < rows; ++i) {
         for(size_t j = 0; j < cols; ++j) {
             spd_five_point_dirichlet(i, j, rows, cols, x, y);
@@ -109,7 +113,12 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
     for(unsigned it = 0; it < CG_STEPS; ++it) {
         poisson_apply_parallel(p, ap, rows, cols, tc);
         double pap = 0.0;
-        #pragma omp parallel for reduction(+:pap) num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
+        #pragma omp parallel for \
+            default(none) \
+            reduction(+:pap) \
+            num_threads(tc->num_threads) \
+            schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
+            shared(ap, count, p, tc)
         for(size_t z = 0; z < count; ++z) {
             pap += p[z] * ap[z];
         }
@@ -119,7 +128,12 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
         }
         double alpha = rr / pap;
         double new_rr = 0.0;
-        #pragma omp parallel for reduction(+:new_rr) num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
+        #pragma omp parallel for \
+            default(none) \
+            reduction(+:new_rr) \
+            num_threads(tc->num_threads) \
+            schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
+            shared(alpha, ap, count, p, r, tc, x)
         for(size_t z = 0; z < count; ++z) {
             x[z]   += alpha * p[z];
             r[z]   -= alpha * ap[z];
@@ -136,7 +150,11 @@ KernelStatus kernel_2d_cg(DataView *view,const TestCase *tc,
         }
         /* The regular benchmark uses a fixed iteration count. */
         double beta = new_rr / rr;
-        #pragma omp parallel for num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
+        #pragma omp parallel for \
+            default(none) \
+            num_threads(tc->num_threads) \
+            schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
+            shared(beta, count, p, r, tc)
         for(size_t z = 0; z < count; ++z) {
             p[z] = r[z] + (beta * p[z]);
         }

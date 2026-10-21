@@ -65,7 +65,7 @@
 static KernelStatus run_twopass_omp(
     double *restrict pool,
     uint64_t total,
-    uint16_t num_threads,
+    uint32_t num_threads,
     Profiler *profiler,
     PerformanceMetric *metric) {
     double *offsets;
@@ -181,12 +181,27 @@ static KernelStatus run_twopass_omp(
 }
 
 /* ============================================================================
- * VIEW_2D
+ * VIEW_1D
  * ========================================================================== */
 
-/**
- * @brief Execute a two-pass scan over a 2D view.
- */
+KernelStatus kernel_1d_two_pass_scan(
+    DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+
+    const uint64_t total = view->meta.v1d.length;
+
+    return run_twopass_omp(
+        view->buffer->pool,
+        total,
+        test_case->num_threads,
+        profiler,
+        metric
+    );
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
@@ -208,9 +223,6 @@ KernelStatus kernel_2d_two_pass_scan(
  * VIEW_3D
  * ========================================================================== */
 
-/**
- * @brief Execute a two-pass scan over a 3D view.
- */
 KernelStatus kernel_3d_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
@@ -234,9 +246,6 @@ KernelStatus kernel_3d_two_pass_scan(
  * VIEW_AOS
  * ========================================================================== */
 
-/**
- * @brief Execute a two-pass scan over an array-of-structures view.
- */
 KernelStatus kernel_aos_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
@@ -260,9 +269,6 @@ KernelStatus kernel_aos_two_pass_scan(
  * VIEW_SOA
  * ========================================================================== */
 
-/**
- * @brief Execute a two-pass scan over a structure-of-arrays view.
- */
 KernelStatus kernel_soa_two_pass_scan(
     DataView *view,
     const TestCase *test_case,
@@ -285,9 +291,6 @@ KernelStatus kernel_soa_two_pass_scan(
  * VIEW_AOSOA
  * ========================================================================== */
 
-/**
- * @brief Execute a two-pass scan over an array-of-structures-of-arrays view.
- */
 KernelStatus kernel_aosoa_two_pass_scan(
     DataView *view,
     const TestCase *test_case,

@@ -35,40 +35,71 @@
 #include "core/TestPlan.h"
 
 #if OPENMP_HAS_NATIVE_SCAN
+/* inscan belongs to the loop; OpenMP forbids a schedule clause on this loop. */
 /* ============================================================================
- * VIEW_2D
+ * VIEW_1D
  * ========================================================================== */
-/**
- * @brief Run the native scan benchmark using the 2D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
-KernelStatus kernel_2d_native_scan(DataView *view,
+KernelStatus kernel_1d_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
-    const uint64_t total       = view->meta.v2d.rows * view->meta.v2d.cols;
+    const uint64_t total       = view->meta.v1d.length;
+    if (total > (uint64_t)INT64_MAX) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
+    }
+    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
+    const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, total, chunk) \
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, count) \
         reduction(inscan, +:sum)
-    {
-        #pragma omp for schedule(static, chunk)
-        for (uint64_t i = 0; i < total; ++i) {
-            sum += pool[i];
-            #pragma omp scan inclusive(sum)
-            pool[i] = sum;
-        }
+    for (int64_t i = 0; i < count; ++i) {
+        sum += pool[i];
+        #pragma omp scan inclusive(sum)
+        pool[i] = sum;
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
+KernelStatus kernel_2d_native_scan(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t num_threads = test_case->num_threads;
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t total       = view->meta.v2d.rows * view->meta.v2d.cols;
+    if (total > (uint64_t)INT64_MAX) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
+    }
+    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
+    const int64_t count = (int64_t)total;
+    double sum                 = 0.0;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, count) \
+        reduction(inscan, +:sum)
+    for (int64_t i = 0; i < count; ++i) {
+        sum += pool[i];
+        #pragma omp scan inclusive(sum)
+        pool[i] = sum;
     }
 
     if (profiler_stop(profiler, metric) != 0) {
@@ -81,37 +112,32 @@ KernelStatus kernel_2d_native_scan(DataView *view,
 /* ============================================================================
  * VIEW_3D
  * ========================================================================== */
-/**
- * @brief Run the native scan benchmark using the 3D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_3d_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.v3d.height * view->meta.v3d.cols * view->meta.v3d.depth;
+    if (total > (uint64_t)INT64_MAX) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
+    }
+    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
+    const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, total, chunk) \
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, count) \
         reduction(inscan, +:sum)
-    {
-        #pragma omp for schedule(static, chunk)
-        for (uint64_t i = 0; i < total; ++i) {
-            sum += pool[i];
-            #pragma omp scan inclusive(sum)
-            pool[i] = sum;
-        }
+    for (int64_t i = 0; i < count; ++i) {
+        sum += pool[i];
+        #pragma omp scan inclusive(sum)
+        pool[i] = sum;
     }
 
     if (profiler_stop(profiler, metric) != 0) {
@@ -125,37 +151,32 @@ KernelStatus kernel_3d_native_scan(DataView *view,
  * VIEW_AOS
  * ========================================================================== */
 
-/**
- * @brief Run the native scan benchmark using the AOS data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_aos_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.aos.num_structs * view->meta.aos.struct_size;
+    if (total > (uint64_t)INT64_MAX) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
+    }
+    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
+    const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, total, chunk) \
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, count) \
         reduction(inscan, +:sum)
-    {
-        #pragma omp for schedule(static, chunk)
-        for (uint64_t i = 0; i < total; ++i) {
-            sum += pool[i];
-            #pragma omp scan inclusive(sum)
-            pool[i] = sum;
-        }
+    for (int64_t i = 0; i < count; ++i) {
+        sum += pool[i];
+        #pragma omp scan inclusive(sum)
+        pool[i] = sum;
     }
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
@@ -166,37 +187,32 @@ KernelStatus kernel_aos_native_scan(DataView *view,
 /* ============================================================================
  * VIEW_SOA
  * ========================================================================== */
-/**
- * @brief Run the native scan benchmark using the SOA data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_soa_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t total       = view->meta.soa.field_length * view->meta.soa.num_fields;
+    if (total > (uint64_t)INT64_MAX) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
+    }
+    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
+    const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, total, chunk) \
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, count) \
         reduction(inscan, +:sum)
-    {
-        #pragma omp for schedule(static, chunk)
-        for (uint64_t i = 0; i < total; ++i) {
-            sum += pool[i];
-            #pragma omp scan inclusive(sum)
-            pool[i] = sum;
-        }
+    for (int64_t i = 0; i < count; ++i) {
+        sum += pool[i];
+        #pragma omp scan inclusive(sum)
+        pool[i] = sum;
     }
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
@@ -208,41 +224,36 @@ KernelStatus kernel_soa_native_scan(DataView *view,
 /* ============================================================================
  * VIEW_AOSOA
  * ========================================================================== */
-/**
- * @brief Run the native scan benchmark using the AOSOA data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_aosoa_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t vl          = view->meta.aosoa.vector_length;
     if (vl == 0) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
     const uint64_t total = view->meta.aosoa.num_blocks * view->meta.aosoa.num_fields * vl;
+    if (total > (uint64_t)INT64_MAX) {
+        return KERNEL_STATUS_INVALID_ARGUMENT;
+    }
+    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
+    const int64_t count = (int64_t)total;
     double sum           = 0.0;
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads) \
-        default(none) shared(pool, total, chunk) \
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, count) \
         reduction(inscan, +:sum)
-    {
-        #pragma omp for schedule(static, chunk)
-        for (uint64_t i = 0; i < total; ++i) {
-            sum += pool[i];
-            #pragma omp scan inclusive(sum)
-            pool[i] = sum;
-        }
+    for (int64_t i = 0; i < count; ++i) {
+        sum += pool[i];
+        #pragma omp scan inclusive(sum)
+        pool[i] = sum;
     }
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;

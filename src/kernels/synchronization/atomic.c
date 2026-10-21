@@ -36,22 +36,44 @@
 
 #if OPENMP_HAS_3_1
 /* ============================================================================
- * VIEW_2D
+ * VIEW_1D
  * ========================================================================== */
-/**
- * @brief Run the atomic benchmark using the 2D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
+KernelStatus kernel_1d_atomic(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t length      = view->meta.v1d.length;
+    double sum = 0.0;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(pool, length, chunk, sum)
+    for (uint64_t r = 0; r < length; ++r) {
+        #pragma omp atomic update
+        sum += pool[r];
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_atomic(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
@@ -82,20 +104,12 @@ KernelStatus kernel_2d_atomic(DataView *view,
 /* ============================================================================
  * VIEW_3D
  * ========================================================================== */
-/**
- * @brief Run the atomic benchmark using the 3D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_3d_atomic(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v3d.height;
     const uint64_t cols        = view->meta.v3d.cols;

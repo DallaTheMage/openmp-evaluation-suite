@@ -37,22 +37,56 @@
 
 #if OPENMP_HAS_3_0
 /* ============================================================================
-- VIEW_2D
+- VIEW_1D
 - ========================================================================== */
-/**
- * @brief Run the task benchmark using the 2D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
+KernelStatus kernel_1d_task(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t   num_threads = test_case->num_threads;
+    const uint64_t   chunk       = test_case->chunk_size;
+    double *restrict pool        = view->buffer->pool;
+    const uint64_t   length      = view->meta.v1d.length;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, length, chunk)
+    {
+        #pragma omp single
+        {
+            for (uint64_t begin = 0; begin < length; begin += chunk) {
+                const uint64_t end = (begin + chunk < length) ? begin + chunk : length;
+                #pragma omp task \
+                    default(none) \
+                    firstprivate(begin, end) \
+                    shared(pool)
+                {
+                    for (uint64_t r = begin; r < end; ++r) {
+                        pool[r] = pool[r] * 2.0 + 1.0;
+                        SLOWDOWN_AFTER_UPDATE(r);
+                    }
+                }
+            }
+        }
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_task(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t   num_threads = test_case->num_threads;
-    const uint32_t   chunk       = test_case->chunk_size;
+    const uint32_t   num_threads = test_case->num_threads;
+    const uint64_t   chunk       = test_case->chunk_size;
     double *restrict pool        = view->buffer->pool;
     const uint64_t   rows        = view->meta.v2d.rows;
     const uint64_t   cols        = view->meta.v2d.cols;
@@ -66,7 +100,10 @@ KernelStatus kernel_2d_task(DataView *view,
         {
             for (uint64_t begin = 0; begin < rows; begin += chunk) {
                 const uint64_t end = (begin + chunk < rows) ? begin + chunk : rows;
-                #pragma omp task firstprivate(begin, end) shared(pool, cols)
+                #pragma omp task \
+                    default(none) \
+                    firstprivate(begin, end) \
+                    shared(pool, cols)
                 {
                     for (uint64_t r = begin; r < end; ++r) {
                         const uint64_t offset = r * cols;
@@ -90,20 +127,12 @@ KernelStatus kernel_2d_task(DataView *view,
 /* ============================================================================
 - VIEW_3D
 - ========================================================================== */
-/**
- * @brief Run the task benchmark using the 3D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_3d_task(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t   num_threads = test_case->num_threads;
-    const uint32_t   chunk       = test_case->chunk_size;
+    const uint32_t   num_threads = test_case->num_threads;
+    const uint64_t   chunk       = test_case->chunk_size;
     double *restrict pool        = view->buffer->pool;
     const uint64_t   rows        = view->meta.v3d.height;
     const uint64_t   cols        = view->meta.v3d.cols;
@@ -118,7 +147,10 @@ KernelStatus kernel_3d_task(DataView *view,
         {
             for (uint64_t begin = 0; begin < rows; begin += chunk) {
                 const uint64_t end = (begin + chunk < rows) ? begin + chunk : rows;
-                #pragma omp task firstprivate(begin, end) shared(pool, cols, depth)
+                #pragma omp task \
+                    default(none) \
+                    firstprivate(begin, end) \
+                    shared(pool, cols, depth)
                 {
                     for (uint64_t r = begin; r < end; ++r) {
                         for (uint64_t c = 0; c < cols; ++c) {
@@ -144,20 +176,12 @@ KernelStatus kernel_3d_task(DataView *view,
 /* ============================================================================
 - VIEW_AOS
 - ========================================================================== */
-/**
- * @brief Run the task benchmark using the AOS data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_aos_task(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aos.num_structs;
     const uint64_t struct_size = view->meta.aos.struct_size;
@@ -171,7 +195,10 @@ KernelStatus kernel_aos_task(DataView *view,
         {
             for (uint64_t begin = 0; begin < num_elems; begin += chunk) {
                 const uint64_t end = (begin + chunk < num_elems) ? begin + chunk : num_elems;
-                #pragma omp task firstprivate(begin, end) shared(pool, struct_size)
+                #pragma omp task \
+                    default(none) \
+                    firstprivate(begin, end) \
+                    shared(pool, struct_size)
                 {
                     for (uint64_t i = begin; i < end; ++i) {
                         const uint64_t base = i * struct_size;
@@ -195,20 +222,12 @@ KernelStatus kernel_aos_task(DataView *view,
 /* ============================================================================
 - VIEW_SOA
 - ========================================================================== */
-/**
- * @brief Run the task benchmark using the SOA data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_soa_task(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
@@ -222,7 +241,10 @@ KernelStatus kernel_soa_task(DataView *view,
         {
             for (uint64_t begin = 0; begin < num_fields; begin += chunk) {
                 const uint64_t end = (begin + chunk < num_fields) ? begin + chunk : num_fields;
-                #pragma omp task firstprivate(begin, end) shared(pool, num_elems)
+                #pragma omp task \
+                    default(none) \
+                    firstprivate(begin, end) \
+                    shared(pool, num_elems)
                 {
                     for (uint64_t f = begin; f < end; ++f) {
                         const uint64_t offset = f * num_elems;
@@ -246,20 +268,12 @@ KernelStatus kernel_soa_task(DataView *view,
 /* ============================================================================
 - VIEW_AOSOA
 - ========================================================================== */
-/**
- * @brief Run the task benchmark using the AOSOA data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_aosoa_task(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aosoa.num_blocks;
     const uint64_t num_fields  = view->meta.aosoa.num_fields;
@@ -281,7 +295,10 @@ KernelStatus kernel_aosoa_task(DataView *view,
         {
             for (uint64_t begin = 0; begin < num_tiles; begin += chunk) {
                 const uint64_t end = (begin + chunk < num_tiles) ? begin + chunk : num_tiles;
-                #pragma omp task firstprivate(begin, end) shared(pool, num_fields, vl, tile_size)
+                #pragma omp task \
+                    default(none) \
+                    firstprivate(begin, end) \
+                    shared(pool, num_fields, vl, tile_size)
                 {
                     for (uint64_t t = begin; t < end; ++t) {
                         const uint64_t tile_base = t * tile_size;

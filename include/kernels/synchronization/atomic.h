@@ -32,6 +32,20 @@
 #include "kernels/common/Kernel.h"
 
 /**
+ * @brief Execute the 1D atomic benchmark.
+ *
+ * @param view Non-owning data view processed by the kernel.
+ * @param test_case Immutable execution parameters for this run.
+ * @param profiler Initialized profiler used for the measurement interval.
+ * @param metric Output structure receiving the measured performance data.
+ *
+ * @pre All pointer arguments must be non-NULL.
+ * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
+ */
+KernelStatus kernel_1d_atomic(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+
+/**
  * @brief Execute the 2D atomic benchmark.
  *
  * @param view Non-owning data view processed by the kernel.
@@ -41,6 +55,7 @@
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_2d_atomic(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -53,6 +68,7 @@ KernelStatus kernel_2d_atomic(DataView *view, const struct TestCase *test_case, 
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_3d_atomic(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 

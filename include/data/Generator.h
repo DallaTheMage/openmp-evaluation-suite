@@ -85,7 +85,7 @@ static inline double generator_next_double(xoshiro256_state *state) {
     s[3] = (s[3] << 45) | (s[3] >> (64 - 45)); // Rotate left by 45 bits.
 
     // Extract 53 mantissa bits and convert them to a floating-point value.
-    return (result >> 11) * 0x1p-53;
+    return (double)(result >> 11) * 0x1p-53;
 }
 
 /**

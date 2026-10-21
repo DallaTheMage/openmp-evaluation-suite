@@ -114,7 +114,11 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
      * spatial locality without introducing inter-thread write conflicts.
      * C was zero-initialized before profiling.
      */
-    #pragma omp parallel for num_threads(test_case->num_threads) schedule(CHOSEN_SCHEDULE, test_case->chunk_size)
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(test_case->num_threads) \
+        schedule(CHOSEN_SCHEDULE, test_case->chunk_size) \
+        shared(a, b, c, m, n, test_case)
     for (size_t i = 0; i < m; ++i) {
         double *restrict c_row = c + (i * n);
         const double *restrict a_row = a + (i * n);

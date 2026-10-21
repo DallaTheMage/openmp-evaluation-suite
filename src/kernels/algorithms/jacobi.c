@@ -75,7 +75,11 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     for (unsigned step = 0; step < JACOBI_STEPS; ++step) {
-        #pragma omp parallel for num_threads(tc->num_threads) schedule(CHOSEN_SCHEDULE, tc->chunk_size)
+        #pragma omp parallel for \
+            default(none) \
+            num_threads(tc->num_threads) \
+            schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
+            shared(a, b, cols, rows, tc)
         for (size_t i = 1; i < (rows - 1); ++i) {
             for (size_t j = 1;  j < (cols - 1); ++j) {
                 size_t z = (i * cols) + j;

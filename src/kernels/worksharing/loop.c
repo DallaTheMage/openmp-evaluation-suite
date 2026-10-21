@@ -37,22 +37,43 @@
 
 #if OPENMP_HAS_2_0
 /* ============================================================================
-- VIEW_2D
+- VIEW_1D
 - ========================================================================== */
-/**
- * @brief Run the loop benchmark using the 2D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
+KernelStatus kernel_1d_loop(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t length      = view->meta.v1d.length;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel for \
+        default(none) \
+        num_threads(num_threads) \
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(chunk, length, pool)
+    for (uint64_t r = 0; r < length; ++r) {
+        pool[r] = pool[r] * 2.0 + 1.0;
+        SLOWDOWN_AFTER_UPDATE(r);
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
@@ -61,8 +82,10 @@ KernelStatus kernel_2d_loop(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
-        schedule(CHOSEN_SCHEDULE, chunk)
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(chunk, cols, pool, rows)
     for (uint64_t r = 0; r < rows; ++r) {
         const uint64_t offset = r * cols;
         for (uint64_t c = 0; c < cols; ++c) {
@@ -81,20 +104,12 @@ KernelStatus kernel_2d_loop(DataView *view,
 /* ============================================================================
 - VIEW_3D
 - ========================================================================== */
-/**
- * @brief Run the loop benchmark using the 3D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_3d_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v3d.height;
     const uint64_t cols        = view->meta.v3d.cols;
@@ -104,8 +119,10 @@ KernelStatus kernel_3d_loop(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
-        schedule(CHOSEN_SCHEDULE, chunk)
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(chunk, cols, depth, pool, rows)
     for (uint64_t r = 0; r < rows; ++r) {
         for (uint64_t c = 0; c < cols; ++c) {
             const uint64_t offset = (r * cols + c) * depth;
@@ -126,20 +143,12 @@ KernelStatus kernel_3d_loop(DataView *view,
 /* ============================================================================
 - VIEW_AOS
 - ========================================================================== */
-/**
- * @brief Run the loop benchmark using the AOS data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_aos_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aos.num_structs;
     const uint64_t struct_size = view->meta.aos.struct_size;
@@ -148,8 +157,10 @@ KernelStatus kernel_aos_loop(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
-        schedule(CHOSEN_SCHEDULE, chunk)
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(chunk, num_elems, pool, struct_size)
     for (uint64_t i = 0; i < num_elems; ++i) {
         const uint64_t base = i * struct_size;
         for (uint64_t f = 0; f < struct_size; ++f) {
@@ -168,20 +179,12 @@ KernelStatus kernel_aos_loop(DataView *view,
 /* ============================================================================
 - VIEW_SOA
 - ========================================================================== */
-/**
- * @brief Run the loop benchmark using the SOA data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_soa_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
@@ -190,8 +193,10 @@ KernelStatus kernel_soa_loop(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
-        schedule(CHOSEN_SCHEDULE, chunk)
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(chunk, num_elems, num_fields, pool)
     for (uint64_t f = 0; f < num_fields; ++f) {
         const uint64_t field_offset = f * num_elems;
         for (uint64_t i = 0; i < num_elems; ++i) {
@@ -210,20 +215,12 @@ KernelStatus kernel_soa_loop(DataView *view,
 /* ============================================================================
 - VIEW_AOSOA
 - ========================================================================== */
-/**
- * @brief Run the loop benchmark using the AOSOA data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_aosoa_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aosoa.num_blocks;
     const uint64_t num_fields  = view->meta.aosoa.num_fields;
@@ -235,8 +232,10 @@ KernelStatus kernel_aosoa_loop(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
-        schedule(CHOSEN_SCHEDULE, chunk)
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(chunk, num_fields, num_tiles, pool, tile_size, vl)
     for (uint64_t t = 0; t < num_tiles; ++t) {
         const uint64_t tile_base = t * tile_size;
         for (uint64_t f = 0; f < num_fields; ++f) {
@@ -260,8 +259,8 @@ KernelStatus kernel_soa_loop_inner(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk = test_case->chunk_size;
     double *restrict pool = view->buffer->pool;
     const uint64_t num_elems = view->meta.soa.field_length;
     const uint64_t num_fields = view->meta.soa.num_fields;
@@ -270,7 +269,10 @@ KernelStatus kernel_soa_loop_inner(DataView *view,
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads)
+    #pragma omp parallel \
+        default(none) \
+        num_threads(num_threads) \
+        shared(chunk, num_elems, num_fields, pool)
     {
         for (uint64_t f = 0; f < num_fields; ++f) {
             const uint64_t field_offset = f * num_elems;

@@ -56,9 +56,38 @@ const KernelDescriptor
     KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT] = {
     [VIEW_1D] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_REDUCTION] = { kernel_1d_reduction }
+                [KERNEL_LOOP]      = { kernel_1d_loop },
+                [KERNEL_SECTIONS]  = { kernel_1d_sections },
+                [KERNEL_MASTER]    = { kernel_1d_master },
+                [KERNEL_ORDERED]   = { kernel_1d_ordered },
+                [KERNEL_SYNC]      = { kernel_1d_sync },
+                [KERNEL_REDUCTION] = { kernel_1d_reduction },
+                [KERNEL_CRITICAL]  = { kernel_1d_critical },
+        #endif
+        #if OPENMP_HAS_3_0
+                [KERNEL_TASK]      = { kernel_1d_task },
+        #endif
+        #if OPENMP_HAS_3_1
+                [KERNEL_ATOMIC]    = { kernel_1d_atomic },
+        #endif
+        #if OPENMP_HAS_SIMD
+                [KERNEL_SIMD_MEMORY]  = { kernel_1d_simd_memory },
+                [KERNEL_SIMD_COMPUTE] = { kernel_1d_simd_compute },
+        #endif
+        #if OPENMP_HAS_TASKLOOP
+                [KERNEL_TASKLOOP] = { kernel_1d_taskloop },
+        #endif
+        #if OPENMP_HAS_MASKED
+                [KERNEL_MASKED] = { kernel_1d_masked },
+        #endif
+        #if OPENMP_HAS_NATIVE_SCAN
+                [KERNEL_NATIVE_SCAN] = { kernel_1d_native_scan },
+        #endif
+        #if OPENMP_HAS_TWO_PASS_SCAN
+                [KERNEL_TWO_PASS_SCAN] = { kernel_1d_two_pass_scan },
         #endif
     },
+
     [VIEW_2D] = {
         #if OPENMP_HAS_2_0
                 [KERNEL_LOOP]      = { kernel_2d_loop },

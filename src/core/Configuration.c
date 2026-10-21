@@ -229,10 +229,12 @@ Configuration load_configuration(void) {
      * AUX_BUFFER_SIZE is expressed in double elements.
      * Check that the value is representable by size_t before storing it.
      */
+    #if SIZE_MAX < UINT64_MAX
     if ((uint64_t)AUX_BUFFER_SIZE > (uint64_t)SIZE_MAX) {
         destroy_configuration(&config);
         return (Configuration){0};
     }
+    #endif
 
     config.memory.aux_buffer_size = (size_t)AUX_BUFFER_SIZE;
 

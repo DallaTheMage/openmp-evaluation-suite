@@ -53,14 +53,48 @@
  * ========================================================================== */
 
 /* --------------------------------------------------------------------------
- * VIEW_2D
+ * VIEW_1D
  * -------------------------------------------------------------------------- */
+KernelStatus kernel_1d_simd_memory(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t length      = view->meta.v1d.length;
+    double sink                = 0.0;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel for simd \
+        default(none) \
+        num_threads(num_threads) \
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(pool, length, chunk) \
+        reduction(+:sink)
+    for (uint64_t i = 0; i < length; ++i) {
+        sink += pool[i];
+    }
+
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
@@ -101,8 +135,8 @@ KernelStatus kernel_3d_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v3d.height;
     const uint64_t cols        = view->meta.v3d.cols;
@@ -146,8 +180,8 @@ KernelStatus kernel_aos_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aos.num_structs;
     const uint64_t struct_size = view->meta.aos.struct_size;
@@ -188,8 +222,8 @@ KernelStatus kernel_soa_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
@@ -230,8 +264,8 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aosoa.num_blocks;
     const uint64_t num_fields  = view->meta.aosoa.num_fields;
@@ -284,14 +318,55 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view,
  * ========================================================================== */
 
 /* --------------------------------------------------------------------------
- * VIEW_2D
+ * VIEW_1D
  * -------------------------------------------------------------------------- */
+KernelStatus kernel_1d_simd_compute(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t length      = view->meta.v1d.length;
+    double sink                = 0.0;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel for simd \
+        default(none) \
+        num_threads(num_threads) \
+        schedule(CHOSEN_SCHEDULE, chunk) \
+        shared(pool, length, chunk) \
+        reduction(+:sink)
+    for (uint64_t i = 0; i < length; ++i) {
+        double x = pool[i];
+        x = x * 1.000001 + 0.999999;
+        x = x * 0.999999 + 1.000001;
+        x = x * 1.000003 + 0.999997;
+        x = x * 0.999997 + 1.000003;
+        x = x * 1.000007 + 0.999993;
+        x = x * 0.999993 + 1.000007;
+        sink += x;
+    }
+
+    /* Keep the reduction observable so the workload cannot be optimized away. */
+    volatile double result = sink;
+    (void)result;
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
@@ -339,8 +414,8 @@ KernelStatus kernel_3d_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v3d.height;
     const uint64_t cols        = view->meta.v3d.cols;
@@ -391,8 +466,8 @@ KernelStatus kernel_aos_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aos.num_structs;
     const uint64_t struct_size = view->meta.aos.struct_size;
@@ -440,8 +515,8 @@ KernelStatus kernel_soa_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
@@ -489,8 +564,8 @@ KernelStatus kernel_aosoa_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.aosoa.num_blocks;
     const uint64_t num_fields  = view->meta.aosoa.num_fields;

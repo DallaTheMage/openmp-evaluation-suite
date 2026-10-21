@@ -32,6 +32,20 @@
 #include "kernels/common/Kernel.h"
 
 /**
+ * @brief Execute the 1D simd memory benchmark.
+ *
+ * @param view Non-owning data view processed by the kernel.
+ * @param test_case Immutable execution parameters for this run.
+ * @param profiler Initialized profiler used for the measurement interval.
+ * @param metric Output structure receiving the measured performance data.
+ *
+ * @pre All pointer arguments must be non-NULL.
+ * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
+ */
+KernelStatus kernel_1d_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+
+/**
  * @brief Execute the 2D simd memory benchmark.
  *
  * @param view Non-owning data view processed by the kernel.
@@ -41,6 +55,7 @@
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_2d_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -53,6 +68,7 @@ KernelStatus kernel_2d_simd_memory(DataView *view, const struct TestCase *test_c
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_3d_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -65,6 +81,7 @@ KernelStatus kernel_3d_simd_memory(DataView *view, const struct TestCase *test_c
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_aos_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -77,6 +94,7 @@ KernelStatus kernel_aos_simd_memory(DataView *view, const struct TestCase *test_
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_soa_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -89,8 +107,23 @@ KernelStatus kernel_soa_simd_memory(DataView *view, const struct TestCase *test_
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_aosoa_simd_memory(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+
+/**
+ * @brief Execute the 1D simd compute benchmark.
+ *
+ * @param view Non-owning data view processed by the kernel.
+ * @param test_case Immutable execution parameters for this run.
+ * @param profiler Initialized profiler used for the measurement interval.
+ * @param metric Output structure receiving the measured performance data.
+ *
+ * @pre All pointer arguments must be non-NULL.
+ * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
+ */
+KernelStatus kernel_1d_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D simd compute benchmark.
@@ -102,6 +135,7 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view, const struct TestCase *tes
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_2d_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -114,6 +148,7 @@ KernelStatus kernel_2d_simd_compute(DataView *view, const struct TestCase *test_
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_3d_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -126,6 +161,7 @@ KernelStatus kernel_3d_simd_compute(DataView *view, const struct TestCase *test_
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_aos_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -138,6 +174,7 @@ KernelStatus kernel_aos_simd_compute(DataView *view, const struct TestCase *test
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_soa_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 /**
@@ -150,6 +187,7 @@ KernelStatus kernel_soa_simd_compute(DataView *view, const struct TestCase *test
  *
  * @pre All pointer arguments must be non-NULL.
  * @pre The test case must be valid for the supplied view.
+ * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
 KernelStatus kernel_aosoa_simd_compute(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
 

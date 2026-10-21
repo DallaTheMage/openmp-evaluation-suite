@@ -39,20 +39,12 @@
 /* ============================================================================
 - VIEW_2D
 - ========================================================================== */
-/**
- * @brief Run the collapse benchmark using the 2D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_2d_collapse(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
@@ -61,9 +53,11 @@ KernelStatus kernel_2d_collapse(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
         schedule(CHOSEN_SCHEDULE, chunk) \
-        collapse(2)
+        collapse(2) \
+        shared(chunk, cols, pool, rows)
     for (uint64_t r = 0; r < rows; ++r) {
         for (uint64_t c = 0; c < cols; ++c) {
             const uint64_t offset = r * cols + c;
@@ -82,20 +76,12 @@ KernelStatus kernel_2d_collapse(DataView *view,
 /* ============================================================================
 - VIEW_3D
 - ========================================================================== */
-/**
- * @brief Run the collapse benchmark using the 3D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
 KernelStatus kernel_3d_collapse(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
-    const uint32_t chunk       = test_case->chunk_size;
+    const uint32_t num_threads = test_case->num_threads;
+    const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v3d.height;
     const uint64_t cols        = view->meta.v3d.cols;
@@ -105,9 +91,11 @@ KernelStatus kernel_3d_collapse(DataView *view,
     }
 
     #pragma omp parallel for \
+        default(none) \
         num_threads(num_threads) \
         schedule(CHOSEN_SCHEDULE, chunk) \
-        collapse(3)
+        collapse(3) \
+        shared(chunk, cols, depth, pool, rows)
     for (uint64_t r = 0; r < rows; ++r) {
         for (uint64_t c = 0; c < cols; ++c) {
             for (uint64_t d = 0; d < depth; ++d) {

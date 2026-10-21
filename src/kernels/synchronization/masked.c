@@ -36,21 +36,44 @@
 
 #if OPENMP_HAS_5_1
 /* ============================================================================
-- VIEW_2D
+- VIEW_1D
 - ========================================================================== */
-/**
- * @brief Run the masked benchmark using the 2D data layout.
- * @param view Non-owning view of the benchmark input/output buffer.
- * @param test_case Thread count and scheduling/workload parameters.
- * @param profiler Initialized profiler used to bracket the kernel workload.
- * @param metric Output measurement populated by the profiler.
- * @return Kernel execution status; propagates profiler failures.
- */
+KernelStatus kernel_1d_masked(DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
+    const uint32_t num_threads = test_case->num_threads;
+    double *restrict pool      = view->buffer->pool;
+    const uint64_t length      = view->meta.v1d.length;
+    if (profiler_start(profiler) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+
+    #pragma omp parallel \
+        default(none) \
+        num_threads(num_threads) \
+        shared(pool, length)
+    {
+        #pragma omp masked
+        {
+            if (length > 0) {
+                pool[0] = pool[0] * 2.0 + 1.0;
+            }
+        }
+    }
+
+    if (profiler_stop(profiler, metric) != 0) {
+        return KERNEL_STATUS_PROFILER_FAILURE;
+    }
+    return KERNEL_STATUS_OK;
+}
+
+/* VIEW_2D */
 KernelStatus kernel_2d_masked(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
-    const uint16_t num_threads = test_case->num_threads;
+    const uint32_t num_threads = test_case->num_threads;
     double *restrict pool      = view->buffer->pool;
     const uint64_t rows        = view->meta.v2d.rows;
     const uint64_t cols        = view->meta.v2d.cols;
