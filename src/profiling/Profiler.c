@@ -26,13 +26,11 @@
  * @brief Performance measurement coordination for benchmark executions.
  */
 
-
 #include <omp.h>
 #include <string.h>
 #include <math.h>
 #include "profiling/Profiler.h"
 #include "config/params.h"
-
 
 int profiler_init(Profiler *p) {
     #if ENABLE_HW_COUNTERS
@@ -57,7 +55,6 @@ int profiler_init(Profiler *p) {
     return 0;
 }
 
-
 int profiler_start(Profiler *p) {
     if (p == NULL || p->is_running) {
         return -1;
@@ -72,7 +69,6 @@ int profiler_start(Profiler *p) {
     p->is_running = true;
     return 0;
 }
-
 
 int profiler_stop(Profiler *p, PerformanceMetric *metric) {
     const double stop_wtime = omp_get_wtime();
@@ -131,7 +127,6 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric) {
     }
     return 0;
 }
-
 
 void profiler_cleanup(Profiler *p) {
     if (p == NULL) {
