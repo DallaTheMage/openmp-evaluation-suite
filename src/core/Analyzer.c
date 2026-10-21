@@ -30,7 +30,6 @@
 #include "core/Analyzer.h"
 #include "core/Statistics.h"
 
-
 typedef struct GroupAccumulator {
     StatisticsAccumulator wall_time_sec;
     StatisticsAccumulator cycles;
@@ -44,13 +43,11 @@ typedef struct GroupAccumulator {
     StatisticsAccumulator energy_dram_joules;
 } GroupAccumulator;
 
-
 /**
  * @brief Reset each statistics accumulator for a new group.
- * @param acc Group accumulator to initialize; NULL is ignored.
+ * @param acc Group accumulator to initialize;
  */
-static void group_accumulator_init(GroupAccumulator *acc)
-{
+static void group_accumulator_init(GroupAccumulator *acc) {
     if (acc == NULL) {
         return;
     }
@@ -89,86 +86,70 @@ static void group_accumulator_update(GroupAccumulator *acc, const PerformanceMet
     statistics_update(&acc->energy_dram_joules, metric->energy_dram_joules);
 }
 
-
 static Metrics statistics_to_metrics(const StatisticsResult *result) {
     Metrics metrics = {NAN, NAN, NAN, NAN};
-
     if (result != NULL) {
-        metrics.min = result->min;
-        metrics.max = result->max;
-        metrics.mean = result->mean;
+        metrics.min      = result->min;
+        metrics.max      = result->max;
+        metrics.mean     = result->mean;
         metrics.variance = result->variance;
     }
-
     return metrics;
 }
-
 
 static void finalize_group(AggregatedSample *dst, const RawSample *sample, const GroupAccumulator *acc) {
     if (dst == NULL || sample == NULL || acc == NULL) {
         return;
     }
 
+    StatisticsResult result;
+
     dst->test_set_id  = sample->test_set_id;
     dst->test_case_id = sample->test_case_id;
     dst->kernel       = sample->kernel;
     dst->total_runs   = acc->wall_time_sec.count;
 
-    {
-        const StatisticsResult result = statistics_finalize(&acc->wall_time_sec);
-        dst->wall_time_sec            = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->cycles);
-        dst->cycles                   = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->instructions);
-        dst->instructions             = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->l1d_misses);
-        dst->l1d_misses               = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->llc_misses);
-        dst->llc_misses               = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->ipc);
-        dst->ipc                      = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->l1d_miss_ratio);
-        dst->l1d_miss_ratio           = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->llc_miss_ratio);
-        dst->llc_miss_ratio           = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->energy_pkg_joules);
-        dst->energy_pkg_joules        = statistics_to_metrics(&result);
-    }
-    {
-        const StatisticsResult result = statistics_finalize(&acc->energy_dram_joules);
-        dst->energy_dram_joules       = statistics_to_metrics(&result);
-    }
-}
+    result                  = statistics_finalize(&acc->wall_time_sec);
+    dst->wall_time_sec      = statistics_to_metrics(&result);
 
+    result                  = statistics_finalize(&acc->cycles);
+    dst->cycles             = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->instructions);
+    dst->instructions       = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->l1d_misses);
+    dst->l1d_misses         = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->llc_misses);
+    dst->llc_misses         = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->ipc);
+    dst->ipc                = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->l1d_miss_ratio);
+    dst->l1d_miss_ratio     = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->llc_miss_ratio);
+    dst->llc_miss_ratio     = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->energy_pkg_joules);
+    dst->energy_pkg_joules  = statistics_to_metrics(&result);
+
+    result                  = statistics_finalize(&acc->energy_dram_joules);
+    dst->energy_dram_joules = statistics_to_metrics(&result);
+}
 
 bool analyzer_same_test_case(const RawSample *a, const RawSample *b) {
-    return a != NULL &&
-           b != NULL &&
-           a->test_set_id == b->test_set_id &&
-           a->test_case_id == b->test_case_id;
+    return a != NULL
+           && b != NULL
+           && a->test_set_id == b->test_set_id
+           && a->test_case_id == b->test_case_id;
 }
-
 
 bool analyzer_same_experiment(const RawSample *a, const RawSample *b) {
     return analyzer_same_test_case(a, b) && (a->kernel == b->kernel);
 }
-
 
 bool analyzer_same_experiment_aggregate(const AggregatedSample *a, const AggregatedSample *b) {
     return a != NULL
@@ -178,12 +159,11 @@ bool analyzer_same_experiment_aggregate(const AggregatedSample *a, const Aggrega
            && (a->kernel == b->kernel);
 }
 
-
 AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sample_count,size_t *out_count) {
     AggregatedSample *result;
-    size_t group_count;
-    size_t group_index;
-    GroupAccumulator accumulator;
+    GroupAccumulator  accumulator;
+    size_t            group_count;
+    size_t            group_index;
 
     if (out_count == NULL) {
         return NULL;
@@ -197,7 +177,7 @@ AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sam
     group_count = 1U;
     for (size_t i = 1U; i < sample_count; ++i) {
         if (!analyzer_same_experiment(&samples[i - 1U], &samples[i])) {
-            ++group_count;
+            group_count++;
         }
     }
 
@@ -208,12 +188,11 @@ AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sam
 
     group_index = 0U;
     group_accumulator_init(&accumulator);
-    for (size_t i = 0U; i < sample_count; ++i) {
+    for (size_t i = 0U; i < sample_count; i++) {
         const RawSample *sample = &samples[i];
-        if (i != 0U &&
-            !analyzer_same_experiment(&samples[i - 1U], sample)) {
+        if (i != 0U && !analyzer_same_experiment(&samples[i - 1U], sample)) {
             finalize_group(&result[group_index], &samples[i - 1U], &accumulator);
-            ++group_index;
+            group_index++;
             group_accumulator_init(&accumulator);
         }
         group_accumulator_update(&accumulator, &sample->metric);
@@ -224,44 +203,44 @@ AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sam
     return result;
 }
 
-
 bool analyzer_compute_scaling(
     const AggregatedSample *baseline,
     const TestCase *baseline_point,
     const AggregatedSample *scaled,
     const TestCase *scaled_point,
-    ScalingMetrics *out_metrics
-) {
+    ScalingMetrics *out_metrics) {
     double baseline_time;
     double scaled_time;
     double thread_ratio;
 
-    if (baseline == NULL ||
-        baseline_point == NULL ||
-        scaled == NULL ||
-        scaled_point == NULL ||
-        out_metrics == NULL) {
+    if (baseline == NULL
+        || baseline_point == NULL
+        || scaled == NULL
+        || scaled_point == NULL
+        || out_metrics == NULL) {
         return false;
     }
 
-    if (baseline->test_set_id != scaled->test_set_id ||
-        baseline->kernel != scaled->kernel ||
-        baseline->test_case_id != baseline_point->uid ||
-        scaled->test_case_id != scaled_point->uid ||
-        baseline_point->num_threads != 1U ||
-        scaled_point->num_threads <= 1U) {
+    if ((baseline->test_set_id != scaled->test_set_id)
+        || (baseline->kernel != scaled->kernel)
+        || (baseline->test_case_id != baseline_point->uid)
+        || (scaled->test_case_id != scaled_point->uid)
+        || (baseline_point->num_threads != 1U)
+        || (scaled_point->num_threads <= 1U)) {
         return false;
     }
 
     baseline_time = baseline->wall_time_sec.mean;
     scaled_time   = scaled->wall_time_sec.mean;
 
-    if (!isfinite(baseline_time) || !isfinite(scaled_time) ||
-        baseline_time <= 0.0 || scaled_time <= 0.0) {
+    if (!isfinite(baseline_time)
+        || !isfinite(scaled_time)
+        || (baseline_time <= 0.0)
+        || (scaled_time <= 0.0)) {
         return false;
     }
 
-    thread_ratio = (double) scaled_point->num_threads / (double) baseline_point->num_threads;
+    thread_ratio = (double)scaled_point->num_threads / (double)baseline_point->num_threads;
     if (thread_ratio <= 0.0) {
         return false;
     }
@@ -271,7 +250,6 @@ bool analyzer_compute_scaling(
     return true;
 }
 
-
 bool analyzer_compute_weak_scaling(
     const AggregatedSample *baseline,
     const TestCase *baseline_point,
@@ -279,27 +257,26 @@ bool analyzer_compute_weak_scaling(
     const AggregatedSample *scaled,
     const TestCase *scaled_point,
     uint64_t scaled_work,
-    ScalingMetrics *out_metrics
-) {
-    const double baseline_time = baseline != NULL ? baseline->wall_time_sec.mean : 0.0;
-    const double scaled_time   = scaled != NULL ? scaled->wall_time_sec.mean : 0.0;
+    ScalingMetrics *out_metrics) {
+    const double baseline_time = (baseline != NULL) ? baseline->wall_time_sec.mean : 0.0;
+    const double scaled_time   = (scaled != NULL) ? scaled->wall_time_sec.mean : 0.0;
     double work_ratio;
 
-    if (baseline          == NULL
-        || baseline_point == NULL
-        || scaled         == NULL
-        || scaled_point   == NULL
-        || out_metrics    == NULL
-        || baseline_work  == UINT64_C(0)
-        || scaled_work    == UINT64_C(0)
-        || baseline_point->num_threads != 1U
-        || scaled_point->num_threads   == 0U
-        || scaled_point->num_threads   <= baseline_point->num_threads
-        || baseline->kernel != scaled->kernel
+    if ((baseline == NULL)
+        || (baseline_point == NULL)
+        || (scaled == NULL)
+        || (scaled_point == NULL)
+        || (out_metrics == NULL)
+        || (baseline_work == UINT64_C(0))
+        || (scaled_work == UINT64_C(0))
+        || (baseline_point->num_threads != 1U)
+        || (scaled_point->num_threads == 0U)
+        || (scaled_point->num_threads <= baseline_point->num_threads)
+        || (baseline->kernel != scaled->kernel)
         || !isfinite(baseline_time)
         || !isfinite(scaled_time)
-        || baseline_time    <= 0.0
-        || scaled_time      <= 0.0) {
+        || (baseline_time <= 0.0)
+        || (scaled_time <= 0.0)) {
         return false;
     }
 
@@ -307,10 +284,8 @@ bool analyzer_compute_weak_scaling(
     if (work_ratio <= 0.0) {
         return false;
     }
-
-    out_metrics->efficiency = baseline_time / scaled_time;
-    out_metrics->speedup = work_ratio * out_metrics->efficiency;
+    out_metrics->efficiency   = baseline_time / scaled_time;
+    out_metrics->speedup      = work_ratio * out_metrics->efficiency;
     out_metrics->overhead_sec = scaled_time - baseline_time;
-
     return true;
 }
