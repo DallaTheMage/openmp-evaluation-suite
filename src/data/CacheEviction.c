@@ -63,12 +63,6 @@ int cache_eviction_init(
     ctx->size_bytes   = size_bytes;
     ctx->stride_bytes = stride_bytes;
 
-    /*
-     * Initialize the entire buffer.
-     *
-     * This happens during setup, outside the
-     * measured benchmark execution.
-     */
     for (i = 0U; i < size_bytes; ++i) {
         ctx->buffer[i] =
             (unsigned char)(((i * 13U) + 7U) & 255U);
@@ -86,19 +80,10 @@ void cache_eviction_run(CacheEviction *ctx) {
         return;
     }
 
-    /*
-     * Access the buffer using a configurable stride.
-     *
-     * Reading one byte per cache line is intended
-     * to perturb the cache hierarchy.
-     */
     for (i = 0U; i < ctx->size_bytes; i += ctx->stride_bytes) {
         sum += ctx->buffer[i];
     }
 
-    /*
-     * Preserve an observable result.
-     */
     ctx->checksum = sum;
 }
 

@@ -70,7 +70,7 @@ static int copy_u32_list(ConfigU32List *destination, const uint32_t *source, siz
     if (data == NULL) {
         return 0;
     }
-    destination->data = data;
+    destination->data  = data;
     destination->count = count;
     return 1;
 }
@@ -115,26 +115,20 @@ static int materialize_window_sizes(ConfigU64List *destination) {
     if (destination == NULL || count == 0U) {
         return 0;
     }
-
     if (count > SIZE_MAX / sizeof(*data)) {
         return 0;
     }
-
     data = malloc(count * sizeof(*data));
 
     if (data == NULL) {
         return 0;
     }
-
     for (size_t i = 0U; i < count; ++i) {
-        const uint64_t window_size =
-            window_size_from_log2(CONFIG_WINDOW_LOG2[i]);
-
+        const uint64_t window_size = window_size_from_log2(CONFIG_WINDOW_LOG2[i]);
         if (window_size == UINT64_C(0)) {
             free(data);
             return 0;
         }
-
         data[i] = window_size;
     }
 
@@ -144,23 +138,13 @@ static int materialize_window_sizes(ConfigU64List *destination) {
     return 1;
 }
 
-
-/* ========================================================================= */
-/* Derived metrics                                                           */
-/* ========================================================================= */
-
 void finalize_configuration_metrics(Configuration *config) {
     uint64_t elements;
-
     if (config == NULL) {
         return;
     }
-
-    /* PROBLEM_LOG2_SIZE is validated to be strictly smaller than 64. */
     elements = UINT64_C(1) << config->execution.problem_size_log2;
-
     config->derived.problem_size_elements = elements;
-
     config->derived.problem_size_bytes =
         elements > (UINT64_MAX / (uint64_t)sizeof(double))
         ? UINT64_MAX
@@ -176,10 +160,6 @@ void finalize_configuration_metrics(Configuration *config) {
 
 Configuration load_configuration(void) {
     Configuration config = {0};
-
-    /* --------------------------------------------------------------------- */
-    /* Build metadata                                                        */
-    /* --------------------------------------------------------------------- */
 
     copy_string(config.build.compiler_family,
         sizeof(config.build.compiler_family),
@@ -202,33 +182,16 @@ Configuration load_configuration(void) {
         OPENMP_VERSION_STRING
     );
 
-    /* --------------------------------------------------------------------- */
-    /* Execution configuration                                               */
-    /* --------------------------------------------------------------------- */
-
     config.execution.problem_size_log2 = (uint64_t)PROBLEM_LOG2_SIZE;
-
-    /* --------------------------------------------------------------------- */
-    /* Benchmark configuration                                               */
-    /* --------------------------------------------------------------------- */
 
     config.benchmark.warmup_reps     = (uint32_t)WARMUP_REPS;
     config.benchmark.work_reps       = (uint32_t)WORK_REPS;
     config.benchmark.slowdown_factor = (uint32_t)SLOWDOWN_FACTOR;
     config.benchmark.generation_seed = (uint64_t)GENERATION_SEED;
 
-
-    /* --------------------------------------------------------------------- */
-    /* Memory configuration                                                  */
-    /* --------------------------------------------------------------------- */
-
     config.memory.alignment               = (size_t)MEMORY_ALIGNMENT;
     config.memory.detected_llc_size_bytes = (uint64_t)DETECTED_LLC_SIZE_BYTES;
 
-    /*
-     * AUX_BUFFER_SIZE is expressed in double elements.
-     * Check that the value is representable by size_t before storing it.
-     */
     #if SIZE_MAX < UINT64_MAX
     if ((uint64_t)AUX_BUFFER_SIZE > (uint64_t)SIZE_MAX) {
         destroy_configuration(&config);
@@ -238,20 +201,10 @@ Configuration load_configuration(void) {
 
     config.memory.aux_buffer_size = (size_t)AUX_BUFFER_SIZE;
 
-    /* --------------------------------------------------------------------- */
-    /* Cache eviction configuration                                          */
-    /* --------------------------------------------------------------------- */
-
     config.memory.cache_eviction.enabled      = (uint32_t)CACHE_EVICTION_ENABLED;
     config.memory.cache_eviction.multiplier   = (uint32_t)CACHE_EVICTION_MULTIPLIER;
     config.memory.cache_eviction.stride_bytes = (size_t)CACHE_EVICTION_STRIDE_BYTES;
 
-    /*
-     * Validate cache eviction parameters.
-     *
-     * enabled must be either 0 or 1.
-     * multiplier and stride must be strictly positive.
-     */
     if (config.memory.cache_eviction.enabled > 1U
         || config.memory.cache_eviction.multiplier == 0U
         || config.memory.cache_eviction.stride_bytes == 0U) {
@@ -265,13 +218,6 @@ Configuration load_configuration(void) {
         return (Configuration){0};
     }
 
-    /*
-     * When cache eviction is enabled, verify that:
-     *
-     * 1. The detected LLC size is available.
-     * 2. The eviction buffer size does not overflow uint64_t.
-     * 3. The resulting size is representable by size_t.
-     */
     if (config.memory.cache_eviction.enabled != 0U) {
         const uint64_t llc_bytes  = config.memory.detected_llc_size_bytes;
         const uint64_t multiplier = (uint64_t)config.memory.cache_eviction.multiplier;
@@ -290,11 +236,6 @@ Configuration load_configuration(void) {
         }
     }
 
-
-    /* --------------------------------------------------------------------- */
-    /* DataView shape configuration                                          */
-    /* --------------------------------------------------------------------- */
-
     config.shapes[VIEW_2D].v2d.cols               = (uint64_t)CONFIG_VIEW_2D_COLS;
     config.shapes[VIEW_3D].v3d.depth              = (uint64_t)CONFIG_VIEW_3D_DEPTH;
     config.shapes[VIEW_3D].v3d.cols               = (uint64_t)CONFIG_VIEW_3D_COLS;
@@ -303,49 +244,28 @@ Configuration load_configuration(void) {
     config.shapes[VIEW_AOSOA].aosoa.vector_length = (uint64_t)CONFIG_VIEW_AOSOA_VECTOR_LEN;
     config.shapes[VIEW_AOSOA].aosoa.num_fields    = (uint64_t)CONFIG_VIEW_AOSOA_NUM_FIELDS;
 
-    /* --------------------------------------------------------------------- */
-    /* Thread configuration                                                  */
-    /* --------------------------------------------------------------------- */
-    {
-        static const uint32_t default_threads[] = { THREAD_LIST };
-        if (!copy_u32_list(
-                &config.execution.threads,
-                default_threads,
-                ARRAY_SIZE(default_threads))) {
-            destroy_configuration(&config);
-            return (Configuration){0};
-        }
+    static const uint32_t default_threads[] = { THREAD_LIST };
+    if (!copy_u32_list(
+            &config.execution.threads,
+            default_threads,
+            ARRAY_SIZE(default_threads))) {
+        destroy_configuration(&config);
+        return (Configuration){0};
     }
 
-
-    /* --------------------------------------------------------------------- */
-    /* Chunk configuration                                                   */
-    /* --------------------------------------------------------------------- */
-
-    {
-        static const uint64_t default_chunks[] = { CHUNK_SIZE_LIST };
-        if (!copy_u64_list(
-                &config.execution.chunk_sizes,
-                default_chunks,
-                ARRAY_SIZE(default_chunks))) {
-            destroy_configuration(&config);
-            return (Configuration){0};
-        }
+    static const uint64_t default_chunks[] = { CHUNK_SIZE_LIST };
+    if (!copy_u64_list(
+            &config.execution.chunk_sizes,
+            default_chunks,
+            ARRAY_SIZE(default_chunks))) {
+        destroy_configuration(&config);
+        return (Configuration){0};
     }
-
-    /* --------------------------------------------------------------------- */
-    /* Window configuration                                                  */
-    /* --------------------------------------------------------------------- */
 
     if (!materialize_window_sizes(&config.execution.window_sizes)) {
         destroy_configuration(&config);
         return (Configuration){0};
     }
-
-    /* --------------------------------------------------------------------- */
-    /* Derived metrics                                                       */
-    /* --------------------------------------------------------------------- */
-
     finalize_configuration_metrics(&config);
     return config;
 }

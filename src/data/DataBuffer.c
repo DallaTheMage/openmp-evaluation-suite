@@ -61,7 +61,6 @@ static int is_valid_alignment(size_t alignment) {
     if (alignment < sizeof(void *)) {
         return 0;
     }
-    /* A power of two has exactly one bit set. */
     if ((alignment & (alignment - 1U)) != 0U) {
         return 0;
     }
@@ -81,8 +80,7 @@ DataBuffer *create_data_buffer(size_t element_count, size_t alignment) {
         return NULL;
     }
 
-    /* Protect the multiplication below from wrapping around size_t. */
-    if (element_count > SIZE_MAX / sizeof(double)) {
+    if (element_count > (SIZE_MAX / sizeof(double))) {
         return NULL;
     }
 
@@ -96,10 +94,6 @@ DataBuffer *create_data_buffer(size_t element_count, size_t alignment) {
     buffer->element_count = element_count;
     buffer->alignment = alignment;
 
-    /*
-     * A zero-sized buffer is a valid object according to the public
-     * contract, but there is no storage to allocate.
-     */
     if (element_count == 0U) {
         return buffer;
     }

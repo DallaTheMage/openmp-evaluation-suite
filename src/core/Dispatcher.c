@@ -311,12 +311,6 @@ DispatchStatus dispatch_test_plan_with_eviction(
         return DISPATCH_INVALID_ARGUMENT;
     }
 
-    /*
-     * Initialize the output collection before allocating resources.
-     *
-     * The caller must release any previously allocated collection before
-     * reusing the same RawSampleSet.
-     */
     out_samples->samples = NULL;
     out_samples->count = 0U;
 
@@ -332,9 +326,6 @@ DispatchStatus dispatch_test_plan_with_eviction(
         return status;
     }
 
-    /*
-     * Allocate storage for measured samples only.
-     */
     if (sample_count != 0U) {
         out_samples->samples = (RawSample *)calloc(
             sample_count,
@@ -354,23 +345,18 @@ DispatchStatus dispatch_test_plan_with_eviction(
     );
     fflush(stdout);
 
-    for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
+    for (size_t set_index = 0U; set_index < plan->count; set_index++) {
         const TestSet *set = &plan->data[set_index];
-
-        /*
-         * Keep the original DataView unchanged.
-         * dispatch_execute_kernel() creates a compact local view for each invocation.
-         */
         const DataView view = set->view;
 
-        for (size_t group_index = 0U; group_index < set->kernels.count; ++group_index) {
+        for (size_t group_index = 0U; group_index < set->kernels.count; group_index++) {
             const KernelTestGroup *group = &set->kernels.data[group_index];
             const KernelFunc function = kernel_registry_get_function(
                                             view.type,
                                             group->kernel
                                         );
 
-            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
+            for (size_t case_index = 0U; case_index < group->cases.count; case_index++) {
                 const TestCase *test_case = &group->cases.data[case_index];
                 status = dispatch_execute_test_case(
                     set, group, test_case, function, memory_manager, profiler,

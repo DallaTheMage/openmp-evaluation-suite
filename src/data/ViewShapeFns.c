@@ -89,7 +89,6 @@ bool shape_2d_validate(const DataView *view) {
         return false;
     }
 
-    /* Require a nonempty rectangular shape with no discarded elements. */
     return rows > 0U &&
            view->window.size % cols == 0U &&
            rows == view->window.size / cols;

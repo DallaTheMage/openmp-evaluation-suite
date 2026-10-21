@@ -52,24 +52,15 @@
  * @return Non-zero if the complete window is contained in the buffer,
  *         zero otherwise.
  */
-static int window_is_valid(
-    const DataBuffer *buffer,
-    uint64_t offset,
-    uint64_t size
-)
-{
+static int window_is_valid(const DataBuffer *buffer, uint64_t offset, uint64_t size){
     uint64_t element_count;
-
     if (buffer == NULL) {
         return 0;
     }
-
     element_count = (uint64_t)buffer->element_count;
-
     if (offset > element_count) {
         return 0;
     }
-
     return size <= element_count - offset;
 }
 
@@ -88,8 +79,7 @@ static void initialize_metadata(
     DataView *view,
     ViewType type,
     const ViewCreateConfig *config
-)
-{
+) {
     switch (type) {
         case VIEW_1D:
             view->meta.v1d.length = config->v1d.length;

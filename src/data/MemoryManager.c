@@ -113,10 +113,6 @@ int memory_manager_reserve_work(
         return -1;
     }
 
-    /*
-     * Preserve the existing allocation when its capacity is sufficient.
-     * The working buffer never shrinks during the manager's lifetime.
-     */
     if (manager->working != NULL &&
         manager->working->element_count >= required_elements) {
         return 0;
@@ -131,10 +127,6 @@ int memory_manager_reserve_work(
         return -1;
     }
 
-    /*
-     * Replace the old buffer only after successful allocation. On failure,
-     * the previous working buffer remains valid and owned by the manager.
-     */
     destroy_data_buffer(manager->working);
     manager->working = replacement;
 
@@ -157,10 +149,6 @@ int memory_manager_restore_window(
 
     source_offset = (size_t)offset;
 
-    /*
-     * Check the range without computing offset + element_count,
-     * which could overflow.
-     */
     if (source_offset > manager->original->element_count ||
         element_count > (manager->original->element_count - source_offset) ||
         element_count > manager->working->element_count) {

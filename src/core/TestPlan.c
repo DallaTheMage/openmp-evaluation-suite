@@ -113,10 +113,6 @@ bool test_plan_rebind_buffer(
         return false;
     }
 
-    /*
-     * Validate the entire plan before changing any view.
-     * This prevents partially rebinding the plan on failure.
-     */
     for (size_t i = 0U; i < plan->count; ++i) {
         const DataView *view = &plan->data[i].view;
         const uint64_t size  = view->window.size;

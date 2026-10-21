@@ -74,17 +74,10 @@ DispatchStatus dispatch_execute_kernel(
         return DISPATCH_INVALID_ARGUMENT;
     }
 
-    /*
-     * A new measurement must not start while another measurement is active.
-     */
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
     }
 
-    /*
-     * Restore the requested logical window into the working buffer.
-     * The memory manager validates the offset and size against both buffers.
-     */
     if (view->window.size > (uint64_t)SIZE_MAX ||
         memory_manager_restore_window(
             memory_manager,
@@ -93,9 +86,6 @@ DispatchStatus dispatch_execute_kernel(
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
 
-    /*
-     * Retrieve the working buffer after restoration.
-     */
     working_buffer = memory_manager_work_buffer(memory_manager);
 
     if (working_buffer == NULL ||
@@ -104,44 +94,21 @@ DispatchStatus dispatch_execute_kernel(
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
 
-    /*
-     * Preserve the original view metadata while redirecting the kernel to
-     * the compact working buffer.
-     *
-     * The logical window begins at zero in this buffer because the requested
-     * source window has already been copied to its beginning.
-     */
     execution_view               = *view;
     execution_view.buffer        = working_buffer;
     execution_view.window.offset = UINT64_C(0);
 
-    /*
-     * Cache eviction is executed after restoring the
-     * working data and before entering the kernel.
-     *
-     * The kernel's profiling interval does not include
-     * this operation.
-     */
     if (eviction != NULL) {
         cache_eviction_run(eviction);
     }
 
-    /*
-     * Initialize the destination metric before calling the kernel.
-     */
     memset(metric, 0, sizeof(*metric));
     kernel_status = function(&execution_view, test_case, profiler, metric);
 
-    /*
-     * A kernel must leave the profiler stopped, regardless of its status.
-     */
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
     }
 
-    /*
-     * Translate the kernel result into the dispatcher's public status.
-     */
     switch (kernel_status) {
         case KERNEL_STATUS_OK:
             return DISPATCH_OK;

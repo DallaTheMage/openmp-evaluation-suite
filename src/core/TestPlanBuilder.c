@@ -208,11 +208,7 @@ static bool populate_kernel_group(
     }
 
     if (case_count == 0U) {
-        /*
-         * Preserve the group even when no test cases match the requested
-         * thread count.
-         */
-        ++test_set->kernels.count;
+        test_set->kernels.count++;
     } else {
         if (case_count > (SIZE_MAX / sizeof(*group->cases.data))) {
             return false;
@@ -223,12 +219,6 @@ static bool populate_kernel_group(
         }
         for (size_t i = 0U; i < config->execution.threads.count; ++i) {
             const uint32_t num_threads = config->execution.threads.data[i];
-
-            /*
-             * A zero fixed_thread_count means that all configured thread
-             * counts are included. Otherwise, include only the matching
-             * thread count.
-             */
             if (fixed_thread_count == 0U || num_threads == fixed_thread_count) {
                 for (size_t c = 0U; c < config->execution.chunk_sizes.count; ++c) {
                     TestCase *test_case    = &group->cases.data[case_index];

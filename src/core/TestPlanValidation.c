@@ -24,9 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "core/TestPlan.h"
+#include "kernels/KernelRegistry.h"
 typedef struct Profiler Profiler;
 typedef struct PerformanceMetric PerformanceMetric;
-#include "kernels/KernelRegistry.h"
 
 /**
  * @brief Validate the structure and contents of a test plan.

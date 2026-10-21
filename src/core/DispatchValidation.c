@@ -26,7 +26,6 @@
  * @brief Structural and optional numerical validation for dispatch.
  */
 
-/* Dispatcher-specific structural and optional numerical checks. */
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
@@ -60,7 +59,6 @@ DispatchStatus dispatch_validate_loop_or_reduction(
         for (uint64_t i = 0U; i < count; ++i) {
             const double expected = (source->pool[(size_t)(offset + i)] * 2.0) + 1.0;
             const double actual   = work->pool[(size_t)i];
-            /* Absolute + relative tolerance accounts for arithmetic rounding. */
             if (!isfinite(actual) || !isfinite(expected) ||
                 fabs(actual - expected) > 1e-12 * fmax(1.0, fabs(expected))) {
                 fprintf(stderr,
@@ -70,8 +68,6 @@ DispatchStatus dispatch_validate_loop_or_reduction(
             }
         }
     } else if (kernel == KERNEL_REDUCTION || kernel == KERNEL_REDUCTION_SOA_INNER) {
-        /* A long double reference reduces rounding differences, while
-         * tolerating reordering from parallel reductions. */
         long double expected = 0.0L;
         for (uint64_t i = 0U; i < count; ++i) {
             expected += (long double)source->pool[(size_t)(offset + i)];
