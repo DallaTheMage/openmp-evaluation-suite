@@ -43,7 +43,11 @@
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_1d_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_1d_loop(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D loop benchmark.
@@ -57,7 +61,12 @@ KernelStatus kernel_1d_loop(DataView *view, const struct TestCase *test_case, st
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_2d_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_2d_loop(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
+
 /**
  * @brief Execute the 3D loop benchmark.
  *
@@ -70,7 +79,12 @@ KernelStatus kernel_2d_loop(DataView *view, const struct TestCase *test_case, st
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_3d_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_3d_loop(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
+
 /**
  * @brief Execute the AOS loop benchmark.
  *
@@ -83,7 +97,12 @@ KernelStatus kernel_3d_loop(DataView *view, const struct TestCase *test_case, st
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aos_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aos_loop(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
+
 /**
  * @brief Execute the SOA loop benchmark.
  *
@@ -96,7 +115,12 @@ KernelStatus kernel_aos_loop(DataView *view, const struct TestCase *test_case, s
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_soa_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_soa_loop(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
+
 /**
  * @brief Execute the AOSOA loop benchmark.
  *
@@ -109,7 +133,11 @@ KernelStatus kernel_soa_loop(DataView *view, const struct TestCase *test_case, s
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aosoa_loop(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aosoa_loop(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the SoA loop with parallelism over elements.
@@ -124,6 +152,10 @@ KernelStatus kernel_aosoa_loop(DataView *view, const struct TestCase *test_case,
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_soa_loop_inner(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_soa_loop_inner(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 #endif /* KERNELS_WORKSHARING_LOOP_H */

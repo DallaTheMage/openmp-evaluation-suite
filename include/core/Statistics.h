@@ -51,7 +51,6 @@
 
 #include <stddef.h>
 
-
 /**
  * @brief Incremental accumulator for one measured quantity.
  *
@@ -69,20 +68,16 @@
  */
 typedef struct StatisticsAccumulator {
     size_t count;
-
     double min;
     double max;
-
     double mean;
     double m2;
 } StatisticsAccumulator;
 
-
 /**
  * @brief Initialize a statistics accumulator.
  *
- * @param accumulator
- *     Accumulator to initialize.
+ * @param accumulator Accumulator to initialize.
  *
  * @pre accumulator != NULL.
  *
@@ -91,10 +86,7 @@ typedef struct StatisticsAccumulator {
  *
  * @note The function does not allocate memory.
  */
-void statistics_init(
-    StatisticsAccumulator *accumulator
-);
-
+void statistics_init(StatisticsAccumulator *accumulator);
 
 /**
  * @brief Add one observation to an accumulator.
@@ -102,11 +94,8 @@ void statistics_init(
  * The update is performed incrementally using Welford's algorithm.
  * No previous observations need to be retained.
  *
- * @param accumulator
- *     Accumulator receiving the observation.
- *
- * @param value
- *     Observation to add.
+ * @param accumulator Accumulator receiving the observation.
+ * @param value Observation to add.
  *
  * @pre accumulator != NULL.
  *
@@ -114,16 +103,10 @@ void statistics_init(
  * @post min and max include value.
  * @post mean and m2 represent all observations processed so far.
  */
-void statistics_update(
-    StatisticsAccumulator *accumulator,
-    double                 value
-);
-
+void statistics_update(StatisticsAccumulator *accumulator, double value);
 
 /**
  * @brief Finalized statistical results.
- *
- * This structure is intentionally independent from Analyzer.h.
  *
  * It represents the statistical summary of one scalar quantity.
  */
@@ -133,7 +116,6 @@ typedef struct StatisticsResult {
     double mean;
     double variance;
 } StatisticsResult;
-
 
 /**
  * @brief Finalize an accumulated statistical result.
@@ -146,18 +128,12 @@ typedef struct StatisticsResult {
  * For one observation, min, max and mean contain the observation and
  * variance is zero.
  *
- * @param accumulator
- *     Accumulator to finalize.
+ * @param accumulator Accumulator to finalize.
  *
- * @return
- *     Statistical summary of the observations currently stored in
- *     the accumulator.
+ * @return Statistical summary of the observations currently stored in the accumulator.
  *
  * @pre accumulator != NULL.
  */
-StatisticsResult statistics_finalize(
-    const StatisticsAccumulator *accumulator
-);
-
+StatisticsResult statistics_finalize(const StatisticsAccumulator *accumulator);
 
 #endif /* CORE_STATISTICS_H */

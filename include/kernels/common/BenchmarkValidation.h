@@ -26,7 +26,6 @@
  * @brief Compile-time switch and state for optional correctness checks.
  */
 
-/* Optional correctness checks are disabled in normal benchmark builds. */
 #ifndef KERNELS_COMMON_BENCHMARK_VALIDATION_H
 #define KERNELS_COMMON_BENCHMARK_VALIDATION_H
 

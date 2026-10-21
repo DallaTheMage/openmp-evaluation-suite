@@ -32,7 +32,6 @@
 #ifndef DATA_VIEW_TYPE_H
 #define DATA_VIEW_TYPE_H
 
-
 /**
  * @brief Identifies a supported logical data-view layout.
  *
@@ -73,11 +72,8 @@ typedef enum {
 
     /**
      * @brief Number of supported view types.
-     *
-     * This value is a sentinel and must not be used as a ViewType.
      */
     VIEW_TYPE_COUNT
 } ViewType;
-
 
 #endif /* DATA_VIEW_TYPE_H */

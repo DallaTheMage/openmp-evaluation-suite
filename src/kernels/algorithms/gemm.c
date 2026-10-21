@@ -48,14 +48,18 @@ static double right_element(size_t k, size_t j) {
  * The check is independent of the timed OpenMP region. It detects incomplete
  * or incorrect parallel execution without making validation O(n^3).
  */
-static int validate_rows(const double *a, const double *b,
-                         const double *c, size_t m, size_t n) {
+static int validate_rows(
+    const double *a,
+    const double *b,
+    const double *c,
+    size_t m,
+    size_t n) {
     const size_t rows[3] = {0U, m / 2U, m - 1U};
-    for (size_t sample = 0; sample < 3U; ++sample) {
+    for (size_t sample = 0; sample < 3U; sample++) {
         size_t i = rows[sample];
-        for (size_t j = 0; j < n; ++j) {
+        for (size_t j = 0; j < n; j++) {
             double expected = 0.0;
-            for (size_t k = 0; k < n; ++k) {
+            for (size_t k = 0; k < n; k++) {
                 expected += a[(i * n) + k] * b[(k * n) + j];
             }
             double actual = c[(i * n) + j];
@@ -68,8 +72,11 @@ static int validate_rows(const double *a, const double *b,
     return 1;
 }
 
-KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
-                           Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_gemm(
+    DataView *view,
+    const TestCase *test_case,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     if (view == NULL || test_case == NULL || profiler == NULL || metric == NULL ||
         view->buffer == NULL || view->buffer->pool == NULL ||
         view->type != VIEW_2D || test_case->num_threads == 0U ||
@@ -100,8 +107,8 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
         free_gemm_components(b, c);
         return KERNEL_STATUS_ALLOCATION_FAILURE;
     }
-    for (size_t k = 0; k < n; ++k) {
-        for (size_t j = 0; j < n; ++j) {
+    for (size_t k = 0; k < n; k++) {
+        for (size_t j = 0; j < n; j++) {
             b[k * n + j] = right_element(k, j);
         }
     }
@@ -110,22 +117,19 @@ KernelStatus kernel_2d_gemm(DataView *view, const TestCase *test_case,
         free_gemm_components(b, c);
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    /* Each output row has one writer. Traversing B and C by rows improves
-     * spatial locality without introducing inter-thread write conflicts.
-     * C was zero-initialized before profiling.
-     */
+
     #pragma omp parallel for \
         default(none) \
         num_threads(test_case->num_threads) \
         schedule(CHOSEN_SCHEDULE, test_case->chunk_size) \
         shared(a, b, c, m, n, test_case)
-    for (size_t i = 0; i < m; ++i) {
+    for (size_t i = 0; i < m; i++) {
         double *restrict c_row = c + (i * n);
         const double *restrict a_row = a + (i * n);
-        for (size_t k = 0; k < n; ++k) {
+        for (size_t k = 0; k < n; k++) {
             const double aik = a_row[k];
             const double *restrict b_row = b + (k * n);
-            for (size_t j = 0; j < n; ++j) {
+            for (size_t j = 0; j < n; j++) {
                 c_row[j] += aik * b_row[j];
             }
         }

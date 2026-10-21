@@ -115,38 +115,31 @@ typedef struct AggregatedSample {
     TestSetUID  test_set_id;
     TestCaseUID test_case_id;
     KernelType  kernel;
-
-    size_t total_runs;
-
-    Metrics wall_time_sec;
-
-    Metrics cycles;
-    Metrics instructions;
-    Metrics l1d_misses;
-    Metrics llc_misses;
-
-    Metrics ipc;
-    Metrics l1d_miss_ratio;
-    Metrics llc_miss_ratio;
-
-    Metrics energy_pkg_joules;
-    Metrics energy_dram_joules;
+    size_t      total_runs;
+    Metrics     wall_time_sec;
+    Metrics     cycles;
+    Metrics     instructions;
+    Metrics     l1d_misses;
+    Metrics     llc_misses;
+    Metrics     ipc;
+    Metrics     l1d_miss_ratio;
+    Metrics     llc_miss_ratio;
+    Metrics     energy_pkg_joules;
+    Metrics     energy_dram_joules;
 } AggregatedSample;
 
 /**
  * @brief Scaling metrics computed between two benchmark configurations.
  *
- * Speedup is defined as:
- *
- *     baseline_time / scaled_time
+ * Speedup is defined as: baseline_time / scaled_time
  *
  * Efficiency is defined relative to the thread-count ratio:
  *
  *     speedup / (scaled_threads / baseline_threads)
  *
  * Overhead is the measured scaled time minus the ideal scaled time derived
- * from the baseline measurement and thread-count ratio. It is expressed in
- * seconds.
+ * from the baseline measurement and thread-count ratio.
+ * It is expressed in seconds.
  */
 typedef enum ScalingMode {
     SCALING_STRONG = 0,
@@ -188,16 +181,11 @@ typedef struct ScalingMetrics {
  * @pre Samples are grouped contiguously by test set, test case and kernel.
  * @pre @p out_count must not be NULL.
  *
- * @post On success, @p out_count contains the number of aggregated
- *       experiments.
+ * @post On success, @p out_count contains the number of aggregated experiments.
  *
  * @note The caller owns the returned array and must release it with free().
  */
-AggregatedSample *analyzer_aggregate_samples(
-    const RawSample *samples,
-    size_t           sample_count,
-    size_t          *out_count
-);
+AggregatedSample *analyzer_aggregate_samples(const RawSample *samples, size_t sample_count, size_t *out_count);
 
 /**
  * @brief Compute scaling metrics between two aggregated experiments.
@@ -238,9 +226,7 @@ bool analyzer_compute_scaling(
  *
  *     (scaled_work / baseline_work) * (baseline_time / scaled_time)
  *
- * Weak-scaling efficiency is:
- *
- *     baseline_time / scaled_time
+ * Weak-scaling efficiency is: baseline_time / scaled_time
  *
  * Overhead is the increase in wall-clock time relative to the baseline.
  *

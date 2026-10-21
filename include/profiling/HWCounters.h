@@ -152,7 +152,6 @@ int hw_counters_stop(HWCounters *hw, HWCountersData *data);
  *
  * All open counter file descriptors are closed.
  *
- * Passing NULL is allowed and has no effect.
  *
  * @param hw Hardware-counter state to clean up.
  */

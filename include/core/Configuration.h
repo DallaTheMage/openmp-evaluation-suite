@@ -39,16 +39,6 @@
  * The OpenMP schedule is a compile-time property of a benchmark build and
  * is therefore defined through config/params.h and encoded directly in
  * OpenMP pragmas.
- *
- * In particular, the benchmark must not rely on:
- *
- *     omp_set_schedule()
- *     schedule(runtime)
- *
- * for selecting the scheduling policy.
- *
- * This design keeps the hot execution path independent from runtime
- * scheduling configuration and makes benchmark variants reproducible.
  */
 
 #ifndef CORE_CONFIGURATION_H
@@ -59,25 +49,17 @@
 
 #include "data/views/ViewType.h"
 
-
 /* ========================================================================= */
 /* Configuration-owned dynamic arrays                                        */
 /* ========================================================================= */
 
-/**
- * @brief Dynamically allocated array of 32-bit unsigned integers.
- * Ownership belongs to Configuration.
- */
+/** @brief Dynamically allocated array of 32-bit unsigned integers. */
 typedef struct {
     uint32_t *data;
     size_t    count;
 } ConfigU32List;
 
-/**
- * @brief Dynamically allocated array of 64-bit unsigned integers.
- *
- * Ownership belongs to Configuration.
- */
+/** @brief Dynamically allocated array of 64-bit unsigned integers. */
 typedef struct {
     uint64_t *data;
     size_t    count;
@@ -87,38 +69,28 @@ typedef struct {
 /* DataView shape configuration                                              */
 /* ========================================================================= */
 
-/**
- * @brief Configuration parameters for a two-dimensional view.
- */
+/** @brief Configuration parameters for a two-dimensional view. */
 typedef struct {
     uint64_t cols;
 } ViewShape2DConfig;
 
-/**
- * @brief Configuration parameters for a three-dimensional view.
- */
+/** @brief Configuration parameters for a three-dimensional view. */
 typedef struct {
     uint64_t depth;
     uint64_t cols;
 } ViewShape3DConfig;
 
-/**
- * @brief Configuration parameters for an Array-of-Structures view.
- */
+/** @brief Configuration parameters for an Array-of-Structures view. */
 typedef struct {
     uint64_t struct_size;
 } ViewShapeAoSConfig;
 
-/**
- * @brief Configuration parameters for a Structure-of-Arrays view.
- */
+/** @brief Configuration parameters for a Structure-of-Arrays view. */
 typedef struct {
     uint64_t num_fields;
 } ViewShapeSoAConfig;
 
-/**
- * @brief Configuration parameters for an Array-of-Structures-of-Arrays view.
- */
+/** @brief Configuration parameters for an Array-of-Structures-of-Arrays view. */
 typedef struct {
     uint64_t vector_length;
     uint64_t num_fields;
@@ -128,7 +100,6 @@ typedef struct {
  * @brief Shape-specific configuration.
  *
  * VIEW_1D does not require additional shape parameters.
- *
  * The active member is selected according to the corresponding ViewType.
  */
 typedef union {
@@ -146,8 +117,8 @@ typedef union {
 /**
  * @brief Metadata describing the binary that executes the benchmark.
  *
- * These fields are descriptive metadata only. They do not control the
- * OpenMP runtime during benchmark execution.
+ * These fields are descriptive metadata only.
+ * They do not control the OpenMP runtime during benchmark execution.
  */
 typedef struct {
     char compiler_family[32];
@@ -161,36 +132,21 @@ typedef struct {
 /* Execution configuration                                                   */
 /* ========================================================================= */
 
-/**
- * @brief Parameters defining the benchmark execution space.
- *
- * The OpenMP scheduling policy is intentionally absent from this structure.
- * Scheduling is a compile-time property selected through config/params.h.
- */
+/** @brief Parameters defining the benchmark execution space. */
 typedef struct {
     /**
      * @brief Base-2 logarithm of the configured problem size.
-     *
-     * The actual number of elements is 2^problem_size_log2.
+     *        The actual number of elements is 2^problem_size_log2.
      */
     uint64_t problem_size_log2;
 
-    /**
-     * @brief Thread counts to benchmark.
-     */
+    /** @brief Thread counts to benchmark. */
     ConfigU32List threads;
 
-    /**
-     * @brief Data-window sizes to benchmark.
-     */
+    /** @brief Data-window sizes to benchmark. */
     ConfigU64List window_sizes;
 
-    /**
-     * @brief Chunk sizes used by scheduling policies that accept a chunk.
-     * For example, dynamic and guided scheduling variants may use these
-     * values. The list is harmless for static scheduling and allows the
-     * same configuration model to describe multiple build variants.
-     */
+    /** @brief Chunk sizes used by scheduling policies that accept a chunk. */
     ConfigU64List chunk_sizes;
 } ExecutionConfig;
 
@@ -198,28 +154,18 @@ typedef struct {
 /* Benchmark configuration                                                   */
 /* ========================================================================= */
 
-/**
- * @brief Parameters controlling benchmark repetition and data generation.
- */
+/** @brief Parameters controlling benchmark repetition and data generation. */
 typedef struct {
-    /**
-     * @brief Number of warm-up executions.
-     */
+    /** @brief Number of warm-up executions. */
     uint32_t warmup_reps;
 
-    /**
-     * @brief Number of measured executions.
-     */
+    /** @brief Number of measured executions. */
     uint32_t work_reps;
 
-    /**
-     * @brief Work amplification factor used by selected kernels.
-     */
+    /** @brief Work amplification factor used by selected kernels. */
     uint32_t slowdown_factor;
 
-    /**
-     * @brief Seed used for deterministic data generation.
-     */
+    /** @brief Seed used for deterministic data generation. */
     uint64_t generation_seed;
 } BenchmarkConfig;
 
@@ -233,25 +179,21 @@ typedef struct {
 /* Memory configuration                                                      */
 /* ========================================================================= */
 
-/**
- * @brief Parameters controlling benchmark data allocation.
- */
+/** @brief Parameters controlling benchmark data allocation. */
 typedef struct {
-    /**
-     * @brief Required alignment in bytes.
-     */
+    /** @brief Required alignment in bytes. */
     size_t alignment;
 
     /**
      * @brief Detected last-level data/unified cache size, in bytes.
-     * Zero means that cache detection was unavailable.
+     *        Zero means that cache detection was unavailable.
      */
     uint64_t detected_llc_size_bytes;
 
     /**
      * @brief Auxiliary buffer capacity, expressed in double elements.
-     * The capacity is twice the detected LLC size divided by sizeof(double).
-     * Zero means that no auxiliary buffer is configured.
+     *        The capacity is twice the detected LLC size divided by sizeof(double).
+     *        Zero means that no auxiliary buffer is configured.
      */
     size_t aux_buffer_size;
 
@@ -268,23 +210,15 @@ typedef struct {
  * per-thread workload used by proportional scaling.
  */
 typedef struct {
-    /**
-     * @brief Total number of elements in the benchmark data pool.
-     */
+    /** @brief Total number of elements in the benchmark data pool. */
     uint64_t problem_size_elements;
 
-    /**
-     * @brief Total size of the benchmark data pool in bytes.
-     */
+    /** @brief Total size of the benchmark data pool in bytes. */
     uint64_t problem_size_bytes;
 
     /**
-     * @brief Number of elements assigned to one thread in proportional
-     *        scaling.
-     *
-     * For N threads, the proportional workload is:
-     *
-     *     size_per_thread * N
+     * @brief Number of elements assigned to one thread in proportional scaling.
+     *        For N threads, the proportional workload is: size_per_thread * N
      */
     uint64_t size_per_thread;
 } DerivedMetrics;
@@ -310,12 +244,7 @@ typedef struct {
     BenchmarkConfig  benchmark;
     MemoryConfig     memory;
 
-    /**
-     * @brief Shape parameters indexed by ViewType.
-     *
-     * VIEW_TYPE_COUNT is used only as the array dimension and is not itself
-     * a valid view type.
-     */
+    /** @brief Shape parameters indexed by ViewType. */
     ViewShapeConfig shapes[VIEW_TYPE_COUNT];
 
     DerivedMetrics derived;
@@ -346,8 +275,6 @@ void finalize_configuration_metrics(Configuration *config);
 
 /**
  * @brief Release resources owned by a configuration.
- *
- * Passing NULL is allowed and has no effect.
  *
  * @param config Configuration whose dynamically allocated members are freed.
  */

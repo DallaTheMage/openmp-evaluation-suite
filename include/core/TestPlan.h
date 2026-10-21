@@ -257,7 +257,6 @@ bool test_plan_rebind_buffer(
 /**
  * @brief Destroy a test plan and all memory owned by it.
  *
- * Passing NULL is allowed and has no effect.
  *
  * @param plan Test plan to destroy.
  */

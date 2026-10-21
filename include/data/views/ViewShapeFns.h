@@ -40,7 +40,6 @@
 
 #include "data/DataView.h"
 
-
 /**
  * @brief Recomputes metadata for a one-dimensional view.
  *
@@ -52,7 +51,6 @@
  * @note Intended for setup/binding operations, never for a kernel hot loop.
  */
 void shape_1d_recompute(DataView *view);
-
 
 /**
  * @brief Recomputes metadata for a two-dimensional view.
@@ -66,12 +64,10 @@ void shape_1d_recompute(DataView *view);
  */
 void shape_2d_recompute(DataView *view);
 
-
 /**
  * @brief Recomputes metadata for a three-dimensional view.
  *
  * @param view DataView whose metadata must be recomputed.
- *
  * @param view DataView whose metadata must be recomputed.
  *
  * @pre view must not be NULL.
@@ -80,7 +76,6 @@ void shape_2d_recompute(DataView *view);
  * @note Intended for setup/binding operations, never for a kernel hot loop.
  */
 void shape_3d_recompute(DataView *view);
-
 
 /**
  * @brief Recomputes metadata for an Array-of-Structures view.
@@ -94,7 +89,6 @@ void shape_3d_recompute(DataView *view);
  */
 void shape_aos_recompute(DataView *view);
 
-
 /**
  * @brief Recomputes metadata for a Structure-of-Arrays view.
  *
@@ -107,7 +101,6 @@ void shape_aos_recompute(DataView *view);
  */
 void shape_soa_recompute(DataView *view);
 
-
 /**
  * @brief Recomputes metadata for an Array-of-Structures-of-Arrays view.
  *
@@ -119,7 +112,6 @@ void shape_soa_recompute(DataView *view);
  * @note Intended for setup/binding operations, never for a kernel hot loop.
  */
 void shape_aosoa_recompute(DataView *view);
-
 
 /**
  * @brief Validates metadata for a one-dimensional view.
@@ -134,7 +126,6 @@ void shape_aosoa_recompute(DataView *view);
  */
 bool shape_1d_validate(const DataView *view);
 
-
 /**
  * @brief Validates metadata for a two-dimensional view.
  *
@@ -147,7 +138,6 @@ bool shape_1d_validate(const DataView *view);
  * @note Intended for correctness checks and debugging, not benchmarking.
  */
 bool shape_2d_validate(const DataView *view);
-
 
 /**
  * @brief Validates metadata for a three-dimensional view.
@@ -162,7 +152,6 @@ bool shape_2d_validate(const DataView *view);
  */
 bool shape_3d_validate(const DataView *view);
 
-
 /**
  * @brief Validates metadata for an Array-of-Structures view.
  *
@@ -176,7 +165,6 @@ bool shape_3d_validate(const DataView *view);
  */
 bool shape_aos_validate(const DataView *view);
 
-
 /**
  * @brief Validates metadata for a Structure-of-Arrays view.
  *
@@ -189,7 +177,6 @@ bool shape_aos_validate(const DataView *view);
  * @note Intended for correctness checks and debugging, not benchmarking.
  */
 bool shape_soa_validate(const DataView *view);
-
 
 /**
  * @brief Validates metadata for an Array-of-Structures-of-Arrays view.

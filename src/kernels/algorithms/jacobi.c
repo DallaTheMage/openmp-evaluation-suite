@@ -37,8 +37,13 @@
 #include "kernels/algorithms/ViewValidation.h"
 
 #if OPENMP_HAS_2_0
+
 /** @brief Apply one Jacobi stencil step, preserving fixed boundary cells. */
-static void serial_step(const double *in, double *out, size_t rows, size_t cols) {
+static void serial_step(
+    const double *in,
+    double *out,
+    size_t rows,
+    size_t cols) {
     memcpy(out, in, (rows * cols * sizeof(*out)));
     for (size_t i = 1; (i + 1) < rows; ++i)
         for (size_t j = 1; (j + 1) < cols; ++j) {
@@ -47,8 +52,11 @@ static void serial_step(const double *in, double *out, size_t rows, size_t cols)
         }
 }
 
-KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
-                              Profiler *profiler, PerformanceMetric *metric) {
+KernelStatus kernel_2d_jacobi(
+    DataView *view,
+    const TestCase *tc,
+    Profiler *profiler,
+    PerformanceMetric *metric) {
     if (!kernel_valid_2d_view(view, tc, profiler, metric, 3)) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
@@ -68,20 +76,19 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
     }
     memcpy(a, input, bytes);
     memcpy(ref, input, bytes);
-    /* Boundary values never change; prefill both workspaces before timing. */
     memcpy(b, input, bytes);
     if (profiler_start(profiler) != 0) {
         free_jacobi_components(a, b, ref, tmp);
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-    for (unsigned step = 0; step < JACOBI_STEPS; ++step) {
+    for (unsigned step = 0; step < JACOBI_STEPS; step++) {
         #pragma omp parallel for \
             default(none) \
             num_threads(tc->num_threads) \
             schedule(CHOSEN_SCHEDULE, tc->chunk_size) \
             shared(a, b, cols, rows, tc)
-        for (size_t i = 1; i < (rows - 1); ++i) {
-            for (size_t j = 1;  j < (cols - 1); ++j) {
+        for (size_t i = 1; i < (rows - 1); i++) {
+            for (size_t j = 1;  j < (cols - 1); j++) {
                 size_t z = (i * cols) + j;
                 b[z] = 0.25 * (a[z - cols] + a[z + cols] + a[z - 1] + a[z + 1]);
             }
@@ -91,7 +98,6 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
         b            = swap;
     }
     int stop = profiler_stop(profiler, metric);
-    /* Independent serial reference, excluded from the timed region. */
     for (unsigned step = 0; step < JACOBI_STEPS; ++step) {
         serial_step(ref, tmp, rows, cols);
         double *swap = ref;
@@ -99,7 +105,7 @@ KernelStatus kernel_2d_jacobi(DataView *view, const TestCase *tc,
         tmp = swap;
     }
     int valid = 1;
-    for (size_t z = 0; z < count; ++z) {
+    for (size_t z = 0; z < count; z++) {
         if (!isfinite(a[z]) || !isfinite(ref[z]) ||
             fabs(a[z] - ref[z]) > (1e-11 * fmax(1.0, fabs(ref[z])))) {
                 valid = 0;

@@ -43,7 +43,11 @@
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_1d_master(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_1d_master(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D master benchmark.
@@ -57,7 +61,11 @@ KernelStatus kernel_1d_master(DataView *view, const struct TestCase *test_case, 
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_2d_master(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_2d_master(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the 1D masked benchmark.
  *
@@ -70,7 +78,11 @@ KernelStatus kernel_2d_master(DataView *view, const struct TestCase *test_case, 
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_1d_masked(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_1d_masked(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D masked benchmark.
@@ -84,6 +96,10 @@ KernelStatus kernel_1d_masked(DataView *view, const struct TestCase *test_case, 
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_2d_masked(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_2d_masked(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 #endif /* KERNELS_SYNCHRONIZATION_MASTER_MASKED_H */

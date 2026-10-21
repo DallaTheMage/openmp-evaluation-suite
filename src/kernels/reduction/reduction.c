@@ -82,7 +82,8 @@ KernelStatus kernel_1d_reduction(DataView *view,
 /* ============================================================================
  * VIEW_2D
  * ========================================================================== */
-KernelStatus kernel_2d_reduction(DataView *view,
+KernelStatus kernel_2d_reduction(
+    DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
@@ -93,9 +94,8 @@ KernelStatus kernel_2d_reduction(DataView *view,
     const uint64_t         rows         = view->meta.v2d.rows;
     const uint64_t         cols         = view->meta.v2d.cols;
     double                 sum          = 0.0;
-    uint64_t offset;
-    uint64_t r;
-    uint64_t c;
+
+    uint64_t offset, r, c;
 
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;

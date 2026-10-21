@@ -25,8 +25,8 @@
  * @file ResultsWriter.h
  * @brief CSV serialization of benchmark plans and measurements.
  *
- * ResultsWriter is the persistence boundary of the benchmark suite. It
- * converts the in-memory test plan and measurement structures into stable,
+ * ResultsWriter is the persistence boundary of the benchmark suite.
+ * It converts the in-memory test plan and measurement structures into stable,
  * machine-readable CSV files without coupling the dispatcher or profiler
  * to filesystem details.
  *
@@ -44,15 +44,14 @@
  * remain compact and use stable numeric test-set and test-case identifiers.
  *
  * scaling.csv contains either strong- or weak-scaling results depending on
- * the selected ScalingMode. Strong scaling compares fixed-workload runs
- * against a one-thread baseline. Weak scaling compares proportional
- * workloads against the smallest available thread count for the same view,
- * kernel and chunk size. Speedup, efficiency and overhead are derived from
- * aggregated wall-clock measurements.
+ * the selected ScalingMode.
+ * Strong scaling compares fixed-workload runs against a one-thread baseline.
+ * Weak scaling compares proportional workloads against the smallest available
+ * thread count for the same view, kernel and chunk size.
+ * Speedup, efficiency and overhead are derived from aggregated wall-clock measurements.
  *
  * The writer is intended to be called after benchmark execution has
- * completed. It is not part of the benchmark hot path and is not
- * thread-safe.
+ * completed.
  */
 
 #ifndef CORE_RESULTS_WRITER_H
@@ -64,7 +63,6 @@
 #include "core/Configuration.h"
 #include "core/FileManager.h"
 #include "core/TestPlan.h"
-
 
 /**
  * @brief Write the complete benchmark result set to CSV files.
@@ -96,6 +94,5 @@ int write_benchmark_results(
     const Configuration *config,
     ScalingMode scaling_mode
 );
-
 
 #endif /* CORE_RESULTS_WRITER_H */

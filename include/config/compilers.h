@@ -41,7 +41,6 @@
 #ifndef CONFIG_COMPILERS_H
 #define CONFIG_COMPILERS_H
 
-
 /* ========================================================================= */
 /* --- Preprocessor stringification --------------------------------------- */
 /* ========================================================================= */
@@ -53,7 +52,6 @@
 #ifndef STRINGIFY
     #define STRINGIFY(x) STRINGIFY2(x)
 #endif
-
 
 /* ========================================================================= */
 /* --- Compiler identification -------------------------------------------- */
@@ -72,13 +70,11 @@
     #define OES_COMPILER_NAME    "icx"
     #define OES_COMPILER_VERSION STRINGIFY(__INTEL_LLVM_COMPILER)
 
-
 #elif defined(__INTEL_COMPILER)
 
     #define OES_COMPILER_FAMILY  "Intel"
     #define OES_COMPILER_NAME    "icc"
     #define OES_COMPILER_VERSION STRINGIFY(__INTEL_COMPILER)
-
 
 #elif defined(__clang__)
 
@@ -89,7 +85,6 @@
         STRINGIFY(__clang_major__) "." \
         STRINGIFY(__clang_minor__) "." \
         STRINGIFY(__clang_patchlevel__)
-
 
 #elif defined(__GNUC__)
 
@@ -110,7 +105,6 @@
 
 #endif
 
-
 /* ========================================================================= */
 /* --- Compiler flags ------------------------------------------------------ */
 /* ========================================================================= */
@@ -129,6 +123,5 @@
 #ifndef OES_COMPILER_FLAGS
     #define OES_COMPILER_FLAGS "unknown"
 #endif
-
 
 #endif /* CONFIG_COMPILERS_H */

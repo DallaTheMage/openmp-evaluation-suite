@@ -43,7 +43,11 @@
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_1d_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_1d_task(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D task benchmark.
@@ -57,7 +61,11 @@ KernelStatus kernel_1d_task(DataView *view, const struct TestCase *test_case, st
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_2d_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_2d_task(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the 3D task benchmark.
  *
@@ -70,7 +78,11 @@ KernelStatus kernel_2d_task(DataView *view, const struct TestCase *test_case, st
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_3d_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_3d_task(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOS task benchmark.
  *
@@ -83,7 +95,11 @@ KernelStatus kernel_3d_task(DataView *view, const struct TestCase *test_case, st
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aos_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aos_task(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA task benchmark.
  *
@@ -96,7 +112,11 @@ KernelStatus kernel_aos_task(DataView *view, const struct TestCase *test_case, s
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_soa_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_soa_task(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA task benchmark.
  *
@@ -109,6 +129,10 @@ KernelStatus kernel_soa_task(DataView *view, const struct TestCase *test_case, s
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aosoa_task(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aosoa_task(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 #endif /* KERNELS_TASKING_TASK_H */

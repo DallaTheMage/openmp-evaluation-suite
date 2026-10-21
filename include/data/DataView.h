@@ -42,15 +42,11 @@
 #include "data/DataBuffer.h"
 #include "data/views/ViewType.h"
 
-
 /**
  * @brief Logical region of a DataBuffer.
  *
  * The offset and size are expressed in number of double elements.
- *
- * The represented interval is:
- *
- *     [offset, offset + size)
+ * The represented interval is: [offset, offset + size)
  *
  * @note DataWindow does not own any memory.
  */
@@ -58,7 +54,6 @@ typedef struct {
     uint64_t offset;
     uint64_t size;
 } DataWindow;
-
 
 /**
  * @brief Metadata describing a one-dimensional view.
@@ -68,7 +63,6 @@ typedef struct {
 typedef struct {
     uint64_t length;
 } View1DMetadata;
-
 
 /**
  * @brief Metadata describing a two-dimensional view.
@@ -80,7 +74,6 @@ typedef struct {
     uint64_t rows;
     uint64_t cols;
 } View2DMetadata;
-
 
 /**
  * @brief Metadata describing a three-dimensional view.
@@ -94,7 +87,6 @@ typedef struct {
     uint64_t cols;
 } View3DMetadata;
 
-
 /**
  * @brief Metadata describing an Array-of-Structures view.
  *
@@ -105,7 +97,6 @@ typedef struct {
     uint64_t num_structs;
     uint64_t struct_size;
 } ViewAoSMetadata;
-
 
 /**
  * @brief Metadata describing a Structure-of-Arrays view.
@@ -118,7 +109,6 @@ typedef struct {
     uint64_t field_length;
 } ViewSoAMetadata;
 
-
 /**
  * @brief Metadata describing an Array-of-Structures-of-Arrays view.
  *
@@ -130,7 +120,6 @@ typedef struct {
     uint64_t vector_length;
     uint64_t num_fields;
 } ViewAoSoAMetadata;
-
 
 /**
  * @brief Layout-specific metadata associated with a DataView.
@@ -149,7 +138,6 @@ typedef union {
     ViewAoSoAMetadata  aosoa;
 } ViewMetadata;
 
-
 /**
  * @brief Runtime descriptor used to construct a DataView.
  *
@@ -163,48 +151,33 @@ typedef union {
     /**
      * @brief Parameters for a one-dimensional view.
      */
-    struct {
-        uint64_t length;
-    } v1d;
+    struct { uint64_t length; } v1d;
 
     /**
      * @brief Parameters for a two-dimensional view.
      */
-    struct {
-        uint64_t cols;
-    } v2d;
+    struct { uint64_t cols; } v2d;
 
     /**
      * @brief Parameters for a three-dimensional view.
      */
-    struct {
-        uint64_t depth;
-        uint64_t cols;
-    } v3d;
+    struct { uint64_t depth; uint64_t cols; } v3d;
 
     /**
      * @brief Parameters for an Array-of-Structures view.
      */
-    struct {
-        uint64_t struct_size;
-    } aos;
+    struct { uint64_t struct_size; } aos;
 
     /**
      * @brief Parameters for a Structure-of-Arrays view.
      */
-    struct {
-        uint64_t num_fields;
-    } soa;
+    struct { uint64_t num_fields; } soa;
 
     /**
      * @brief Parameters for an Array-of-Structures-of-Arrays view.
      */
-    struct {
-        uint64_t vector_length;
-        uint64_t num_fields;
-    } aosoa;
+    struct { uint64_t vector_length; uint64_t num_fields; } aosoa;
 } ViewCreateConfig;
-
 
 /**
  * @brief Non-owning logical view over a DataBuffer.
@@ -224,7 +197,6 @@ typedef struct {
     DataWindow   window;
     ViewMetadata meta;
 } DataView;
-
 
 /**
  * @brief Creates a DataView over an existing DataBuffer.
@@ -256,6 +228,5 @@ DataView create_data_view(
     uint64_t offset,
     uint64_t size
 );
-
 
 #endif /* DATA_DATAVIEW_H */

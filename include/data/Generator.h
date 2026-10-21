@@ -48,9 +48,7 @@
  * @brief State of the xoshiro256+ pseudo-random generator.
  * The state consists of four 64-bit words (256 bits).
  */
-typedef struct {
-    uint64_t s[4];
-} xoshiro256_state;
+typedef struct { uint64_t s[4]; } xoshiro256_state;
 
 /**
  * @brief Advance the generator state by 2^128 steps.
@@ -69,22 +67,14 @@ void generator_jump(xoshiro256_state *state);
  */
 static inline double generator_next_double(xoshiro256_state *state) {
     uint64_t *s = state->s;
-
-    // Compute the result (xoshiro256+ uses the sum s[0] + s[3]).
     const uint64_t result = s[0] + s[3];
-
-    // Advance the generator state.
     const uint64_t t = s[1] << 17;
-
     s[2] ^= s[0];
     s[3] ^= s[1];
     s[1] ^= s[2];
     s[0] ^= s[3];
-
     s[2] ^= t;
-    s[3] = (s[3] << 45) | (s[3] >> (64 - 45)); // Rotate left by 45 bits.
-
-    // Extract 53 mantissa bits and convert them to a floating-point value.
+    s[3] = (s[3] << 45) | (s[3] >> (64 - 45));
     return (double)(result >> 11) * 0x1p-53;
 }
 

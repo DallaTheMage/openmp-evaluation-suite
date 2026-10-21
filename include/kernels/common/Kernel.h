@@ -48,13 +48,11 @@
  */
 struct TestCase;
 
-/**
- * @brief Opaque declaration of the profiler.
+/** @brief Opaque declaration of the profiler.
  */
 struct Profiler;
 
-/**
- * @brief Opaque declaration of the performance metric structure.
+/** @brief Opaque declaration of the performance metric structure.
  */
 struct PerformanceMetric;
 
@@ -99,19 +97,12 @@ typedef enum KernelStatus {
  * The dispatcher is responsible for preparing the working buffer before
  * invocation and for deciding whether the returned metric can be accepted.
  *
- * @param view
- *     Non-owning view of the data processed by the kernel.
+ * @param view Non-owning view of the data processed by the kernel.
+ * @param test_case Immutable execution parameters for the current test invocation.
+ * @param profiler Initialized profiler used to measure the kernel execution.
+ * @param metric Output structure receiving the collected performance metrics.
  *
- * @param test_case
- *     Immutable execution parameters for the current test invocation.
- *
- * @param profiler
- *     Initialized profiler used to measure the kernel execution.
- *
- * @param metric
- *     Output structure receiving the collected performance metrics.
- *
- * @return KERNEL_STATUS_OK if execution and measurement succeed;
+ * @return KERNEL_STATUS_OK if execution and measurement succeed
  *         an appropriate error status otherwise.
  *
  * @pre All pointer arguments must be non-NULL.
@@ -119,13 +110,10 @@ typedef enum KernelStatus {
  * @pre The TestCase must be valid for the supplied DataView.
  *
  * @note Kernel functions do not take ownership of their arguments.
- *
  * @note The kernel must not report success if profiling fails or if the
  *       measurement is incomplete.
- *
  * @note The OpenMP scheduling policy is a compile-time property of the
  *       benchmark build and is not selected through this interface.
- *
  * @note The concrete kernel implementation is selected by the kernel
  *       registry using the DataView type and KernelType.
  */

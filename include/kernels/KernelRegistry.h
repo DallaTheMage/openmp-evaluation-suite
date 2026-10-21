@@ -26,11 +26,11 @@
  * @brief Static registry of available benchmark kernel implementations.
  *
  * The registry is the single source of truth for the relationship between
- * a logical KernelType and a DataView layout. Availability is represented by
- * a NULL function pointer.
+ * a logical KernelType and a DataView layout.
+ * Availability is represented by a NULL function pointer.
  *
- * The registry is immutable after program initialization. Callers receive
- * read-only descriptors and must not modify or free them.
+ * The registry is immutable after program initialization.
+ * Callers receive read-only descriptors and must not modify or free them.
  */
 
 #ifndef KERNELS_REGISTRY_H
@@ -60,8 +60,7 @@ typedef struct KernelDescriptor {
  * Entries not supported by the current implementation or OpenMP version
  * contain a NULL function pointer.
  */
-extern const KernelDescriptor
-    KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT];
+extern const KernelDescriptor KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT];
 
 /**
  * @brief Look up a kernel descriptor.
@@ -70,10 +69,7 @@ extern const KernelDescriptor
  * @param kernel_type Logical kernel identifier.
  * @return Pointer to the static descriptor, or NULL for invalid identifiers.
  */
-const KernelDescriptor *kernel_registry_get(
-    ViewType view_type,
-    KernelType kernel_type
-);
+const KernelDescriptor *kernel_registry_get(ViewType view_type, KernelType kernel_type);
 
 /**
  * @brief Return the implementation registered for a kernel/view pair.
@@ -82,10 +78,7 @@ const KernelDescriptor *kernel_registry_get(
  * @param kernel_type Logical kernel identifier.
  * @return Kernel function, or NULL when unavailable or invalid.
  */
-KernelFunc kernel_registry_get_function(
-    ViewType view_type,
-    KernelType kernel_type
-);
+KernelFunc kernel_registry_get_function(ViewType view_type, KernelType kernel_type);
 
 /**
  * @brief Test whether a kernel/view combination is available.
@@ -94,9 +87,6 @@ KernelFunc kernel_registry_get_function(
  * @param kernel_type Logical kernel identifier.
  * @return true when a concrete implementation is registered.
  */
-bool kernel_registry_is_available(
-    ViewType view_type,
-    KernelType kernel_type
-);
+bool kernel_registry_is_available(ViewType view_type, KernelType kernel_type);
 
 #endif /* KERNELS_REGISTRY_H */

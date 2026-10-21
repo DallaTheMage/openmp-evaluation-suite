@@ -137,7 +137,6 @@ int rapl_power_stop(RaplPower *rapl, RaplPowerData *data);
  *
  * All file descriptors owned by the RAPL state are closed.
  *
- * Passing NULL is allowed and has no effect.
  *
  * @param rapl RAPL state to clean up.
  */

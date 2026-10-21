@@ -37,7 +37,6 @@
 #ifndef KERNELS_COMMON_KERNEL_TYPE_H
 #define KERNELS_COMMON_KERNEL_TYPE_H
 
-
 /**
  * @brief Identifies one logical benchmark kernel.
  *

@@ -38,9 +38,9 @@
 /** @brief Buffer and traversal state used for cache perturbation. */
 typedef struct CacheEviction {
     unsigned char *buffer;
-    size_t size_bytes;
-    size_t stride_bytes;
-    uint64_t checksum;
+    size_t         size_bytes;
+    size_t         stride_bytes;
+    uint64_t       checksum;
 } CacheEviction;
 
 /**
@@ -51,12 +51,7 @@ typedef struct CacheEviction {
  * @param stride_bytes Distance between consecutive buffer accesses.
  * @return 0 on success, -1 on failure.
  */
-int cache_eviction_init(
-    CacheEviction *ctx,
-    size_t llc_bytes,
-    size_t multiplier,
-    size_t stride_bytes
-);
+int cache_eviction_init(CacheEviction *ctx, size_t llc_bytes, size_t multiplier, size_t stride_bytes);
 
 /**
  * @brief Traverse the buffer to perturb cache residency.
@@ -65,7 +60,8 @@ int cache_eviction_init(
  */
 void cache_eviction_run(CacheEviction *ctx);
 
-/** @brief Release allocated resources.
+/**
+ * @brief Release allocated resources.
  * @param ctx Context to destroy.
  */
 void cache_eviction_destroy(CacheEviction *ctx);

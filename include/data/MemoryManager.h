@@ -53,11 +53,7 @@ typedef struct MemoryManager MemoryManager;
  * @param seed Seed passed unchanged to the data generator.
  * @return A new manager, or NULL if allocation or initialization setup fails.
  */
-MemoryManager *memory_manager_create(
-    size_t original_element_count,
-    size_t alignment,
-    uint64_t seed
-);
+MemoryManager *memory_manager_create(size_t original_element_count, size_t alignment, uint64_t seed);
 
 /**
  * @brief Get the original, immutable data buffer.
@@ -92,17 +88,15 @@ DataBuffer *memory_manager_work_buffer(MemoryManager *manager);
  * @param required_elements Minimum required capacity in elements.
  * @return 0 on success, non-zero on invalid input or allocation failure.
  */
-int memory_manager_reserve_work(
-    MemoryManager *manager,
-    size_t required_elements
-);
+int memory_manager_reserve_work(MemoryManager *manager, size_t required_elements);
 
 /**
  * @brief Restore the requested prefix of the working buffer.
  *
  * Small copies use a sequential loop. Larger copies use a static-scheduled
  * OpenMP loop with a preparation-specific thread count independent of the
- * benchmark test's thread count. The copy is performed outside kernel timing.
+ * benchmark test's thread count.
+ * The copy is performed outside kernel timing.
  *
  * @param manager Memory manager.
  * @param element_count Number of elements to restore.
@@ -125,16 +119,10 @@ int memory_manager_restore(MemoryManager *manager, size_t element_count);
  * @return 0 on success, non-zero if the requested window exceeds the
  *         original buffer or the working buffer capacity.
  */
-int memory_manager_restore_window(
-    MemoryManager *manager,
-    uint64_t offset,
-    size_t element_count
-);
+int memory_manager_restore_window(MemoryManager *manager, uint64_t offset, size_t element_count);
 
 /**
  * @brief Destroy the manager and all buffers it owns.
- *
- * Passing NULL is allowed and has no effect.
  *
  * @param manager Manager to destroy.
  */

@@ -43,7 +43,8 @@
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_1d_reduction(DataView *view,
+KernelStatus kernel_1d_reduction(
+    DataView *view,
     const struct TestCase *test_case,
     struct Profiler *profiler,
     struct PerformanceMetric *metric
@@ -61,7 +62,8 @@ KernelStatus kernel_1d_reduction(DataView *view,
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_2d_reduction(DataView *view,
+KernelStatus kernel_2d_reduction(
+    DataView *view,
     const struct TestCase *test_case,
     struct Profiler *profiler,
     struct PerformanceMetric *metric
@@ -79,7 +81,8 @@ KernelStatus kernel_2d_reduction(DataView *view,
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_3d_reduction(DataView *view,
+KernelStatus kernel_3d_reduction(
+    DataView *view,
     const struct TestCase *test_case,
     struct Profiler *profiler,
     struct PerformanceMetric *metric
@@ -97,7 +100,11 @@ KernelStatus kernel_3d_reduction(DataView *view,
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aos_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aos_reduction(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA reduction benchmark.
  *
@@ -110,7 +117,10 @@ KernelStatus kernel_aos_reduction(DataView *view, const struct TestCase *test_ca
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_soa_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_soa_reduction(DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA reduction benchmark.
  *
@@ -123,7 +133,10 @@ KernelStatus kernel_soa_reduction(DataView *view, const struct TestCase *test_ca
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aosoa_reduction(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aosoa_reduction(DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the SoA reduction with parallelism over elements.
@@ -138,6 +151,9 @@ KernelStatus kernel_aosoa_reduction(DataView *view, const struct TestCase *test_
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_soa_reduction_inner(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_soa_reduction_inner(DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 #endif /* KERNELS_REDUCTION_H */

@@ -43,7 +43,11 @@
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_1d_two_pass_scan(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_1d_two_pass_scan(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 /**
  * @brief Execute the 2D two pass scan benchmark.
@@ -57,7 +61,11 @@ KernelStatus kernel_1d_two_pass_scan(DataView *view, const struct TestCase *test
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_2d_two_pass_scan(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_2d_two_pass_scan(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the 3D two pass scan benchmark.
  *
@@ -70,7 +78,11 @@ KernelStatus kernel_2d_two_pass_scan(DataView *view, const struct TestCase *test
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_3d_two_pass_scan(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_3d_two_pass_scan(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOS two pass scan benchmark.
  *
@@ -83,7 +95,11 @@ KernelStatus kernel_3d_two_pass_scan(DataView *view, const struct TestCase *test
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aos_two_pass_scan(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aos_two_pass_scan(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the SOA two pass scan benchmark.
  *
@@ -96,7 +112,11 @@ KernelStatus kernel_aos_two_pass_scan(DataView *view, const struct TestCase *tes
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_soa_two_pass_scan(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_soa_two_pass_scan(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 /**
  * @brief Execute the AOSOA two pass scan benchmark.
  *
@@ -109,6 +129,10 @@ KernelStatus kernel_soa_two_pass_scan(DataView *view, const struct TestCase *tes
  * @pre The test case must be valid for the supplied view.
  * @return KERNEL_STATUS_OK on success, or a KernelStatus error.
  */
-KernelStatus kernel_aosoa_two_pass_scan(DataView *view, const struct TestCase *test_case, struct Profiler *profiler, struct PerformanceMetric *metric);
+KernelStatus kernel_aosoa_two_pass_scan(
+    DataView *view,
+    const struct TestCase *test_case,
+    struct Profiler *profiler,
+    struct PerformanceMetric *metric);
 
 #endif /* KERNELS_SCAN_TWO_PASS_H */

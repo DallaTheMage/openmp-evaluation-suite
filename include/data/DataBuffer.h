@@ -28,8 +28,8 @@
  * DataBuffer owns a contiguous pool of double-precision elements.
  *
  * The buffer is deliberately independent from the global Configuration
- * object. Its creation requires only the information that is actually
- * relevant to the allocation:
+ * object.
+ * Its creation requires only the information that is actually relevant to the allocation:
  *
  * - number of elements;
  * - required alignment.
@@ -44,7 +44,6 @@
 #define DATA_BUFFER_H
 
 #include <stddef.h>
-
 
 /* ========================================================================= */
 /* DataBuffer                                                                */
@@ -78,7 +77,6 @@ typedef struct DataBuffer {
     size_t alignment;
 } DataBuffer;
 
-
 /* ========================================================================= */
 /* Lifecycle                                                                 */
 /* ========================================================================= */
@@ -98,22 +96,13 @@ typedef struct DataBuffer {
  * @return Pointer to a newly allocated DataBuffer, or NULL if allocation
  *         fails or the requested allocation parameters are invalid.
  */
-DataBuffer *create_data_buffer(
-    size_t element_count,
-    size_t alignment
-);
-
+DataBuffer *create_data_buffer(size_t element_count, size_t alignment);
 
 /**
  * @brief Destroy a data buffer and release its owned storage.
  *
- * Passing NULL is allowed and has no effect.
- *
  * @param buffer Buffer to destroy.
  */
-void destroy_data_buffer(
-    DataBuffer *buffer
-);
-
+void destroy_data_buffer(DataBuffer *buffer);
 
 #endif /* DATA_BUFFER_H */

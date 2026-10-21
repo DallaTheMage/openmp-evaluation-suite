@@ -142,8 +142,6 @@ DispatchStatus dispatch_test_plan_with_eviction(
  *
  * @note Passing NULL is allowed and has no effect.
  */
-void dispatch_destroy_samples(
-    RawSampleSet *samples
-);
+void dispatch_destroy_samples(RawSampleSet *samples);
 
 #endif /* CORE_DISPATCHER_H */
