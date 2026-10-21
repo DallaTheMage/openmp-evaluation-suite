@@ -107,15 +107,18 @@ int profiler_stop(Profiler *p, PerformanceMetric *metric) {
     metric->instructions   = hw_data.instructions;
     metric->l1d_misses     = hw_data.l1d_misses;
     metric->llc_misses     = hw_data.llc_misses;
-    metric->ipc            = (metric->cycles > 0U)
-        ? (double)metric->instructions / (double)metric->cycles
-        : 0.0;
-    metric->l1d_miss_ratio = (metric->instructions > 0U)
-        ? (double)metric->l1d_misses / (double)metric->instructions
-        : 0.0;
-    metric->llc_miss_ratio = (metric->instructions > 0U)
-        ? (double)metric->llc_misses / (double)metric->instructions
-        : 0.0;
+    if (metric->cycles > 0U) {
+        metric->ipc = (double)metric->instructions / (double)metric->cycles;
+    } else {
+        metric->ipc = 0.0;
+    }
+    if (metric->instructions > 0U) {
+        metric->l1d_miss_ratio = (double)metric->l1d_misses / (double)metric->instructions;
+        metric->llc_miss_ratio = (double)metric->llc_misses / (double)metric->instructions;
+    } else {
+        metric->l1d_miss_ratio = 0.0;
+        metric->llc_miss_ratio = 0.0;
+    }
     metric->energy_dram_joules = dram_valid ? rapl_data.energy_dram_joules : NAN;
     metric->energy_pkg_joules  = pkg_valid ? rapl_data.energy_pkg_joules : NAN;
     metric->hw_counters_valid  = hw_valid;

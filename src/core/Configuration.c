@@ -44,11 +44,6 @@
 #include "core/Configuration.h"
 #include "utils/ArrayCopy.h"
 
-
-/* ========================================================================= */
-/* Internal helpers                                                          */
-/* ========================================================================= */
-
 static inline void copy_string(char *target, size_t capacity, const char *string) {
     (void)snprintf(target, capacity, "%s", string);
 }
@@ -98,11 +93,8 @@ static int copy_u64_list(ConfigU64List *destination, const uint64_t *source, siz
     return 1;
 }
 
-
 /**
  * @brief Materialize the configured window sizes.
- *
- * Window sizes are specified in params.h as base-2 logarithms.
  *
  * @param destination Destination configuration list.
  *
@@ -153,11 +145,6 @@ void finalize_configuration_metrics(Configuration *config) {
     config->derived.size_per_thread = (uint64_t)SIZE_PER_THREAD;
 }
 
-
-/* ========================================================================= */
-/* Configuration loading                                                     */
-/* ========================================================================= */
-
 Configuration load_configuration(void) {
     Configuration config = {0};
 
@@ -199,8 +186,7 @@ Configuration load_configuration(void) {
     }
     #endif
 
-    config.memory.aux_buffer_size = (size_t)AUX_BUFFER_SIZE;
-
+    config.memory.aux_buffer_size             = (size_t)AUX_BUFFER_SIZE;
     config.memory.cache_eviction.enabled      = (uint32_t)CACHE_EVICTION_ENABLED;
     config.memory.cache_eviction.multiplier   = (uint32_t)CACHE_EVICTION_MULTIPLIER;
     config.memory.cache_eviction.stride_bytes = (size_t)CACHE_EVICTION_STRIDE_BYTES;
@@ -209,11 +195,7 @@ Configuration load_configuration(void) {
         || config.memory.cache_eviction.multiplier == 0U
         || config.memory.cache_eviction.stride_bytes == 0U) {
 
-        fprintf(
-            stderr,
-            "[Configuration] Invalid cache eviction parameters\n"
-        );
-
+        fprintf(stderr, "[Configuration] Invalid cache eviction parameters\n");
         destroy_configuration(&config);
         return (Configuration){0};
     }
@@ -226,11 +208,7 @@ Configuration load_configuration(void) {
             || (llc_bytes > (UINT64_MAX / multiplier))
             || ((llc_bytes * multiplier) > (uint64_t)SIZE_MAX)) {
 
-            fprintf(
-                stderr,
-                "[Configuration] Invalid cache eviction buffer size\n"
-            );
-
+            fprintf(stderr, "[Configuration] Invalid cache eviction buffer size\n");
             destroy_configuration(&config);
             return (Configuration){0};
         }
@@ -269,10 +247,6 @@ Configuration load_configuration(void) {
     finalize_configuration_metrics(&config);
     return config;
 }
-
-/* ========================================================================= */
-/* Configuration destruction                                                */
-/* ========================================================================= */
 
 void destroy_configuration(Configuration *config) {
     if (config == NULL) {

@@ -57,8 +57,8 @@ static inline int cleanup(AggregatedSample *aggregated,
  *
  * This function owns all resources whose lifetime is limited to one suite.
  * The shared MemoryManager is borrowed from the caller and is never destroyed
- * here. All resources acquired by this function are released at @c cleanup,
- * regardless of which operation fails.
+ * here.
+ * All resources acquired by this function are released regardless of which operation fails.
  *
  * @param memory_manager Shared manager containing original and working data.
  * @param config Validated benchmark configuration.
@@ -66,8 +66,7 @@ static inline int cleanup(AggregatedSample *aggregated,
  * @param scaling_mode Scaling mode recorded in the output.
  * @param proportional Non-zero selects the proportional test plan.
  *
- * @return 0 on success; non-zero if setup, execution, analysis, or output
- *         generation fails.
+ * @return 0 on success; non-zero one phase fails.
  */
 int run_benchmark_suite(
     MemoryManager *memory_manager,
@@ -109,7 +108,6 @@ int run_benchmark_suite(
         return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
     }
 
-    /* Build the test plan against the immutable original data buffer. */
     if (proportional) {
         plan = generate_proportional_test_plan(original_buffer, config);
     } else {
@@ -121,12 +119,12 @@ int run_benchmark_suite(
         return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
     }
 
-    /* Reserve enough working memory once, before dispatching any kernel. */
     if (!test_plan_max_workload(plan, &max_workload) ||
         memory_manager_reserve_work(memory_manager, max_workload) != 0) {
         fprintf(stderr, "[Error] Unable to reserve working memory for %s\n", test_name);
         return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
     }
+
     work_buffer = memory_manager_work_buffer(memory_manager);
     if (work_buffer == NULL ||
         !test_plan_rebind_buffer(plan, work_buffer) ||
@@ -141,9 +139,7 @@ int run_benchmark_suite(
         work_buffer->element_count
     );
 
-    /* Create and select the output directory for this suite. */
     file_manager = create_file_manager("./output", config->build.compiler_name, CHOSEN_SCHEDULE_NAME);
-
     if (file_manager == NULL ||
         set_current_test(file_manager, test_name) != 0) {
         fprintf(stderr, "[Error] Unable to initialize output directory for %s\n", test_name);
@@ -188,8 +184,6 @@ int run_benchmark_suite(
         printf("[Main] Cache eviction disabled for %s\n", test_name);
     }
 
-
-    /* Execute warm-ups and measured repetitions. */
     printf("[Main] Dispatching %s suite\n", test_name);
 
     const DispatchStatus dispatch_status =
@@ -204,10 +198,7 @@ int run_benchmark_suite(
         );
 
     if (dispatch_status != DISPATCH_OK) {
-        fprintf(stderr, "[Error] Benchmark dispatch failed for %s (status=%d)\n",
-            test_name,
-            (int)dispatch_status
-        );
+        fprintf(stderr, "[Error] Benchmark dispatch failed for %s (status=%d)\n", test_name, (int)dispatch_status);
         return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
     }
     printf("[Main] Dispatch completed for %s\n", test_name);
@@ -216,19 +207,8 @@ int run_benchmark_suite(
         fprintf(stderr, "[Error] Benchmark analysis failed for %s\n", test_name);
         return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
     }
-    printf("[Main] %s: %zu raw samples, %zu aggregated experiments\n",
-        test_name,
-        samples.count,
-        aggregated_count
-    );
-    if (write_benchmark_results(
-            file_manager,
-            plan,
-            &samples,
-            aggregated,
-            aggregated_count,
-            config,
-            scaling_mode) != 0) {
+    printf("[Main] %s: %zu raw samples, %zu aggregated experiments\n", test_name, samples.count, aggregated_count);
+    if (write_benchmark_results(file_manager, plan, &samples, aggregated, aggregated_count, config, scaling_mode) != 0) {
         fprintf(stderr, "[Error] Unable to write %s output files\n", test_name);
         return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
     }

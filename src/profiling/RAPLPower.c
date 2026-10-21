@@ -83,53 +83,55 @@ static int read_path(const char *path, double *value) {
     return status;
 }
 
-static int find_named_domain(const char *parent, const char *expected, char *path, size_t length) {
+static int find_named_domain(
+    const char *parent,
+    const char *expected,
+    char *path,
+    size_t length) {
+
     DIR *directory = opendir(parent);
     struct dirent *entry;
+    int found = -1;
     if (!directory) {
         return -1;
     }
-    while ((entry = readdir(directory)) != NULL) {
-        char    name_path[PATH_MAX];
-        char    domain_name[80];
-        int     fd;
+    while ((entry = readdir(directory)) != NULL && found != 0) {
+        char name_path[PATH_MAX];
+        char domain_name[80];
+        int fd, out_len;
         ssize_t n;
-        if (strncmp(entry->d_name, "intel-rapl:", 11) != 0) {
-            continue;
-        }
-        if (snprintf(name_path, sizeof(name_path), "%s/%s/name", parent, entry->d_name) >= (int)sizeof(name_path)) {
-            continue;
-        }
-        fd = open(name_path, O_RDONLY);
-        if (fd < 0) {
-            continue;
-        }
-        n = read(fd, domain_name, sizeof(domain_name) - 1);
-        close(fd);
-        if (n <= 0) {
-            continue;
-        }
-        domain_name[n] = '\0';
-        domain_name[strcspn(domain_name, "\r\n")] = '\0';
-        if (strcmp(domain_name, expected) == 0) {
-            if (snprintf(path, length, "%s/%s", parent, entry->d_name) < (int)length) {
-                closedir(directory);
-                return 0;
+        out_len = snprintf(name_path, sizeof(name_path), "%s/%s/name", parent, entry->d_name);
+        if ((strncmp(entry->d_name, "intel-rapl:", 11) == 0) &&
+            (out_len < (int)sizeof(name_path))) {
+            fd = open(name_path, O_RDONLY);
+            if (fd >= 0) {
+                n = read(fd, domain_name, sizeof(domain_name) - 1);
+                close(fd);
+                if (n > 0) {
+                    domain_name[n] = '\0';
+                    domain_name[strcspn(domain_name, "\r\n")] = '\0';
+                    out_len = snprintf(path, length, "%s/%s", parent, entry->d_name);
+                    if (strcmp(domain_name, expected) == 0 && out_len < (int)length) {
+                        found = 0;
+                    }
+                }
             }
         }
     }
     closedir(directory);
-    return -1;
+    return found;
 }
 
 static int open_domain(const char *directory, double *maximum) {
     char filename[PATH_MAX];
-    int fd;
-    if (snprintf(filename, sizeof(filename), "%s/max_energy_range_uj", directory) >= (int)sizeof(filename) ||
+    int fd, out_len;
+    out_len = snprintf(filename, sizeof(filename), "%s/max_energy_range_uj", directory);
+    if (out_len >= (int)sizeof(filename) ||
         read_path(filename, maximum) != 0 || *maximum <= 0) {
         return -1;
     }
-    if (snprintf(filename, sizeof(filename), "%s/energy_uj", directory) >= (int)sizeof(filename)) {
+    out_len = snprintf(filename, sizeof(filename), "%s/energy_uj", directory);
+    if (out_len >= (int)sizeof(filename)) {
         return -1;
     }
     fd = open(filename, O_RDONLY);
@@ -138,20 +140,22 @@ static int open_domain(const char *directory, double *maximum) {
 
 int rapl_power_init(RaplPower *rapl) {
     char pkg[PATH_MAX], dram[PATH_MAX];
+    int found_nd;
     if (!rapl) {
         return -1;
     }
     memset(rapl, 0, sizeof(*rapl));
     rapl->fd_pkg = rapl->fd_dram = -1;
-    /* First package domain: multi-package aggregation is not yet supported. */
-    if (find_named_domain(RAPL_ROOT, "package-0", pkg, sizeof(pkg)) != 0) {
+    found_nd = find_named_domain(RAPL_ROOT, "package-0", pkg, sizeof(pkg));
+    if (found_nd != 0) {
         return -1;
     }
     rapl->fd_pkg = open_domain(pkg, &rapl->max_energy_pkg_uj);
     if (rapl->fd_pkg < 0) {
         return -1;
     }
-    if (find_named_domain(pkg, "dram", dram, sizeof(dram)) == 0) {
+    found_nd = find_named_domain(pkg, "dram", dram, sizeof(dram));
+    if (found_nd == 0) {
         rapl->fd_dram = open_domain(dram, &rapl->max_energy_dram_uj);
     }
     rapl->scale_pkg = rapl->scale_dram = 1e-6;
@@ -168,13 +172,13 @@ int rapl_power_start(RaplPower *rapl) {
     }
     if (rapl->fd_dram >= 0 && read_value(rapl->fd_dram, &rapl->start_energy_dram_uj) != 0) {
         close(rapl->fd_dram);
-        rapl->fd_dram = -1; /* Optional domain: retain package measurement. */
+        rapl->fd_dram = -1;
     }
     return 0;
 }
 
-static double energy_delta(double start, double stop, double maximum) {
-    return stop >= start ? stop - start : maximum - start + stop;
+static inline double energy_delta(double start, double stop, double maximum) {
+    return (stop >= start) ? (stop - start) : (maximum - start + stop);
 }
 
 int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
@@ -185,8 +189,8 @@ int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
     if (read_value(rapl->fd_pkg, &stop_pkg) != 0) {
         return -1;
     }
-    data->energy_pkg_joules = energy_delta(rapl->start_energy_pkg_uj, stop_pkg,
-                                         rapl->max_energy_pkg_uj) * rapl->scale_pkg;
+    delta = energy_delta(rapl->start_energy_pkg_uj, stop_pkg, rapl->max_energy_pkg_uj);
+    data->energy_pkg_joules = delta * rapl->scale_pkg;
     data->energy_dram_joules = NAN;
     if (rapl->fd_dram >= 0) {
         if (read_value(rapl->fd_dram, &stop_dram) == 0) {

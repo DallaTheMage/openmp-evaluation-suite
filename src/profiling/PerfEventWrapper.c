@@ -32,17 +32,21 @@
 
 #include "profiling/PerfEventWrapper.h"
 
-typedef struct perf_event_attr perf_event_attr;
+int sys_perf_event_open(
+    struct perf_event_attr *hw_event,
+    pid_t pid,
+    int cpu,
+    int group_fd,
+    unsigned long flags) {
 
-int sys_perf_event_open(perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags) {
     return (int) syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
 }
 
 int perf_counter_open_process(uint32_t type, uint64_t config, int group_fd) {
-    perf_event_attr pe;
-    memset(&pe, 0, sizeof(perf_event_attr));
+    struct perf_event_attr pe;
+    memset(&pe, 0, sizeof(struct perf_event_attr));
     pe.type           = type;
-    pe.size           = sizeof(perf_event_attr);
+    pe.size           = sizeof(struct perf_event_attr);
     pe.config         = config;
     pe.disabled       = 1;
     pe.inherit        = 1;
@@ -58,7 +62,7 @@ void perf_counter_close(int fd) {
 }
 
 int perf_counter_open_thread(uint32_t type, uint64_t config, pid_t tid, int group_fd) {
-    perf_event_attr pe;
+    struct perf_event_attr pe;
     memset(&pe, 0, sizeof(pe));
     pe.type = type;
     pe.size = sizeof(pe);
