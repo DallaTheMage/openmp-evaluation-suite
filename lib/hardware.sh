@@ -25,7 +25,6 @@
 
 detect_default_compiler() {
     if command -v cc &>/dev/null; then
-        # Resolve symlink if cc points to gcc/clang
         local real_cc
         real_cc=$(readlink -f "$(command -v cc)" 2>/dev/null || command -v cc)
         if [[ "$real_cc" == *clang* ]]; then
@@ -43,7 +42,7 @@ detect_default_compiler() {
     fi
 }
 
-# Number of available logical CPUs (respects cgroup limits when possible).
+# Number of available logical CPUs.
 detect_cores() {
     local n=""
 
@@ -102,7 +101,6 @@ detect_llc_bytes() {
         type=$(< "$cache_dir/type")
         size=$(< "$cache_dir/size")
 
-        # Ignore instruction-only caches.
         [[ "$type" == "Data" || "$type" == "Unified" ]] || continue
 
         [[ "$level" =~ ^[0-9]+$ ]] || continue
@@ -143,7 +141,7 @@ detect_llc_bytes() {
     printf '%s\n' "$max_bytes"
 }
 
-# Available RAM in MiB; takes cgroup limits into account when present.
+# Available RAM in MiB.
 detect_mem_mib() {
     local mem_kib=""
 

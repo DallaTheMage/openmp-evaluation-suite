@@ -28,11 +28,7 @@ configure_toolchain() {
 # ------------------------------------------------------------
 # Select compiler
 # ------------------------------------------------------------
-
 CC_COMPILER="${CC:-${SELECTED_CC:-gcc}}"
-
-# This script expects CC to contain one executable name/path.
-# For wrappers such as "ccache gcc", use a wrapper executable.
 
 if ! command -v "$CC_COMPILER" >/dev/null 2>&1; then
     error "Compiler not found: $CC_COMPILER"
@@ -115,10 +111,6 @@ case "$COMPILER_FAMILY" in
 esac
 
 # Environment overrides are useful for non-standard toolchains.
-#
-# Note: these variables are whitespace-separated flag lists.
-# Paths containing spaces are not supported by this simple parser.
-
 if [[ -n "${OPENMP_CFLAGS+x}" ]]; then
     read -r -a OPENMP_CFLAGS_ARRAY <<< "$OPENMP_CFLAGS"
 else

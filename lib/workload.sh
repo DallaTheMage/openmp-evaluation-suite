@@ -29,8 +29,6 @@ select_workload() {
 # ---------------------------------------------------------------------------
 
 # Use a conservative data budget (25% of currently available RAM).
-# The estimate reserves 64 bytes per logical element for the data arrays used
-# by the benchmark. Derive all workload sizes from this same budget.
 BUDGET_BYTES=$(( AVAILABLE_MEM_MIB * 1024 * 1024 / 4 ))
 BUDGET_ELEMENTS=$(( BUDGET_BYTES / 64 ))
 
@@ -72,8 +70,6 @@ fi
 
 # Keep proportional workloads valid for the largest configured thread count:
 # (2^SIZE_PER_THREAD_LOG2) * LOGICAL_CORES must fit in the original buffer and budget.
-# Choose the largest power of two that satisfies this constraint; there is no
-# arbitrary minimum or fixed initial workload size.
 per_thread_limit=$(( (1 << MAX_PROBLEM_SIZE) / LOGICAL_CORES ))
 if (( per_thread_limit < 1 )); then
     printf '[ERROR] Memory budget cannot accommodate one element per thread.\n' >&2
