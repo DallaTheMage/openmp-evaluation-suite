@@ -35,9 +35,7 @@
 #include "core/TestPlan.h"
 
 #if OPENMP_HAS_2_0
-/* ============================================================================
-- VIEW_1D
-- ========================================================================== */
+
 KernelStatus kernel_1d_master(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,

@@ -36,9 +36,7 @@
 
 #if OPENMP_HAS_NATIVE_SCAN
 /* inscan belongs to the loop; OpenMP forbids a schedule clause on this loop. */
-/* ============================================================================
- * VIEW_1D
- * ========================================================================== */
+
 KernelStatus kernel_1d_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -109,9 +107,7 @@ KernelStatus kernel_2d_native_scan(DataView *view,
 }
 
 
-/* ============================================================================
- * VIEW_3D
- * ========================================================================== */
+
 KernelStatus kernel_3d_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -147,9 +143,7 @@ KernelStatus kernel_3d_native_scan(DataView *view,
 }
 
 
-/* ============================================================================
- * VIEW_AOS
- * ========================================================================== */
+
 
 KernelStatus kernel_aos_native_scan(DataView *view,
     const TestCase *test_case,
@@ -184,9 +178,7 @@ KernelStatus kernel_aos_native_scan(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-/* ============================================================================
- * VIEW_SOA
- * ========================================================================== */
+
 KernelStatus kernel_soa_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -221,9 +213,7 @@ KernelStatus kernel_soa_native_scan(DataView *view,
 }
 
 
-/* ============================================================================
- * VIEW_AOSOA
- * ========================================================================== */
+
 KernelStatus kernel_aosoa_native_scan(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,

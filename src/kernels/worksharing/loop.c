@@ -36,9 +36,7 @@
 #include "kernels/common/Slowdown.h"
 
 #if OPENMP_HAS_2_0
-/* ============================================================================
-- VIEW_1D
-- ========================================================================== */
+
 KernelStatus kernel_1d_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -101,9 +99,7 @@ KernelStatus kernel_2d_loop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_3D
-- ========================================================================== */
+
 KernelStatus kernel_3d_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -140,9 +136,7 @@ KernelStatus kernel_3d_loop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_AOS
-- ========================================================================== */
+
 KernelStatus kernel_aos_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -176,32 +170,34 @@ KernelStatus kernel_aos_loop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_SOA
-- ========================================================================== */
+
 KernelStatus kernel_soa_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
     const uint32_t num_threads = test_case->num_threads;
-    const uint64_t chunk       = test_case->chunk_size;
-    double *restrict pool      = view->buffer->pool;
-    const uint64_t num_elems   = view->meta.soa.field_length;
-    const uint64_t num_fields  = view->meta.soa.num_fields;
+    const uint64_t chunk = test_case->chunk_size;
+    double *restrict pool = view->buffer->pool;
+    const uint64_t num_elems = view->meta.soa.field_length;
+    const uint64_t num_fields = view->meta.soa.num_fields;
+
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel for \
+    #pragma omp parallel \
         default(none) \
         num_threads(num_threads) \
-        schedule(CHOSEN_SCHEDULE, chunk) \
         shared(chunk, num_elems, num_fields, pool)
-    for (uint64_t f = 0; f < num_fields; ++f) {
-        const uint64_t field_offset = f * num_elems;
-        for (uint64_t i = 0; i < num_elems; ++i) {
-            pool[field_offset + i] = pool[field_offset + i] * 2.0 + 1.0;
-            SLOWDOWN_AFTER_UPDATE(field_offset + i);
+    {
+        for (uint64_t f = 0; f < num_fields; ++f) {
+            const uint64_t field_offset = f * num_elems;
+            #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
+            for (uint64_t i = 0; i < num_elems; ++i) {
+                const uint64_t offset = field_offset + i;
+                pool[offset] = pool[offset] * 2.0 + 1.0;
+                SLOWDOWN_AFTER_UPDATE(offset);
+            }
         }
     }
 
@@ -212,9 +208,6 @@ KernelStatus kernel_soa_loop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_AOSOA
-- ========================================================================== */
 KernelStatus kernel_aosoa_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -243,44 +236,6 @@ KernelStatus kernel_aosoa_loop(DataView *view,
             for (uint64_t v = 0; v < vl; ++v) {
                 pool[field_base + v] = pool[field_base + v] * 2.0 + 1.0;
                 SLOWDOWN_AFTER_UPDATE(field_base + v);
-            }
-        }
-    }
-
-    if (profiler_stop(profiler, metric) != 0) {
-        return KERNEL_STATUS_PROFILER_FAILURE;
-    }
-    return KERNEL_STATUS_OK;
-}
-
-
-/* Diagnostic variant: parallelize the inner element dimension of SoA. */
-KernelStatus kernel_soa_loop_inner(DataView *view,
-    const TestCase *test_case,
-    Profiler *profiler,
-    PerformanceMetric *metric) {
-    const uint32_t num_threads = test_case->num_threads;
-    const uint64_t chunk = test_case->chunk_size;
-    double *restrict pool = view->buffer->pool;
-    const uint64_t num_elems = view->meta.soa.field_length;
-    const uint64_t num_fields = view->meta.soa.num_fields;
-
-    if (profiler_start(profiler) != 0) {
-        return KERNEL_STATUS_PROFILER_FAILURE;
-    }
-
-    #pragma omp parallel \
-        default(none) \
-        num_threads(num_threads) \
-        shared(chunk, num_elems, num_fields, pool)
-    {
-        for (uint64_t f = 0; f < num_fields; ++f) {
-            const uint64_t field_offset = f * num_elems;
-            #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-            for (uint64_t i = 0; i < num_elems; ++i) {
-                const uint64_t offset = field_offset + i;
-                pool[offset] = pool[offset] * 2.0 + 1.0;
-                SLOWDOWN_AFTER_UPDATE(offset);
             }
         }
     }

@@ -36,9 +36,7 @@
 #include "kernels/common/Slowdown.h"
 
 #if OPENMP_HAS_TASKLOOP
-/* ============================================================================
-- VIEW_1D
-- ========================================================================== */
+
 KernelStatus kernel_1d_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -117,9 +115,7 @@ KernelStatus kernel_2d_taskloop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_3D
-- ========================================================================== */
+
 KernelStatus kernel_3d_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -164,9 +160,7 @@ KernelStatus kernel_3d_taskloop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_AOS
-- ========================================================================== */
+
 KernelStatus kernel_aos_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -208,9 +202,7 @@ KernelStatus kernel_aos_taskloop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_SOA
-- ========================================================================== */
+
 KernelStatus kernel_soa_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -252,9 +244,7 @@ KernelStatus kernel_soa_taskloop(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_AOSOA
-- ========================================================================== */
+
 KernelStatus kernel_aosoa_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,

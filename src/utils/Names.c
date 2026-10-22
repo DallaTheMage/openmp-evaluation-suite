@@ -51,10 +51,6 @@ const char *utils_kernel_type_name(KernelType type) {
     switch (type) {
         case KERNEL_LOOP:
             return "Loop";
-        case KERNEL_LOOP_SOA_INNER:
-            return "Loop SoA Inner";
-        case KERNEL_REDUCTION_SOA_INNER:
-            return "Reduction SoA Inner";
         case KERNEL_COLLAPSE:
             return "Collapse";
         case KERNEL_SECTIONS:

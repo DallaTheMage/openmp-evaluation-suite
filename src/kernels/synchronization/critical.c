@@ -35,9 +35,7 @@
 #include "core/TestPlan.h"
 
 #if OPENMP_HAS_2_0
-/* ============================================================================
-- VIEW_1D
-- ========================================================================== */
+
 KernelStatus kernel_1d_critical(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -107,9 +105,7 @@ KernelStatus kernel_2d_critical(DataView *view,
 }
 
 
-/* ============================================================================
-- VIEW_3D
-- ========================================================================== */
+
 KernelStatus kernel_3d_critical(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,

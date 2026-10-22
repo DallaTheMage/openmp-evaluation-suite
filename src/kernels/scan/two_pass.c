@@ -180,9 +180,7 @@ static KernelStatus run_twopass_omp(
     return KERNEL_STATUS_OK;
 }
 
-/* ============================================================================
- * VIEW_1D
- * ========================================================================== */
+
 
 KernelStatus kernel_1d_two_pass_scan(
     DataView *view,
@@ -219,9 +217,7 @@ KernelStatus kernel_2d_two_pass_scan(
     );
 }
 
-/* ============================================================================
- * VIEW_3D
- * ========================================================================== */
+
 
 KernelStatus kernel_3d_two_pass_scan(
     DataView *view,
@@ -242,9 +238,7 @@ KernelStatus kernel_3d_two_pass_scan(
     );
 }
 
-/* ============================================================================
- * VIEW_AOS
- * ========================================================================== */
+
 
 KernelStatus kernel_aos_two_pass_scan(
     DataView *view,
@@ -265,9 +259,7 @@ KernelStatus kernel_aos_two_pass_scan(
     );
 }
 
-/* ============================================================================
- * VIEW_SOA
- * ========================================================================== */
+
 
 KernelStatus kernel_soa_two_pass_scan(
     DataView *view,
@@ -287,9 +279,7 @@ KernelStatus kernel_soa_two_pass_scan(
     );
 }
 
-/* ============================================================================
- * VIEW_AOSOA
- * ========================================================================== */
+
 
 KernelStatus kernel_aosoa_two_pass_scan(
     DataView *view,

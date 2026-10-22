@@ -35,9 +35,7 @@
 #include "core/TestPlan.h"
 
 #if OPENMP_HAS_3_1
-/* ============================================================================
- * VIEW_1D
- * ========================================================================== */
+
 KernelStatus kernel_1d_atomic(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -101,9 +99,7 @@ KernelStatus kernel_2d_atomic(DataView *view,
 }
 
 
-/* ============================================================================
- * VIEW_3D
- * ========================================================================== */
+
 KernelStatus kernel_3d_atomic(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,

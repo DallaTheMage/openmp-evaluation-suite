@@ -36,9 +36,7 @@
 #include "kernels/common/Slowdown.h"
 
 #if OPENMP_HAS_2_0
-/* ============================================================================
-- VIEW_1D
-- ========================================================================== */
+
 KernelStatus kernel_1d_sections(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -82,7 +80,6 @@ KernelStatus kernel_1d_sections(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-/* VIEW_2D */
 KernelStatus kernel_2d_sections(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
