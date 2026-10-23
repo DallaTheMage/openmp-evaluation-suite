@@ -88,8 +88,7 @@ int write_scaling_strong(
             for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
                 const TestCase *scaled_case   = &group->cases.data[case_index];
                 const TestCase *baseline_case = find_baseline_case(group, scaled_case);
-                if (baseline_case != NULL &&
-                    scaled_case->num_threads != baseline_case->num_threads) {
+                if (baseline_case != NULL) {
                     const AggregatedSample *scaled_sample = find_aggregated_sample(
                                                                 aggregated,
                                                                 aggregated_count,
@@ -170,9 +169,18 @@ static int find_weak_baseline(
                 if (group->kernel == scaled_group->kernel) {
                     for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
                         const TestCase *candidate = &group->cases.data[case_index];
-                        if (candidate->chunk_size == scaled_case->chunk_size &&
-                            candidate->num_threads == 1U &&
-                            scaled_case->num_threads > 1U) {
+                        const uint64_t baseline_work = set->view.window.size;
+                        const uint64_t scaled_work =
+                            plan->data[scaled_set_index].view.window.size;
+
+                        if (candidate->chunk_size == scaled_case->chunk_size
+                            && candidate->num_threads == 1U
+                            && scaled_case->num_threads > 1U
+                            && baseline_work > UINT64_C(0)
+                            && scaled_work > UINT64_C(0)
+                            && scaled_work % baseline_work == UINT64_C(0)
+                            && scaled_work / baseline_work == scaled_case->num_threads) {
+
                             *baseline_set_index = set_index;
                             *baseline_case = candidate;
                             return 1;
@@ -206,67 +214,71 @@ int write_scaling_weak(
         for (size_t group_index = 0U; group_index < scaled_set->kernels.count; ++group_index) {
             const KernelTestGroup *scaled_group = &scaled_set->kernels.data[group_index];
             for (size_t case_index = 0U; case_index < scaled_group->cases.count; ++case_index) {
-                const TestCase *scaled_case   = &scaled_group->cases.data[case_index];
+                const TestCase *scaled_case = &scaled_group->cases.data[case_index];
                 const TestCase *baseline_case = NULL;
-                size_t baseline_set_index = 0U;
-                if (find_weak_baseline(
-                        plan,
-                        set_index,
-                        scaled_group,
-                        scaled_case,
-                        &baseline_set_index,
-                        &baseline_case)) {
-
-                    const TestSet *baseline_set = &plan->data[baseline_set_index];
-                    const AggregatedSample *scaled_sample   = find_aggregated_sample(
-                                                                aggregated,
-                                                                aggregated_count,
-                                                                scaled_set->uid,
-                                                                scaled_case->uid,
-                                                                scaled_group->kernel
-                                                            );
-                    const AggregatedSample *baseline_sample = find_aggregated_sample(
-                                                                aggregated,
-                                                                aggregated_count,
-                                                                baseline_set->uid,
-                                                                baseline_case->uid,
-                                                                scaled_group->kernel
-                                                            );
-                    ScalingMetrics metrics;
-
-                    if (scaled_sample != NULL &&
-                        baseline_sample != NULL &&
-                        analyzer_compute_weak_scaling(
-                            baseline_sample,
-                            baseline_case,
-                            baseline_set->view.window.size,
-                            scaled_sample,
+                size_t baseline_set_index = set_index;
+                if (scaled_case->num_threads == 1U) {
+                    baseline_case = scaled_case;
+                } else {
+                    if (!find_weak_baseline(
+                            plan,
+                            set_index,
+                            scaled_group,
                             scaled_case,
-                            scaled_set->view.window.size,
-                            &metrics)) {
+                            &baseline_set_index,
+                            &baseline_case)) {
+                        continue;
+                    }
+                }
+                const TestSet *baseline_set = &plan->data[baseline_set_index];
+                const AggregatedSample *scaled_sample   = find_aggregated_sample(
+                                                            aggregated,
+                                                            aggregated_count,
+                                                            scaled_set->uid,
+                                                            scaled_case->uid,
+                                                            scaled_group->kernel
+                                                        );
+                const AggregatedSample *baseline_sample = find_aggregated_sample(
+                                                            aggregated,
+                                                            aggregated_count,
+                                                            baseline_set->uid,
+                                                            baseline_case->uid,
+                                                            scaled_group->kernel
+                                                        );
+                ScalingMetrics metrics;
 
-                        if (fprintf(
-                                file,
-                                "weak,%llu,%llu,%s,%llu,%llu,%s,%llu,%u,%u,"
-                                "%.17g,%.17g,%.17g,%.17g,%.17g,%.17g\n",
-                                (unsigned long long) baseline_set->uid,
-                                (unsigned long long) scaled_set->uid,
-                                utils_view_type_name(scaled_set->view.type),
-                                (unsigned long long) baseline_set->view.window.size,
-                                (unsigned long long) scaled_set->view.window.size,
-                                utils_kernel_type_name(scaled_group->kernel),
-                                (unsigned long long) scaled_case->chunk_size,
-                                baseline_case->num_threads,
-                                scaled_case->num_threads,
-                                baseline_sample->wall_time_sec.mean,
-                                scaled_sample->wall_time_sec.mean,
-                                (double) scaled_set->view.window.size /
-                                    (double) baseline_set->view.window.size,
-                                metrics.speedup,
-                                metrics.efficiency,
-                                metrics.overhead_sec) < 0) {
-                            return -1;
-                        }
+                if (scaled_sample != NULL &&
+                    baseline_sample != NULL &&
+                    analyzer_compute_weak_scaling(
+                        baseline_sample,
+                        baseline_case,
+                        baseline_set->view.window.size,
+                        scaled_sample,
+                        scaled_case,
+                        scaled_set->view.window.size,
+                        &metrics)) {
+
+                    if (fprintf(
+                            file,
+                            "weak,%llu,%llu,%s,%llu,%llu,%s,%llu,%u,%u,"
+                            "%.17g,%.17g,%.17g,%.17g,%.17g,%.17g\n",
+                            (unsigned long long) baseline_set->uid,
+                            (unsigned long long) scaled_set->uid,
+                            utils_view_type_name(scaled_set->view.type),
+                            (unsigned long long) baseline_set->view.window.size,
+                            (unsigned long long) scaled_set->view.window.size,
+                            utils_kernel_type_name(scaled_group->kernel),
+                            (unsigned long long) scaled_case->chunk_size,
+                            baseline_case->num_threads,
+                            scaled_case->num_threads,
+                            baseline_sample->wall_time_sec.mean,
+                            scaled_sample->wall_time_sec.mean,
+                            (double) scaled_set->view.window.size /
+                                (double) baseline_set->view.window.size,
+                            metrics.speedup,
+                            metrics.efficiency,
+                            metrics.overhead_sec) < 0) {
+                        return -1;
                     }
                 }
             }

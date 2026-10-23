@@ -212,6 +212,7 @@ bool analyzer_compute_scaling(
     double baseline_time;
     double scaled_time;
     double thread_ratio;
+    ScalingMetrics metrics;
 
     if (baseline == NULL
         || baseline_point == NULL
@@ -226,7 +227,7 @@ bool analyzer_compute_scaling(
         || (baseline->test_case_id != baseline_point->uid)
         || (scaled->test_case_id != scaled_point->uid)
         || (baseline_point->num_threads != 1U)
-        || (scaled_point->num_threads <= 1U)) {
+        || (scaled_point->num_threads == 0U)) {
         return false;
     }
 
@@ -240,13 +241,30 @@ bool analyzer_compute_scaling(
         return false;
     }
 
+    if (scaled_point->num_threads == 1U) {
+        metrics.speedup      = 1.0;
+        metrics.efficiency   = 1.0;
+        metrics.overhead_sec = 0.0;
+
+        *out_metrics = metrics;
+        return true;
+    }
+
     thread_ratio = (double)scaled_point->num_threads / (double)baseline_point->num_threads;
     if (thread_ratio <= 0.0) {
         return false;
     }
-    out_metrics->speedup      = baseline_time / scaled_time;
-    out_metrics->efficiency   = out_metrics->speedup / thread_ratio;
-    out_metrics->overhead_sec = scaled_time - (baseline_time / thread_ratio);
+    metrics.speedup      = baseline_time / scaled_time;
+    metrics.efficiency   = metrics.speedup / thread_ratio;
+    metrics.overhead_sec = scaled_time - (baseline_time / thread_ratio);
+
+    if (!isfinite(metrics.speedup)
+        || !isfinite(metrics.efficiency)
+        || !isfinite(metrics.overhead_sec)) {
+        return false;
+    }
+
+    *out_metrics = metrics;
     return true;
 }
 
@@ -261,6 +279,7 @@ bool analyzer_compute_weak_scaling(
     const double baseline_time = (baseline != NULL) ? baseline->wall_time_sec.mean : 0.0;
     const double scaled_time   = (scaled != NULL) ? scaled->wall_time_sec.mean : 0.0;
     double work_ratio;
+    ScalingMetrics metrics;
 
     if ((baseline == NULL)
         || (baseline_point == NULL)
@@ -271,8 +290,9 @@ bool analyzer_compute_weak_scaling(
         || (scaled_work == UINT64_C(0))
         || (baseline_point->num_threads != 1U)
         || (scaled_point->num_threads == 0U)
-        || (scaled_point->num_threads <= baseline_point->num_threads)
         || (baseline->kernel != scaled->kernel)
+        || (baseline->test_case_id != baseline_point->uid)
+        || (scaled->test_case_id != scaled_point->uid)
         || !isfinite(baseline_time)
         || !isfinite(scaled_time)
         || (baseline_time <= 0.0)
@@ -280,12 +300,33 @@ bool analyzer_compute_weak_scaling(
         return false;
     }
 
+    if (scaled_point->num_threads == 1U) {
+        if (baseline_work != scaled_work) {
+            return false;
+        }
+
+        metrics.speedup      = 1.0;
+        metrics.efficiency   = 1.0;
+        metrics.overhead_sec = 0.0;
+
+        *out_metrics = metrics;
+        return true;
+    }
+
     work_ratio = (double)scaled_work / (double)baseline_work;
-    if (work_ratio <= 0.0) {
+    if (!isfinite(work_ratio) || (work_ratio <= 0.0)) {
         return false;
     }
-    out_metrics->efficiency   = baseline_time / scaled_time;
-    out_metrics->speedup      = work_ratio * out_metrics->efficiency;
-    out_metrics->overhead_sec = scaled_time - baseline_time;
+    metrics.efficiency   = baseline_time / scaled_time;
+    metrics.speedup      = work_ratio * metrics.efficiency;
+    metrics.overhead_sec = scaled_time - baseline_time;
+
+    if (!isfinite(metrics.speedup)
+        || !isfinite(metrics.efficiency)
+        || !isfinite(metrics.overhead_sec)) {
+        return false;
+    }
+
+    *out_metrics = metrics;
     return true;
 }

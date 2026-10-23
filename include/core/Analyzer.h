@@ -155,6 +155,12 @@ typedef enum ScalingMode {
  * For weak scaling, speedup is a work-normalized speedup and efficiency is
  * the baseline time divided by the scaled time. This keeps efficiency equal
  * to one for ideal weak scaling while still exposing a normalized speedup.
+ *
+ * @note A single-thread baseline compared with itself is normalized to speedup = 1,
+ * efficiency = 1, and overhead_sec = 0.
+ *
+ * This represents a reference point rather than an
+ * independent experimental measurement.
  */
 typedef struct ScalingMetrics {
     double speedup;
