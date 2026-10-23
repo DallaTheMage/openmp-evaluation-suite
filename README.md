@@ -153,7 +153,7 @@ Its conservative memory budget is approximately **25% of detected available RAM*
 | `CACHE_EVICTION_MULTIPLIER` | Eviction buffer size relative to LLC |
 | `CACHE_EVICTION_STRIDE_BYTES` | Access stride within the eviction buffer |
 | `ENABLE_HW_COUNTERS` | Enable experimental `perf_event` counters (1/0) |
-| `SLOWDOWN_FACTOR` | Legacy parameter; may be unused |
+| `SLOWDOWN_FACTOR` | Used to amplify interal kernel computation |
 
 A small example configuration for smoke testing:
 
