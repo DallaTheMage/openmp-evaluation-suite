@@ -199,7 +199,7 @@ KernelStatus kernel_1d_two_pass_scan(
     );
 }
 
-/* VIEW_2D */
+
 KernelStatus kernel_2d_two_pass_scan(
     DataView *view,
     const TestCase *test_case,

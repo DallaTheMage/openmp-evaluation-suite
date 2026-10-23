@@ -67,7 +67,7 @@ KernelStatus kernel_1d_critical(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-/* VIEW_2D */
+
 KernelStatus kernel_2d_critical(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,

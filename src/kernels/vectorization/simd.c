@@ -88,7 +88,7 @@ KernelStatus kernel_1d_simd_memory(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-/* VIEW_2D */
+
 KernelStatus kernel_2d_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -360,7 +360,7 @@ KernelStatus kernel_1d_simd_compute(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-/* VIEW_2D */
+
 KernelStatus kernel_2d_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
