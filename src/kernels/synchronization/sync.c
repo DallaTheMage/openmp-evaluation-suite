@@ -53,14 +53,14 @@ KernelStatus kernel_1d_sync(DataView *view,
         shared(pool, length, chunk)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk) nowait
-        for (uint64_t r = 0; r < length; ++r) {
+        for (uint64_t r = 0; r < length; r++) {
             pool[r] = pool[r] * 2.0 + 1.0;
         }
 
         #pragma omp barrier
 
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < length; ++r) {
+        for (uint64_t r = 0; r < length; r++) {
             pool[r] = pool[r] + 1.0;
         }
     }
@@ -88,9 +88,9 @@ KernelStatus kernel_2d_sync(DataView *view,
     #pragma omp parallel num_threads(num_threads) default(none) shared(pool, rows, cols, chunk)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk) nowait
-        for (uint64_t r = 0; r < rows; ++r) {
+        for (uint64_t r = 0; r < rows; r++) {
             const uint64_t offset = r * cols;
-            for (uint64_t c = 0; c < cols; ++c) {
+            for (uint64_t c = 0; c < cols; c++) {
                 pool[offset + c] = pool[offset + c] * 2.0 + 1.0;
             }
         }
@@ -98,9 +98,9 @@ KernelStatus kernel_2d_sync(DataView *view,
         #pragma omp barrier
 
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < rows; ++r) {
+        for (uint64_t r = 0; r < rows; r++) {
             const uint64_t offset = r * cols;
-            for (uint64_t c = 0; c < cols; ++c) {
+            for (uint64_t c = 0; c < cols; c++) {
                 pool[offset + c] = pool[offset + c] + 1.0;
             }
         }
@@ -131,10 +131,10 @@ KernelStatus kernel_3d_sync(DataView *view,
     #pragma omp parallel num_threads(num_threads) default(none) shared(pool, rows, cols, depth, chunk)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk) nowait
-        for (uint64_t r = 0; r < rows; ++r) {
-            for (uint64_t c = 0; c < cols; ++c) {
+        for (uint64_t r = 0; r < rows; r++) {
+            for (uint64_t c = 0; c < cols; c++) {
                 const uint64_t offset = (r * cols + c) * depth;
-                for (uint64_t d = 0; d < depth; ++d) {
+                for (uint64_t d = 0; d < depth; d++) {
                     pool[offset + d] = pool[offset + d] * 2.0 + 1.0;
                 }
             }
@@ -143,10 +143,10 @@ KernelStatus kernel_3d_sync(DataView *view,
         #pragma omp barrier
 
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < rows; ++r) {
-            for (uint64_t c = 0; c < cols; ++c) {
+        for (uint64_t r = 0; r < rows; r++) {
+            for (uint64_t c = 0; c < cols; c++) {
                 const uint64_t offset = (r * cols + c) * depth;
-                for (uint64_t d = 0; d < depth; ++d) {
+                for (uint64_t d = 0; d < depth; d++) {
                     pool[offset + d] = pool[offset + d] + 1.0;
                 }
             }

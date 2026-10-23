@@ -50,7 +50,7 @@ void test_plan_destroy_kernel_groups(KernelTestGroupArray *groups) {
     if (groups == NULL) {
         return;
     }
-    for (size_t i = 0U; i < groups->count; ++i) {
+    for (size_t i = 0U; i < groups->count; i++) {
         destroy_kernel_group(&groups->data[i]);
     }
     free(groups->data);
@@ -90,7 +90,7 @@ bool test_plan_max_workload(
         return false;
     }
 
-    for (size_t i = 0U; i < plan->count; ++i) {
+    for (size_t i = 0U; i < plan->count; i++) {
         const uint64_t size = plan->data[i].view.window.size;
         if (size > (uint64_t)SIZE_MAX) {
             return false;
@@ -113,7 +113,7 @@ bool test_plan_rebind_buffer(
         return false;
     }
 
-    for (size_t i = 0U; i < plan->count; ++i) {
+    for (size_t i = 0U; i < plan->count; i++) {
         const DataView *view = &plan->data[i].view;
         const uint64_t size  = view->window.size;
 
@@ -123,7 +123,7 @@ bool test_plan_rebind_buffer(
         }
     }
 
-    for (size_t i = 0U; i < plan->count; ++i) {
+    for (size_t i = 0U; i < plan->count; i++) {
         plan->data[i].view.buffer = buffer;
     }
 
@@ -138,7 +138,7 @@ bool test_plan_rebind_buffer(
  */
 void destroy_test_plan(TestPlan *plan) {
     if (plan != NULL) {
-        for (size_t i = 0U; i < plan->count; ++i) {
+        for (size_t i = 0U; i < plan->count; i++) {
             destroy_test_set(&plan->data[i]);
         }
 

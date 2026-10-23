@@ -58,7 +58,7 @@ KernelStatus kernel_1d_native_scan(DataView *view,
         num_threads(num_threads) \
         shared(pool, count) \
         reduction(inscan, +:sum)
-    for (int64_t i = 0; i < count; ++i) {
+    for (int64_t i = 0; i < count; i++) {
         sum += pool[i];
         #pragma omp scan inclusive(sum)
         pool[i] = sum;
@@ -93,7 +93,7 @@ KernelStatus kernel_2d_native_scan(DataView *view,
         num_threads(num_threads) \
         shared(pool, count) \
         reduction(inscan, +:sum)
-    for (int64_t i = 0; i < count; ++i) {
+    for (int64_t i = 0; i < count; i++) {
         sum += pool[i];
         #pragma omp scan inclusive(sum)
         pool[i] = sum;
@@ -129,7 +129,7 @@ KernelStatus kernel_3d_native_scan(DataView *view,
         num_threads(num_threads) \
         shared(pool, count) \
         reduction(inscan, +:sum)
-    for (int64_t i = 0; i < count; ++i) {
+    for (int64_t i = 0; i < count; i++) {
         sum += pool[i];
         #pragma omp scan inclusive(sum)
         pool[i] = sum;
@@ -166,7 +166,7 @@ KernelStatus kernel_aos_native_scan(DataView *view,
         num_threads(num_threads) \
         shared(pool, count) \
         reduction(inscan, +:sum)
-    for (int64_t i = 0; i < count; ++i) {
+    for (int64_t i = 0; i < count; i++) {
         sum += pool[i];
         #pragma omp scan inclusive(sum)
         pool[i] = sum;
@@ -200,7 +200,7 @@ KernelStatus kernel_soa_native_scan(DataView *view,
         num_threads(num_threads) \
         shared(pool, count) \
         reduction(inscan, +:sum)
-    for (int64_t i = 0; i < count; ++i) {
+    for (int64_t i = 0; i < count; i++) {
         sum += pool[i];
         #pragma omp scan inclusive(sum)
         pool[i] = sum;
@@ -239,7 +239,7 @@ KernelStatus kernel_aosoa_native_scan(DataView *view,
         num_threads(num_threads) \
         shared(pool, count) \
         reduction(inscan, +:sum)
-    for (int64_t i = 0; i < count; ++i) {
+    for (int64_t i = 0; i < count; i++) {
         sum += pool[i];
         #pragma omp scan inclusive(sum)
         pool[i] = sum;

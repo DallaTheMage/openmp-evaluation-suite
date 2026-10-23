@@ -54,7 +54,7 @@ KernelStatus kernel_1d_ordered(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         ordered \
         shared(pool, length, chunk, ordered_sum)
-    for (uint64_t r = 0; r < length; ++r) {
+    for (uint64_t r = 0; r < length; r++) {
         double local_sum = 0.0;
         const double value = pool[r];
         pool[r] = value * 2.0 + 1.0;
@@ -94,10 +94,10 @@ KernelStatus kernel_2d_ordered(DataView *view,
         ordered \
         default(none) \
         shared(pool, rows, cols, chunk, ordered_sum)
-    for (uint64_t r = 0; r < rows; ++r) {
+    for (uint64_t r = 0; r < rows; r++) {
         const uint64_t offset = r * cols;
         double local_sum = 0.0;
-        for (uint64_t c = 0; c < cols; ++c) {
+        for (uint64_t c = 0; c < cols; c++) {
             const double value = pool[offset + c];
             pool[offset + c] = value * 2.0 + 1.0;
             local_sum += value;

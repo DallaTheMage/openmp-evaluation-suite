@@ -57,7 +57,7 @@ KernelStatus kernel_1d_sections(DataView *view,
         {
             #pragma omp section
             {
-                for (uint64_t r = 0; r < mid; ++r) {
+                for (uint64_t r = 0; r < mid; r++) {
                     pool[r] = pool[r] * 2.0 + 1.0;
                     SLOWDOWN_AFTER_UPDATE(r);
                 }
@@ -65,7 +65,7 @@ KernelStatus kernel_1d_sections(DataView *view,
 
             #pragma omp section
             {
-                for (uint64_t r = mid; r < length; ++r) {
+                for (uint64_t r = mid; r < length; r++) {
                     pool[r] = pool[r] * 2.0 + 1.0;
                     SLOWDOWN_AFTER_UPDATE(r);
                 }
@@ -98,9 +98,9 @@ KernelStatus kernel_2d_sections(DataView *view,
         {
             #pragma omp section
             {
-                for (uint64_t r = 0; r < mid; ++r) {
+                for (uint64_t r = 0; r < mid; r++) {
                     const uint64_t offset = r * cols;
-                    for (uint64_t c = 0; c < cols; ++c) {
+                    for (uint64_t c = 0; c < cols; c++) {
                         pool[offset + c] = pool[offset + c] * 2.0 + 1.0;
                         SLOWDOWN_AFTER_UPDATE(offset + c);
                     }
@@ -109,9 +109,9 @@ KernelStatus kernel_2d_sections(DataView *view,
 
             #pragma omp section
             {
-                for (uint64_t r = mid; r < rows; ++r) {
+                for (uint64_t r = mid; r < rows; r++) {
                     const uint64_t offset = r * cols;
-                    for (uint64_t c = 0; c < cols; ++c) {
+                    for (uint64_t c = 0; c < cols; c++) {
                         pool[offset + c] = pool[offset + c] * 2.0 + 1.0;
                         SLOWDOWN_AFTER_UPDATE(offset + c);
                     }

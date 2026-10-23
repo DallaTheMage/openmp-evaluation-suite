@@ -74,7 +74,7 @@ KernelStatus kernel_1d_simd_memory(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         shared(pool, length, chunk) \
         reduction(+:sink)
-    for (uint64_t i = 0; i < length; ++i) {
+    for (uint64_t i = 0; i < length; i++) {
         sink += pool[i];
     }
 
@@ -108,10 +108,10 @@ KernelStatus kernel_2d_simd_memory(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < rows; ++r) {
+        for (uint64_t r = 0; r < rows; r++) {
             const uint64_t offset = r * cols;
             #pragma omp simd reduction(+:sink)
-            for (uint64_t c = 0; c < cols; ++c) {
+            for (uint64_t c = 0; c < cols; c++) {
                 sink += pool[offset + c];
             }
         }
@@ -151,11 +151,11 @@ KernelStatus kernel_3d_simd_memory(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < rows; ++r) {
-            for (uint64_t c = 0; c < cols; ++c) {
+        for (uint64_t r = 0; r < rows; r++) {
+            for (uint64_t c = 0; c < cols; c++) {
                 const uint64_t offset = (r * cols + c) * depth;
                 #pragma omp simd reduction(+:sink)
-                for (uint64_t d = 0; d < depth; ++d) {
+                for (uint64_t d = 0; d < depth; d++) {
                     sink += pool[offset + d];
                 }
             }
@@ -195,10 +195,10 @@ KernelStatus kernel_aos_simd_memory(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t i = 0; i < num_elems; ++i) {
+        for (uint64_t i = 0; i < num_elems; i++) {
             const uint64_t base = i * struct_size;
             #pragma omp simd reduction(+:sink)
-            for (uint64_t f = 0; f < struct_size; ++f) {
+            for (uint64_t f = 0; f < struct_size; f++) {
                 sink += pool[base + f];
             }
         }
@@ -237,10 +237,10 @@ KernelStatus kernel_soa_simd_memory(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t f = 0; f < num_fields; ++f) {
+        for (uint64_t f = 0; f < num_fields; f++) {
             const uint64_t field_offset = f * num_elems;
             #pragma omp simd reduction(+:sink)
-            for (uint64_t i = 0; i < num_elems; ++i) {
+            for (uint64_t i = 0; i < num_elems; i++) {
                 sink += pool[field_offset + i];
             }
         }
@@ -282,12 +282,12 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t t = 0; t < num_tiles; ++t) {
+        for (uint64_t t = 0; t < num_tiles; t++) {
             const uint64_t tile_base = t * tile_size;
-            for (uint64_t f = 0; f < num_fields; ++f) {
+            for (uint64_t f = 0; f < num_fields; f++) {
                 const uint64_t field_base = tile_base + f * vl;
                 #pragma omp simd reduction(+:sink)
-                for (uint64_t v = 0; v < vl; ++v) {
+                for (uint64_t v = 0; v < vl; v++) {
                     sink += pool[field_base + v];
                 }
             }
@@ -339,7 +339,7 @@ KernelStatus kernel_1d_simd_compute(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         shared(pool, length, chunk) \
         reduction(+:sink)
-    for (uint64_t i = 0; i < length; ++i) {
+    for (uint64_t i = 0; i < length; i++) {
         double x = pool[i];
         x = x * 1.000001 + 0.999999;
         x = x * 0.999999 + 1.000001;
@@ -380,10 +380,10 @@ KernelStatus kernel_2d_simd_compute(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < rows; ++r) {
+        for (uint64_t r = 0; r < rows; r++) {
             const uint64_t offset = r * cols;
             #pragma omp simd reduction(+:sink)
-            for (uint64_t c = 0; c < cols; ++c) {
+            for (uint64_t c = 0; c < cols; c++) {
                 double x = pool[offset + c];
                 x = x * 1.000001 + 0.999999;
                 x = x * 0.999999 + 1.000001;
@@ -430,11 +430,11 @@ KernelStatus kernel_3d_simd_compute(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t r = 0; r < rows; ++r) {
-            for (uint64_t c = 0; c < cols; ++c) {
+        for (uint64_t r = 0; r < rows; r++) {
+            for (uint64_t c = 0; c < cols; c++) {
                 const uint64_t offset = (r * cols + c) * depth;
                 #pragma omp simd reduction(+:sink)
-                for (uint64_t d = 0; d < depth; ++d) {
+                for (uint64_t d = 0; d < depth; d++) {
                     double x = pool[offset + d];
                     x = x * 1.000001 + 0.999999;
                     x = x * 0.999999 + 1.000001;
@@ -481,10 +481,10 @@ KernelStatus kernel_aos_simd_compute(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t i = 0; i < num_elems; ++i) {
+        for (uint64_t i = 0; i < num_elems; i++) {
             const uint64_t base = i * struct_size;
             #pragma omp simd reduction(+:sink)
-            for (uint64_t f = 0; f < struct_size; ++f) {
+            for (uint64_t f = 0; f < struct_size; f++) {
                 double x = pool[base + f];
                 x = x * 1.000001 + 0.999999;
                 x = x * 0.999999 + 1.000001;
@@ -530,10 +530,10 @@ KernelStatus kernel_soa_simd_compute(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t f = 0; f < num_fields; ++f) {
+        for (uint64_t f = 0; f < num_fields; f++) {
             const uint64_t field_offset = f * num_elems;
             #pragma omp simd reduction(+:sink)
-            for (uint64_t i = 0; i < num_elems; ++i) {
+            for (uint64_t i = 0; i < num_elems; i++) {
                 double x = pool[field_offset + i];
                 x = x * 1.000001 + 0.999999;
                 x = x * 0.999999 + 1.000001;
@@ -582,12 +582,12 @@ KernelStatus kernel_aosoa_simd_compute(DataView *view,
         reduction(+:sink)
     {
         #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-        for (uint64_t t = 0; t < num_tiles; ++t) {
+        for (uint64_t t = 0; t < num_tiles; t++) {
             const uint64_t tile_base = t * tile_size;
-            for (uint64_t f = 0; f < num_fields; ++f) {
+            for (uint64_t f = 0; f < num_fields; f++) {
                 const uint64_t field_base = tile_base + f * vl;
                 #pragma omp simd reduction(+:sink)
-                for (uint64_t v = 0; v < vl; ++v) {
+                for (uint64_t v = 0; v < vl; v++) {
                     double x = pool[field_base + v];
                     x = x * 1.000001 + 0.999999;
                     x = x * 0.999999 + 1.000001;

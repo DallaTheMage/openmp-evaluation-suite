@@ -175,7 +175,7 @@ AggregatedSample *analyzer_aggregate_samples(const RawSample *samples,size_t sam
     }
 
     group_count = 1U;
-    for (size_t i = 1U; i < sample_count; ++i) {
+    for (size_t i = 1U; i < sample_count; i++) {
         if (!analyzer_same_experiment(&samples[i - 1U], &samples[i])) {
             group_count++;
         }

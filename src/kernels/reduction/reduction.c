@@ -58,7 +58,7 @@ KernelStatus kernel_1d_reduction(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk)            \
         shared(pool, num_elems, num_threads, chunk) \
         reduction(+:sum)
-    for (i = 0; i < num_elems; ++i) {
+    for (i = 0; i < num_elems; i++) {
         sum += pool[i];
     }
 
@@ -102,9 +102,9 @@ KernelStatus kernel_2d_reduction(
         shared(pool, rows, cols, num_threads, chunk) \
         private(offset, c)                           \
         reduction(+:sum)
-    for (r = 0; r < rows; ++r) {
+    for (r = 0; r < rows; r++) {
         offset = r * cols;
-        for (c = 0; c < cols; ++c) {
+        for (c = 0; c < cols; c++) {
             sum += pool[offset + c];
         }
     }
@@ -141,10 +141,10 @@ KernelStatus kernel_3d_reduction(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         reduction(+:sum) \
         shared(chunk, cols, depth, pool, rows)
-    for (uint64_t r = 0; r < rows; ++r) {
-        for (uint64_t c = 0; c < cols; ++c) {
+    for (uint64_t r = 0; r < rows; r++) {
+        for (uint64_t c = 0; c < cols; c++) {
             const uint64_t offset = (r * cols + c) * depth;
-            for (uint64_t d = 0; d < depth; ++d) {
+            for (uint64_t d = 0; d < depth; d++) {
                 sum += pool[offset + d];
             }
         }
@@ -181,9 +181,9 @@ KernelStatus kernel_aos_reduction(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         reduction(+:sum) \
         shared(chunk, num_elems, pool, struct_size)
-    for (uint64_t i = 0; i < num_elems; ++i) {
+    for (uint64_t i = 0; i < num_elems; i++) {
         const uint64_t base = i * struct_size;
-        for (uint64_t f = 0; f < struct_size; ++f) {
+        for (uint64_t f = 0; f < struct_size; f++) {
             sum += pool[base + f];
         }
     }
@@ -221,10 +221,10 @@ KernelStatus kernel_soa_reduction(DataView *view,
         reduction(+:sum) \
         shared(chunk, num_elems, num_fields, pool)
     {
-        for (uint64_t f = 0; f < num_fields; ++f) {
+        for (uint64_t f = 0; f < num_fields; f++) {
             const uint64_t field_offset = f * num_elems;
             #pragma omp for schedule(CHOSEN_SCHEDULE, chunk)
-            for (uint64_t i = 0; i < num_elems; ++i) {
+            for (uint64_t i = 0; i < num_elems; i++) {
                 sum += pool[field_offset + i];
             }
         }
@@ -265,11 +265,11 @@ KernelStatus kernel_aosoa_reduction(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         reduction(+:sum) \
         shared(chunk, num_fields, num_tiles, pool, tile_size, vl)
-    for (uint64_t t = 0; t < num_tiles; ++t) {
+    for (uint64_t t = 0; t < num_tiles; t++) {
         const uint64_t tile_base = t * tile_size;
-        for (uint64_t f = 0; f < num_fields; ++f) {
+        for (uint64_t f = 0; f < num_fields; f++) {
             const uint64_t field_base = tile_base + f * vl;
-            for (uint64_t v = 0; v < vl; ++v) {
+            for (uint64_t v = 0; v < vl; v++) {
                 sum += pool[field_base + v];
             }
         }

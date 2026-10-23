@@ -46,7 +46,7 @@
          * microbenchmark, not a cycle-accurate CPU busy loop. */
         static inline void slowdown_work(uint64_t token) {
             volatile double value = (double)(token & UINT64_C(1023)) + 1.0;
-            for (uint64_t i = 0; i < SLOWDOWN_FACTOR; ++i) {
+            for (uint64_t i = 0; i < SLOWDOWN_FACTOR; i++) {
                 value = value * 1.0000001192092896 + 0.0000001192092896;
             }
         }

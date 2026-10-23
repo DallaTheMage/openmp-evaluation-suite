@@ -349,7 +349,7 @@ static TestPlan *build_test_plan(
         return NULL;
     }
     plan->count = set_count;
-    for (size_t i = 0U; i < size_count; ++i) {
+    for (size_t i = 0U; i < size_count; i++) {
         const uint32_t fixed_thread_count = proportional
             ? config->execution.threads.data[i]
             : 0U;
@@ -406,7 +406,7 @@ TestPlan *generate_proportional_test_plan(DataBuffer *buffer, const Configuratio
     if (sizes == NULL) {
         return NULL;
     }
-    for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+    for (size_t i = 0U; i < config->execution.threads.count; i++) {
         const uint64_t threads = (uint64_t)config->execution.threads.data[i];
         if (threads == UINT64_C(0)
             || config->derived.size_per_thread > UINT64_MAX / threads) {
@@ -439,7 +439,7 @@ TestPlan *generate_full_scale_test_plan(DataBuffer *buffer, const Configuration 
         || config->execution.window_sizes.count == 0U) {
         return NULL;
     }
-    for (size_t i = 0U; i < config->execution.window_sizes.count; ++i) {
+    for (size_t i = 0U; i < config->execution.window_sizes.count; i++) {
         const uint64_t size = config->execution.window_sizes.data[i];
         if (size == UINT64_C(0) || size > (uint64_t)buffer->element_count) {
             return NULL;

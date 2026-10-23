@@ -55,11 +55,11 @@ static int write_test_plan(FILE *file, const TestPlan *plan) {
             "kernel,test_case_id,num_threads,chunk_size\n") < 0) {
         return -1;
     }
-    for (size_t i = 0U; i < plan->count; ++i) {
+    for (size_t i = 0U; i < plan->count; i++) {
         const TestSet *set = &plan->data[i];
         for (size_t k = 0U; k < set->kernels.count; ++k) {
             const KernelTestGroup *group = &set->kernels.data[k];
-            for (size_t c = 0U; c < group->cases.count; ++c) {
+            for (size_t c = 0U; c < group->cases.count; c++) {
                 const TestCase *test_case = &group->cases.data[c];
                 if (fprintf(
                         file,
@@ -89,7 +89,7 @@ static int write_raw_samples(FILE *file, const RawSampleSet *samples) {
             "energy_dram_joules,hw_counters_valid,energy_pkg_valid,energy_dram_valid\n") < 0) {
         return -1;
     }
-    for (size_t i = 0U; i < samples->count; ++i) {
+    for (size_t i = 0U; i < samples->count; i++) {
         const RawSample *sample = &samples->samples[i];
         const PerformanceMetric *metric = &sample->metric;
         if (fprintf(
@@ -139,7 +139,7 @@ static int write_aggregated_samples(FILE *file, const AggregatedSample *samples,
             "energy_dram_joules_mean,energy_dram_joules_variance\n") < 0) {
         return -1;
     }
-    for (size_t i = 0U; i < sample_count; ++i) {
+    for (size_t i = 0U; i < sample_count; i++) {
         const AggregatedSample *sample = &samples[i];
         if (fprintf(
                 file,

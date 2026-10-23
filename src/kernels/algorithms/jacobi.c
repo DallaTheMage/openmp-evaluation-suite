@@ -45,7 +45,7 @@ static void serial_step(
     size_t rows,
     size_t cols) {
     memcpy(out, in, (rows * cols * sizeof(*out)));
-    for (size_t i = 1; (i + 1) < rows; ++i)
+    for (size_t i = 1; (i + 1) < rows; i++)
         for (size_t j = 1; (j + 1) < cols; ++j) {
             const size_t z = (i * cols) + j;
             out[z] = 0.25 * (in[z - cols] + in[z + cols] + in[z - 1] + in[z + 1]);

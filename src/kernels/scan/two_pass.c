@@ -116,7 +116,7 @@ static KernelStatus run_twopass_omp(
          */
         double acc = 0.0;
 
-        for (uint64_t i = start; i < end; ++i) {
+        for (uint64_t i = start; i < end; i++) {
             acc += pool[i];
             pool[i] = acc;
         }
@@ -145,7 +145,7 @@ static KernelStatus run_twopass_omp(
         #pragma omp single
         {
             double running = 0.0;
-            for (uint64_t t = 0U; t < nth; ++t) {
+            for (uint64_t t = 0U; t < nth; t++) {
                 const double tmp = offsets[t];
                 offsets[t]       = running;
                 running         += tmp;
@@ -162,7 +162,7 @@ static KernelStatus run_twopass_omp(
             const double thread_offset = offsets[tid];
 
             if (thread_offset != 0.0) {
-                for (uint64_t i = start; i < end; ++i) {
+                for (uint64_t i = start; i < end; i++) {
                     pool[i] += thread_offset;
                 }
             }

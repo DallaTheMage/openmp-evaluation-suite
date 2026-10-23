@@ -36,7 +36,7 @@ static const AggregatedSample *find_aggregated_sample(
     if (samples == NULL) {
         return NULL;
     }
-    for (size_t i = 0U; i < sample_count; ++i) {
+    for (size_t i = 0U; i < sample_count; i++) {
         if (samples[i].test_set_id == test_set_id &&
             samples[i].test_case_id == test_case_id &&
             samples[i].kernel == kernel) {
@@ -56,7 +56,7 @@ static const TestCase *find_baseline_case(const KernelTestGroup *group, const Te
     if (group == NULL || scaled_case == NULL) {
         return NULL;
     }
-    for (size_t i = 0U; i < group->cases.count; ++i) {
+    for (size_t i = 0U; i < group->cases.count; i++) {
         const TestCase *candidate = &group->cases.data[i];
         if (candidate->num_threads == 1U &&
             candidate->chunk_size == scaled_case->chunk_size) {

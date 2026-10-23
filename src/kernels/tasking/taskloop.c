@@ -59,7 +59,7 @@ KernelStatus kernel_1d_taskloop(DataView *view,
                 default(none) \
                 grainsize(chunk) \
                 shared(pool, length)
-            for (uint64_t r = 0; r < length; ++r) {
+            for (uint64_t r = 0; r < length; r++) {
                 pool[r] = pool[r] * 2.0 + 1.0;
                 SLOWDOWN_AFTER_UPDATE(r);
             }
@@ -97,9 +97,9 @@ KernelStatus kernel_2d_taskloop(DataView *view,
                 default(none) \
                 grainsize(chunk) \
                 shared(rows, cols, pool)
-            for (uint64_t r = 0; r < rows; ++r) {
+            for (uint64_t r = 0; r < rows; r++) {
                 const uint64_t offset = r * cols;
-                for (uint64_t c = 0; c < cols; ++c) {
+                for (uint64_t c = 0; c < cols; c++) {
                     pool[offset + c] = pool[offset + c] * 2.0 + 1.0;
                     SLOWDOWN_AFTER_UPDATE(offset + c);
                 }
@@ -140,10 +140,10 @@ KernelStatus kernel_3d_taskloop(DataView *view,
                 default(none) \
                 grainsize(chunk) \
                 shared(rows, cols, depth, pool)
-            for (uint64_t r = 0; r < rows; ++r) {
-                for (uint64_t c = 0; c < cols; ++c) {
+            for (uint64_t r = 0; r < rows; r++) {
+                for (uint64_t c = 0; c < cols; c++) {
                     const uint64_t offset = (r * cols + c) * depth;
-                    for (uint64_t d = 0; d < depth; ++d) {
+                    for (uint64_t d = 0; d < depth; d++) {
                         pool[offset + d] = pool[offset + d] * 2.0 + 1.0;
                         SLOWDOWN_AFTER_UPDATE(offset + d);
                     }
@@ -184,9 +184,9 @@ KernelStatus kernel_aos_taskloop(DataView *view,
                 default(none) \
                 grainsize(chunk) \
                 shared(pool, num_elems, struct_size)
-            for (uint64_t i = 0; i < num_elems; ++i) {
+            for (uint64_t i = 0; i < num_elems; i++) {
                 const uint64_t base = i * struct_size;
-                for (uint64_t f = 0; f < struct_size; ++f) {
+                for (uint64_t f = 0; f < struct_size; f++) {
                     pool[base + f] = pool[base + f] * 2.0 + 1.0;
                     SLOWDOWN_AFTER_UPDATE(base + f);
                 }
@@ -226,9 +226,9 @@ KernelStatus kernel_soa_taskloop(DataView *view,
                 default(none) \
                 grainsize(chunk) \
                 shared(num_elems, num_fields, pool)
-            for (uint64_t f = 0; f < num_fields; ++f) {
+            for (uint64_t f = 0; f < num_fields; f++) {
                 const uint64_t field_offset = f * num_elems;
-                for (uint64_t i = 0; i < num_elems; ++i) {
+                for (uint64_t i = 0; i < num_elems; i++) {
                     pool[field_offset + i] = pool[field_offset + i] * 2.0 + 1.0;
                     SLOWDOWN_AFTER_UPDATE(field_offset + i);
                 }
@@ -271,11 +271,11 @@ KernelStatus kernel_aosoa_taskloop(DataView *view,
                 default(none) \
                 grainsize(chunk) \
                 shared(num_fields, num_tiles, pool, tile_size, vl)
-            for (uint64_t t = 0; t < num_tiles; ++t) {
+            for (uint64_t t = 0; t < num_tiles; t++) {
                 const uint64_t tile_base = t * tile_size;
-                for (uint64_t f = 0; f < num_fields; ++f) {
+                for (uint64_t f = 0; f < num_fields; f++) {
                     const uint64_t field_base = tile_base + f * vl;
-                    for (uint64_t v = 0; v < vl; ++v) {
+                    for (uint64_t v = 0; v < vl; v++) {
                         pool[field_base + v] = pool[field_base + v] * 2.0 + 1.0;
                         SLOWDOWN_AFTER_UPDATE(field_base + v);
                     }

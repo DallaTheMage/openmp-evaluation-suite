@@ -115,7 +115,7 @@ static int materialize_window_sizes(ConfigU64List *destination) {
     if (data == NULL) {
         return 0;
     }
-    for (size_t i = 0U; i < count; ++i) {
+    for (size_t i = 0U; i < count; i++) {
         const uint64_t window_size = window_size_from_log2(CONFIG_WINDOW_LOG2[i]);
         if (window_size == UINT64_C(0)) {
             free(data);

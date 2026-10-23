@@ -55,8 +55,8 @@ KernelStatus kernel_2d_collapse(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         collapse(2) \
         shared(chunk, cols, pool, rows)
-    for (uint64_t r = 0; r < rows; ++r) {
-        for (uint64_t c = 0; c < cols; ++c) {
+    for (uint64_t r = 0; r < rows; r++) {
+        for (uint64_t c = 0; c < cols; c++) {
             const uint64_t offset = r * cols + c;
             pool[offset] = pool[offset] * 2.0 + 1.0;
             SLOWDOWN_AFTER_UPDATE(offset);
@@ -89,9 +89,9 @@ KernelStatus kernel_3d_collapse(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         collapse(3) \
         shared(chunk, cols, depth, pool, rows)
-    for (uint64_t r = 0; r < rows; ++r) {
-        for (uint64_t c = 0; c < cols; ++c) {
-            for (uint64_t d = 0; d < depth; ++d) {
+    for (uint64_t r = 0; r < rows; r++) {
+        for (uint64_t c = 0; c < cols; c++) {
+            for (uint64_t d = 0; d < depth; d++) {
                 const uint64_t offset = (r * cols + c) * depth + d;
                 pool[offset] = pool[offset] * 2.0 + 1.0;
                 SLOWDOWN_AFTER_UPDATE(offset);

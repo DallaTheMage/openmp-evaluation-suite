@@ -59,7 +59,7 @@ int cache_eviction_init(
     ctx->size_bytes   = size_bytes;
     ctx->stride_bytes = stride_bytes;
 
-    for (i = 0U; i < size_bytes; ++i) {
+    for (i = 0U; i < size_bytes; i++) {
         ctx->buffer[i] =
             (unsigned char)(((i * 13U) + 7U) & 255U);
     }

@@ -53,7 +53,7 @@ KernelStatus kernel_1d_atomic(DataView *view,
         num_threads(num_threads) \
         schedule(CHOSEN_SCHEDULE, chunk) \
         shared(pool, length, chunk, sum)
-    for (uint64_t r = 0; r < length; ++r) {
+    for (uint64_t r = 0; r < length; r++) {
         #pragma omp atomic update
         sum += pool[r];
     }
@@ -83,9 +83,9 @@ KernelStatus kernel_2d_atomic(DataView *view,
         num_threads(num_threads) \
         schedule(CHOSEN_SCHEDULE, chunk) \
         default(none) shared(pool, rows, cols, chunk, sum)
-    for (uint64_t r = 0; r < rows; ++r) {
+    for (uint64_t r = 0; r < rows; r++) {
         const uint64_t offset = r * cols;
-        for (uint64_t c = 0; c < cols; ++c) {
+        for (uint64_t c = 0; c < cols; c++) {
             #pragma omp atomic update
             sum += pool[offset + c];
         }
@@ -119,10 +119,10 @@ KernelStatus kernel_3d_atomic(DataView *view,
         schedule(CHOSEN_SCHEDULE, chunk) \
         default(none) \
         shared(pool, rows, cols, depth, chunk, sum)
-    for (uint64_t r = 0; r < rows; ++r) {
-        for (uint64_t c = 0; c < cols; ++c) {
+    for (uint64_t r = 0; r < rows; r++) {
+        for (uint64_t c = 0; c < cols; c++) {
             const uint64_t offset = (r * cols + c) * depth;
-            for (uint64_t d = 0; d < depth; ++d) {
+            for (uint64_t d = 0; d < depth; d++) {
                 #pragma omp atomic update
                 sum += pool[offset + d];
             }

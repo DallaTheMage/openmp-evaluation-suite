@@ -151,7 +151,7 @@ int memory_manager_restore_window(
     }
 
     if (element_count < MEMORY_MANAGER_PARALLEL_THRESHOLD_ELEMENTS) {
-        for (i = 0U; i < element_count; ++i) {
+        for (i = 0U; i < element_count; i++) {
             manager->working->pool[i] = manager->original->pool[source_offset + i];
         }
     } else {
@@ -159,7 +159,7 @@ int memory_manager_restore_window(
         const size_t count = element_count;
 
         #pragma omp parallel for schedule(static) num_threads(copy_threads)
-        for (i = 0U; i < count; ++i) {
+        for (i = 0U; i < count; i++) {
             manager->working->pool[i] = manager->original->pool[source_offset + i];
         }
     }
