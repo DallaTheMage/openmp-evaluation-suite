@@ -23,7 +23,7 @@
 
 /**
  * @file Names.c
- * @brief Human-readable names for views and kernels.
+ * @brief Enum value to string conversion for views type and kernels type.
  */
 
 #include "utils/Names.h"
@@ -84,7 +84,7 @@ const char *utils_kernel_type_name(KernelType type) {
         case KERNEL_CG:
             return "Conjugate Gradient";
         case KERNEL_JACOBI:
-            return "Jacobi 2D";
+            return "Jacobi";
         case KERNEL_TWO_PASS_SCAN:
             return "Two-Pass Scan";
         default:

@@ -28,13 +28,11 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-
 #include <omp.h>
 
 #include "data/Generator.h"
 #include "data/MemoryManager.h"
 
-/* Keep the copy policy explicit and independent from benchmark test cases. */
 #define MEMORY_MANAGER_PARALLEL_THRESHOLD_ELEMENTS ((size_t)262144U)
 #define MEMORY_MANAGER_MAX_COPY_THREADS 8
 
@@ -45,9 +43,6 @@ struct MemoryManager {
 
 /**
  * @brief Determine a bounded thread count for memory preparation.
- *
- * This policy uses the processors available to the OpenMP runtime, capped at
- * a fixed limit. It does not inspect or alter the benchmark's test thread list.
  *
  * @return A positive thread count no greater than the configured internal cap.
  */

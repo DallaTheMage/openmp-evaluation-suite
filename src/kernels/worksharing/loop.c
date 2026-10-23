@@ -25,8 +25,7 @@
  * @file loop.c
  * @brief OpenMP worksharing execution for the loop construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/worksharing/loop.h"

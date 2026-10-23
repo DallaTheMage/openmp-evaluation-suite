@@ -92,7 +92,6 @@ void statistics_init(StatisticsAccumulator *accumulator);
  * @brief Add one observation to an accumulator.
  *
  * The update is performed incrementally using Welford's algorithm.
- * No previous observations need to be retained.
  *
  * @param accumulator Accumulator receiving the observation.
  * @param value Observation to add.
@@ -105,11 +104,7 @@ void statistics_init(StatisticsAccumulator *accumulator);
  */
 void statistics_update(StatisticsAccumulator *accumulator, double value);
 
-/**
- * @brief Finalized statistical results.
- *
- * It represents the statistical summary of one scalar quantity.
- */
+/** @brief Finalized statistical results. */
 typedef struct StatisticsResult {
     double min;
     double max;

@@ -23,17 +23,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "core/TestPlan.h"
 #include "core/internal/TestPlanLifecycle.h"
-
-/* KernelFunc uses these opaque pointer types in KernelRegistry.h. */
-typedef struct Profiler Profiler;
-typedef struct PerformanceMetric PerformanceMetric;
 #include "kernels/KernelRegistry.h"
 
-/* ========================================================================= */
-/* Internal helpers                                                          */
-/* ========================================================================= */
+typedef struct Profiler Profiler;
+typedef struct PerformanceMetric PerformanceMetric;
 
 /**
  * @brief Convert a configured shape to a DataView creation descriptor.
@@ -161,9 +157,6 @@ static bool initialize_test_set_view(
 /**
  * @brief Populate one kernel group for a test set.
  *
- * When fixed_thread_count is zero, all configured thread counts are used.
- * Otherwise only the requested thread count is inserted into the cases.
- *
  * @param test_set Destination test set.
  * @param config Benchmark configuration.
  * @param kernel_type Kernel type to populate.
@@ -189,7 +182,7 @@ static bool populate_kernel_group(
     group->kernel = kernel_type;
 
     if (fixed_thread_count != 0U) {
-        for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+        for (size_t i = 0U; i < config->execution.threads.count; i++) {
             if (config->execution.threads.data[i] == fixed_thread_count) {
                 case_count = config->execution.chunk_sizes.count;
                 break;
@@ -217,20 +210,20 @@ static bool populate_kernel_group(
         if (group->cases.data == NULL) {
             return false;
         }
-        for (size_t i = 0U; i < config->execution.threads.count; ++i) {
+        for (size_t i = 0U; i < config->execution.threads.count; i++) {
             const uint32_t num_threads = config->execution.threads.data[i];
             if (fixed_thread_count == 0U || num_threads == fixed_thread_count) {
-                for (size_t c = 0U; c < config->execution.chunk_sizes.count; ++c) {
+                for (size_t c = 0U; c < config->execution.chunk_sizes.count; c++) {
                     TestCase *test_case    = &group->cases.data[case_index];
                     test_case->uid         = (TestCaseUID)case_index;
                     test_case->num_threads = num_threads;
                     test_case->chunk_size  = config->execution.chunk_sizes.data[c];
-                    ++case_index;
+                    case_index++;
                 }
             }
         }
         group->cases.count = case_index;
-        ++test_set->kernels.count;
+        test_set->kernels.count++;
     }
 
     return true;
@@ -239,9 +232,6 @@ static bool populate_kernel_group(
 
 /**
  * @brief Populate all available kernel groups for one test set.
- *
- * When fixed_thread_count is zero, all configured thread counts are used.
- * Otherwise only the requested thread count is inserted into the cases.
  *
  * @param test_set Test set to populate.
  * @param config Benchmark configuration.
@@ -393,9 +383,6 @@ static TestPlan *build_test_plan(
 /**
  * @brief Generate a proportional test plan.
  *
- * Each configured thread count receives a workload proportional to the
- * number of threads.
- *
  * @param buffer Data buffer referenced by the plan.
  * @param config Benchmark configuration.
  *
@@ -440,9 +427,6 @@ TestPlan *generate_proportional_test_plan(DataBuffer *buffer, const Configuratio
 
 /**
  * @brief Generate a full-scale test plan.
- *
- * Every configured workload window is combined with all configured thread
- * counts.
  *
  * @param buffer Data buffer referenced by the plan.
  * @param config Benchmark configuration.

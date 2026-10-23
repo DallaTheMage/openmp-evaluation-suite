@@ -96,7 +96,6 @@ int memory_manager_reserve_work(MemoryManager *manager, size_t required_elements
  * Small copies use a sequential loop. Larger copies use a static-scheduled
  * OpenMP loop with a preparation-specific thread count independent of the
  * benchmark test's thread count.
- * The copy is performed outside kernel timing.
  *
  * @param manager Memory manager.
  * @param element_count Number of elements to restore.

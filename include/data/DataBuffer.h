@@ -27,8 +27,6 @@
  *
  * DataBuffer owns a contiguous pool of double-precision elements.
  *
- * The buffer is deliberately independent from the global Configuration
- * object.
  * Its creation requires only the information that is actually relevant to the allocation:
  *
  * - number of elements;
@@ -37,7 +35,6 @@
  * This keeps the data layer independent from the benchmark configuration
  * layer and avoids unnecessary coupling between components.
  *
- * DataView objects may reference a DataBuffer, but do not own it.
  */
 
 #ifndef DATA_BUFFER_H
@@ -45,41 +42,22 @@
 
 #include <stddef.h>
 
-/* ========================================================================= */
-/* DataBuffer                                                                */
-/* ========================================================================= */
-
 /**
  * @brief Owning contiguous buffer of double-precision elements.
- *
- * The memory referenced by pool is owned by the DataBuffer and remains valid
- * until destroy_data_buffer() is called.
  *
  * DataBuffer is not copy-owning: copying the structure itself does not create
  * an independent allocation.
  */
 typedef struct DataBuffer {
-    /**
-     * @brief Pointer to the first element of the allocated pool.
-     *
-     * The pointer is NULL when no storage is allocated.
-     */
+    /** @brief Pointer to the first element of the allocated pool. */
     double *pool;
 
-    /**
-     * @brief Number of double-precision elements in the pool.
-     */
+    /** @brief Number of double-precision elements in the pool. */
     size_t element_count;
 
-    /**
-     * @brief Alignment of the allocated pool in bytes.
-     */
+    /** @brief Alignment of the allocated pool in bytes. */
     size_t alignment;
 } DataBuffer;
-
-/* ========================================================================= */
-/* Lifecycle                                                                 */
-/* ========================================================================= */
 
 /**
  * @brief Allocate and initialize a data buffer.

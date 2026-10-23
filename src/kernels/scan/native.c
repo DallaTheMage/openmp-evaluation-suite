@@ -25,8 +25,7 @@
  * @file native.c
  * @brief OpenMP scan execution for the native construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/scan/native.h"

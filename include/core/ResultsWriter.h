@@ -49,9 +49,6 @@
  * Weak scaling compares proportional workloads against the smallest available
  * thread count for the same view, kernel and chunk size.
  * Speedup, efficiency and overhead are derived from aggregated wall-clock measurements.
- *
- * The writer is intended to be called after benchmark execution has
- * completed.
  */
 
 #ifndef CORE_RESULTS_WRITER_H

@@ -25,9 +25,6 @@
  * @file HWCounters.c
  * @brief Linux perf_event counters aggregated across enumerated process threads.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
- *
  * @note Counters are opened for threads visible in /proc/self/task during initialization.
  */
 

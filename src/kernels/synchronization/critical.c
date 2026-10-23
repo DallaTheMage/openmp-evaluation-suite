@@ -25,8 +25,7 @@
  * @file critical.c
  * @brief OpenMP synchronization execution for the critical construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/synchronization/critical.h"

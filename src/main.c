@@ -89,13 +89,13 @@ static int run_application(const Configuration *config) {
 
     #if RUN_FULL_SCALE
     full_scale_failed = (
-        run_benchmark_suite(memory_manager, config, "Full_scale", SCALING_STRONG, 0) != 0
+        run_benchmark_suite(memory_manager, config, "Full_scale", SCALING_STRONG, FULL_SCALE_PLAN) != 0
     );
     #endif
 
     #if RUN_PROPORTIONAL
     proportional_failed = (
-        run_benchmark_suite(memory_manager, config, "Proportional", SCALING_WEAK, 1) != 0
+        run_benchmark_suite(memory_manager, config, "Proportional", SCALING_WEAK, PROPORTIONAL_PLAN) != 0
     );
     #endif
 
@@ -112,14 +112,9 @@ static int run_application(const Configuration *config) {
     return exit_code;
 }
 
-/**
- * @brief Application entry point.
- *
- * @return EXIT_SUCCESS on success; EXIT_FAILURE on any fatal suite error.
- */
 int main(void) {
-    Configuration config = load_configuration();
     int exit_code;
+    Configuration config = load_configuration();
     printf("[Main] Configuration loaded\n");
     exit_code = run_application(&config);
     destroy_configuration(&config);

@@ -34,16 +34,12 @@
 #include "kernels/common/BenchmarkValidation.h"
 
 #if BENCH_VALIDATE_RESULTS
-/* Shared only by the post-timing reduction validation path. */
 volatile double benchmark_validation_reduction_sum = 0.0;
 
-/* Validate a single untimed diagnostic invocation per test configuration.
- * Original input remains immutable in MemoryManager. */
 DispatchStatus dispatch_validate_loop_or_reduction(
     KernelType kernel,
     const DataView *view,
-    MemoryManager *memory_manager)
-{
+    MemoryManager *memory_manager) {
     const DataBuffer *source = memory_manager_original_buffer(memory_manager);
     const DataBuffer *work   = memory_manager_work_buffer(memory_manager);
     const uint64_t offset    = view->window.offset;
@@ -56,7 +52,7 @@ DispatchStatus dispatch_validate_loop_or_reduction(
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
     if (kernel == KERNEL_LOOP || kernel == KERNEL_LOOP_SOA_INNER) {
-        for (uint64_t i = 0U; i < count; ++i) {
+        for (uint64_t i = 0U; i < count; i++) {
             const double expected = (source->pool[(size_t)(offset + i)] * 2.0) + 1.0;
             const double actual   = work->pool[(size_t)i];
             if (!isfinite(actual) || !isfinite(expected) ||
@@ -69,7 +65,7 @@ DispatchStatus dispatch_validate_loop_or_reduction(
         }
     } else if (kernel == KERNEL_REDUCTION || kernel == KERNEL_REDUCTION_SOA_INNER) {
         long double expected = 0.0L;
-        for (uint64_t i = 0U; i < count; ++i) {
+        for (uint64_t i = 0U; i < count; i++) {
             expected += (long double)source->pool[(size_t)(offset + i)];
         }
         const double actual    = benchmark_validation_reduction_sum;
@@ -90,12 +86,6 @@ DispatchStatus dispatch_validate_loop_or_reduction(
 /**
  * @brief Validate the structural fields required by the dispatcher.
  *
- * This function validates the plan structure and ensures that every
- * requested kernel implementation is available.
- *
- * Logical window bounds are checked when the window is restored by the
- * memory manager.
- *
  * @param plan Test plan to validate.
  * @param work_reps Number of measured repetitions.
  * @return Dispatch status.
@@ -109,7 +99,7 @@ DispatchStatus dispatch_validate_plan_for_dispatch(
     if (plan->count != 0U && plan->data == NULL) {
         return DISPATCH_INVALID_ARGUMENT;
     }
-    for (size_t set_index = 0U; set_index < plan->count; ++set_index) {
+    for (size_t set_index = 0U; set_index < plan->count; set_index++) {
         const TestSet *set = &plan->data[set_index];
         if (set->view.buffer == NULL) {
             return DISPATCH_INVALID_ARGUMENT;
@@ -117,7 +107,7 @@ DispatchStatus dispatch_validate_plan_for_dispatch(
         if (set->kernels.count != 0U && set->kernels.data == NULL) {
             return DISPATCH_INVALID_ARGUMENT;
         }
-        for (size_t group_index = 0U; group_index < set->kernels.count; ++group_index) {
+        for (size_t group_index = 0U; group_index < set->kernels.count; group_index++) {
             const KernelTestGroup *group = &set->kernels.data[group_index];
             const KernelFunc function = kernel_registry_get_function(
                                             set->view.type,
@@ -130,8 +120,7 @@ DispatchStatus dispatch_validate_plan_for_dispatch(
             if (group->cases.count != 0U && group->cases.data == NULL) {
                 return DISPATCH_INVALID_ARGUMENT;
             }
-
-            for (size_t case_index = 0U; case_index < group->cases.count; ++case_index) {
+            for (size_t case_index = 0U; case_index < group->cases.count; case_index++) {
                 const TestCase *test_case = &group->cases.data[case_index];
                 if (test_case->num_threads == 0U || test_case->chunk_size == 0U) {
                     return DISPATCH_INVALID_ARGUMENT;
@@ -139,6 +128,5 @@ DispatchStatus dispatch_validate_plan_for_dispatch(
             }
         }
     }
-
     return DISPATCH_OK;
 }

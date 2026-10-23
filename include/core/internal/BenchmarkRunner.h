@@ -44,6 +44,6 @@
  */
 int run_benchmark_suite(MemoryManager *memory_manager,
     const Configuration *config, const char *test_name,
-    ScalingMode scaling_mode, int proportional);
+    ScalingMode scaling_mode, TestPlanType plan_type);
 
 #endif

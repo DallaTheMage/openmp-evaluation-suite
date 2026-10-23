@@ -24,24 +24,20 @@
 /**
  * @file CacheEviction.c
  * @brief Allocation, traversal, and cleanup of a cache-perturbation buffer.
- *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
  */
 
-#include "data/CacheEviction.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "data/CacheEviction.h"
+
 int cache_eviction_init(
     CacheEviction *ctx,
     size_t llc_bytes,
     size_t multiplier,
-    size_t stride_bytes
-)
-{
+    size_t stride_bytes) {
     size_t i, size_bytes;
 
     if (ctx == NULL ||
@@ -74,9 +70,9 @@ void cache_eviction_run(CacheEviction *ctx) {
     size_t i;
     uint64_t sum = 0U;
 
-    if (ctx == NULL ||
-        ctx->buffer == NULL ||
-        ctx->stride_bytes == 0U) {
+    if (ctx == NULL
+        || ctx->buffer == NULL
+        || ctx->stride_bytes == 0U) {
         return;
     }
 
@@ -85,13 +81,14 @@ void cache_eviction_run(CacheEviction *ctx) {
     }
 
     ctx->checksum = sum;
+    return;
 }
 
-void cache_eviction_destroy(CacheEviction *ctx)
-{
+void cache_eviction_destroy(CacheEviction *ctx) {
     if (ctx == NULL) {
         return;
     }
     free(ctx->buffer);
     memset(ctx, 0, sizeof(*ctx));
+    return;
 }

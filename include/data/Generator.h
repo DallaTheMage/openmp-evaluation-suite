@@ -27,15 +27,6 @@
  *
  * This header provides the pseudo-random generator used to initialize
  * benchmark data deterministically.
- *
- * The generator state is explicitly represented by xoshiro256_state,
- * allowing callers to create independent deterministic streams.
- *
- * The generator is intended for benchmark data generation and setup.
- * It is not suitable for cryptographic or security-sensitive purposes.
- *
- * The data-generation interface is independent from the benchmark execution
- * and profiling layers.
  */
 
 #ifndef DATA_GENERATOR_H

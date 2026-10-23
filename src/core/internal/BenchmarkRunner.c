@@ -52,13 +52,22 @@ static inline int cleanup(AggregatedSample *aggregated,
     return result;
 }
 
+static inline TestPlan* generate_test_plan(
+    DataBuffer *buffer,
+    const Configuration *config,
+    TestPlanType plan_type) {
+    switch(plan_type) {
+        case FULL_SCALE_PLAN:
+            return generate_full_scale_test_plan(buffer, config);
+        case PROPORTIONAL_PLAN:
+            return generate_proportional_test_plan(buffer, config);
+        default:
+        return NULL;
+    }
+}
+
 /**
  * @brief Execute one benchmark suite and write its results.
- *
- * This function owns all resources whose lifetime is limited to one suite.
- * The shared MemoryManager is borrowed from the caller and is never destroyed
- * here.
- * All resources acquired by this function are released regardless of which operation fails.
  *
  * @param memory_manager Shared manager containing original and working data.
  * @param config Validated benchmark configuration.
@@ -73,7 +82,7 @@ int run_benchmark_suite(
     const Configuration *config,
     const char *test_name,
     ScalingMode scaling_mode,
-    int proportional) {
+    TestPlanType plan_type) {
 
     DataBuffer  *original_buffer = NULL;
     DataBuffer  *work_buffer     = NULL;
@@ -97,7 +106,16 @@ int run_benchmark_suite(
         || config == NULL
         || test_name == NULL) {
         fprintf(stderr, "[Error] Invalid arguments for benchmark suite\n");
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
     printf("[Main] Starting suite: %s\n", test_name);
@@ -105,24 +123,47 @@ int run_benchmark_suite(
 
     if (original_buffer == NULL) {
         fprintf(stderr, "[Error] Original data buffer is unavailable\n");
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
-    if (proportional) {
-        plan = generate_proportional_test_plan(original_buffer, config);
-    } else {
-        plan = generate_full_scale_test_plan(original_buffer, config);
-    }
+    plan = generate_test_plan(original_buffer, config, plan_type);
 
     if (plan == NULL || !validate_test_plan(plan)) {
         fprintf(stderr, "[Error] Unable to create valid %s test plan\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
-    if (!test_plan_max_workload(plan, &max_workload) ||
-        memory_manager_reserve_work(memory_manager, max_workload) != 0) {
+    if (!test_plan_max_workload(plan, &max_workload)
+        || memory_manager_reserve_work(memory_manager, max_workload) != 0) {
         fprintf(stderr, "[Error] Unable to reserve working memory for %s\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
     work_buffer = memory_manager_work_buffer(memory_manager);
@@ -130,7 +171,16 @@ int run_benchmark_suite(
         !test_plan_rebind_buffer(plan, work_buffer) ||
         !validate_test_plan(plan)) {
         fprintf(stderr, "[Error] Unable to bind working memory for %s\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
     printf("[Main] %s test plan ready: %zu test sets; work capacity: %zu elements\n",
@@ -143,7 +193,16 @@ int run_benchmark_suite(
     if (file_manager == NULL ||
         set_current_test(file_manager, test_name) != 0) {
         fprintf(stderr, "[Error] Unable to initialize output directory for %s\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
     printf("[Main] Output directory: ./output/%s/%s/%s\n",
@@ -156,13 +215,23 @@ int run_benchmark_suite(
 
     if (profiler_init(&profiler) != 0) {
         fprintf(stderr, "[Error] Unable to initialize profiler for %s\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
 
     profiler_initialized = 1;
 
     if (config->memory.cache_eviction.enabled != 0U) {
-        const CacheEvictionConfig *eviction_config = &config->memory.cache_eviction;
+        const CacheEvictionConfig *eviction_config;
+        eviction_config = &config->memory.cache_eviction;
         if (cache_eviction_init(
                 &eviction,
                 (size_t)config->memory.detected_llc_size_bytes,
@@ -170,7 +239,16 @@ int run_benchmark_suite(
                 eviction_config->stride_bytes
             ) != 0) {
             fprintf(stderr, "[Error] Unable to initialize cache eviction for %s\n", test_name);
-            return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+            return cleanup(
+                        aggregated,
+                        &samples,
+                        &eviction,
+                        profiler_initialized,
+                        &profiler,
+                        file_manager,
+                        plan,
+                        result
+                    );
         }
         active_eviction = &eviction;
         printf(
@@ -183,9 +261,7 @@ int run_benchmark_suite(
     } else {
         printf("[Main] Cache eviction disabled for %s\n", test_name);
     }
-
     printf("[Main] Dispatching %s suite\n", test_name);
-
     const DispatchStatus dispatch_status =
         dispatch_test_plan_with_eviction(
             plan,
@@ -199,18 +275,49 @@ int run_benchmark_suite(
 
     if (dispatch_status != DISPATCH_OK) {
         fprintf(stderr, "[Error] Benchmark dispatch failed for %s (status=%d)\n", test_name, (int)dispatch_status);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
     printf("[Main] Dispatch completed for %s\n", test_name);
     aggregated = analyzer_aggregate_samples(samples.samples, samples.count, &aggregated_count);
     if (aggregated == NULL) {
         fprintf(stderr, "[Error] Benchmark analysis failed for %s\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
-    printf("[Main] %s: %zu raw samples, %zu aggregated experiments\n", test_name, samples.count, aggregated_count);
+    printf("[Main] %s: %zu raw samples, %zu aggregated experiments\n",
+            test_name,
+            samples.count,
+            aggregated_count
+        );
     if (write_benchmark_results(file_manager, plan, &samples, aggregated, aggregated_count, config, scaling_mode) != 0) {
         fprintf(stderr, "[Error] Unable to write %s output files\n", test_name);
-        return cleanup(aggregated, &samples, &eviction, profiler_initialized, &profiler, file_manager, plan, result);
+        return cleanup(
+                    aggregated,
+                    &samples,
+                    &eviction,
+                    profiler_initialized,
+                    &profiler,
+                    file_manager,
+                    plan,
+                    result
+                );
     }
     printf("[Main] %s results written successfully\n", test_name);
     result = EXIT_SUCCESS;

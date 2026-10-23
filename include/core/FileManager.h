@@ -33,13 +33,6 @@
  *         <compiler_name>/
  *             <schedule>/
  *                 <test_name>/
- *
- * The compiler and schedule names are copied into the FileManager during
- * construction.
- *
- * FileManager is intentionally independent from the benchmark analysis
- * subsystem. It does not know about RawSample, AggregatedSample or
- * statistical results.
  */
 
 #ifndef CORE_FILE_MANAGER_H

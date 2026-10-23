@@ -65,29 +65,10 @@
 #include "data/DataView.h"
 #include "kernels/common/KernelType.h"
 
-
-/**
- * @brief Opaque identifier for a complete test set.
- */
 typedef uint64_t TestSetUID;
-
-
-/**
- * @brief Opaque identifier for an individual test case.
- */
 typedef uint64_t TestCaseUID;
 
-
-/**
- * @brief One concrete benchmark execution configuration.
- *
- * The thread count determines the number of OpenMP threads used for the
- * execution.
- *
- * The chunk size is relevant to compile-time schedules such as dynamic and
- * guided. For schedules where the chunk size has no effect, it may still
- * be present in the plan as part of the common test-case representation.
- */
+/** @brief One concrete benchmark execution configuration. */
 typedef struct TestCase {
     TestCaseUID uid;
     uint32_t num_threads;
@@ -95,9 +76,7 @@ typedef struct TestCase {
 } TestCase;
 
 
-/**
- * @brief Dynamically sized array of test cases.
- */
+/** @brief Dynamically sized array of test cases. */
 typedef struct TestCaseArray {
     TestCase *data;
     size_t count;
@@ -116,21 +95,14 @@ typedef struct KernelTestGroup {
 } KernelTestGroup;
 
 
-/**
- * @brief Dynamically sized array of kernel test groups.
- */
+/** @brief Dynamically sized array of kernel test groups. */
 typedef struct KernelTestGroupArray {
     KernelTestGroup *data;
     size_t count;
 } KernelTestGroupArray;
 
 
-/**
- * @brief Benchmark executions associated with one DataView.
- *
- * The DataView is stored by value and remains non-owning with respect to
- * its DataBuffer and any external topology storage.
- */
+/** @brief Benchmark executions associated with one DataView. */
 typedef struct TestSet {
     TestSetUID uid;
     DataView view;
@@ -149,6 +121,12 @@ typedef struct TestPlan {
     size_t count;
 } TestPlan;
 
+typedef enum {
+    FULL_SCALE_PLAN = 0,
+    PROPORTIONAL_PLAN,
+
+    PLAN_TYPE_COUNT
+} TestPlanType;
 
 /**
  * @brief Generate the proportional-scale benchmark plan.
@@ -157,9 +135,6 @@ typedef struct TestPlan {
  * For N threads, the logical workload is:
  *
  *     size_per_thread * N
- *
- * The plan includes only kernel/view combinations reported as available by
- * the kernel registry.
  *
  * @param buffer DataBuffer from which the DataViews are built.
  * @param config Immutable benchmark configuration.
@@ -180,10 +155,6 @@ TestPlan *generate_proportional_test_plan(
 
 /**
  * @brief Generate the full-scale benchmark plan.
- *
- * The generated plan follows the configured full-scale workload strategy
- * and includes only kernel/view combinations reported as available by the
- * kernel registry.
  *
  * @param buffer DataBuffer from which the DataViews are built.
  * @param config Immutable benchmark configuration.
@@ -208,9 +179,6 @@ TestPlan *generate_full_scale_test_plan(
  * This function checks ownership-related structure and basic consistency
  * of the plan, including array bounds and kernel/view relationships.
  *
- * It is intended for setup-time validation and debugging only and must not
- * be called from the benchmark hot path.
- *
  * @param plan Test plan to validate.
  *
  * @return true if the plan is structurally valid, false otherwise.
@@ -225,8 +193,8 @@ bool validate_test_plan(const TestPlan *plan);
  *
  * @param plan Test plan to inspect.
  * @param out_elements Receives the maximum view size in elements.
- * @return true on success, false for invalid arguments or an unrepresentable
- *         view size.
+ * @return true on success, false for invalid arguments or
+ *         an unrepresentable view size.
  */
 bool test_plan_max_workload(
     const TestPlan *plan,
@@ -238,10 +206,7 @@ bool test_plan_max_workload(
  * @brief Rebind every view in a test plan to another data buffer.
  *
  * The target buffer must be large enough to hold the logical window of
- * every view. Window offsets refer to the original dataset and are preserved
- * when views are rebound.
- *
- * The function does not transfer ownership of the target buffer.
+ * every view.
  *
  * @param plan Test plan whose views will be rebound.
  * @param buffer Target buffer, owned by the caller.
@@ -257,10 +222,8 @@ bool test_plan_rebind_buffer(
 /**
  * @brief Destroy a test plan and all memory owned by it.
  *
- *
  * @param plan Test plan to destroy.
  */
 void destroy_test_plan(TestPlan *plan);
-
 
 #endif /* CORE_TEST_PLAN_H */

@@ -25,8 +25,7 @@
  * @file reduction.c
  * @brief OpenMP reduction execution for the reduction construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/reduction/reduction.h"

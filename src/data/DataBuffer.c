@@ -26,8 +26,6 @@
  * @brief Owning contiguous storage for benchmark data.
  *
  * This implementation deliberately depends only on the DataBuffer contract.
- * The data layer must remain independent from the global benchmark
- * Configuration object.
  *
  * The allocation uses POSIX posix_memalign() to provide explicit alignment,
  * which is important for vectorized and memory-bandwidth-sensitive kernels.
@@ -41,17 +39,8 @@
 
 #include "data/DataBuffer.h"
 
-
-/* ========================================================================= */
-/* --- Internal helpers --------------------------------------------------- */
-/* ========================================================================= */
-
 /**
  * @brief Check whether an alignment value is valid for posix_memalign().
- *
- * POSIX requires the alignment to be:
- * - a power of two;
- * - a multiple of sizeof(void *).
  *
  * @param alignment Requested alignment in bytes.
  *
@@ -67,33 +56,22 @@ static int is_valid_alignment(size_t alignment) {
     return 1;
 }
 
-
-/* ========================================================================= */
-/* --- Lifecycle ---------------------------------------------------------- */
-/* ========================================================================= */
-
 DataBuffer *create_data_buffer(size_t element_count, size_t alignment) {
     DataBuffer *buffer;
     size_t allocation_size;
-
     if (!is_valid_alignment(alignment)) {
         return NULL;
     }
-
     if (element_count > (SIZE_MAX / sizeof(double))) {
         return NULL;
     }
-
     buffer = malloc(sizeof(*buffer));
-
     if (buffer == NULL) {
         return NULL;
     }
-
     buffer->pool = NULL;
     buffer->element_count = element_count;
     buffer->alignment = alignment;
-
     if (element_count == 0U) {
         return buffer;
     }

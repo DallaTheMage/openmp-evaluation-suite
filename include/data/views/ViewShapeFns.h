@@ -26,11 +26,7 @@
  * layout-specific metadata stored in a DataView.
  *
  * Shape recomputation is intended to be performed when a view is created
- * or when its logical window changes. These functions must not be called
- * from the hot loop of a benchmark kernel.
- *
- * Validation functions are intended for correctness checks and debugging.
- * They are not part of the benchmark hot path.
+ * or when its logical window changes.
  */
 
 #ifndef DATA_VIEW_SHAPE_FNS_H

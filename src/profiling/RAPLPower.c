@@ -25,8 +25,7 @@
  * @file RAPLPower.c
  * @brief Linux powercap RAPL package and optional DRAM energy readings.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
 
  * @note Wraparound correction assumes at most one counter wrap per interval.
  *       RAPL measurements are restricted to package-0 and optional DRAM.
@@ -164,13 +163,16 @@ int rapl_power_init(RaplPower *rapl) {
 }
 
 int rapl_power_start(RaplPower *rapl) {
+    int readed_value;
     if (!rapl || !rapl->is_supported) {
         return -1;
     }
-    if (read_value(rapl->fd_pkg, &rapl->start_energy_pkg_uj) != 0) {
+    readed_value = read_value(rapl->fd_pkg, &rapl->start_energy_pkg_uj);
+    if (readed_value != 0) {
         return -1;
     }
-    if (rapl->fd_dram >= 0 && read_value(rapl->fd_dram, &rapl->start_energy_dram_uj) != 0) {
+    readed_value = read_value(rapl->fd_dram, &rapl->start_energy_dram_uj);
+    if (rapl->fd_dram >= 0 && readed_value != 0) {
         close(rapl->fd_dram);
         rapl->fd_dram = -1;
     }
@@ -183,18 +185,29 @@ static inline double energy_delta(double start, double stop, double maximum) {
 
 int rapl_power_stop(RaplPower *rapl, RaplPowerData *data) {
     double stop_pkg, stop_dram, delta;
+    int readed_value;
     if (!rapl || !rapl->is_supported || !data) {
         return -1;
     }
-    if (read_value(rapl->fd_pkg, &stop_pkg) != 0) {
+    readed_value = read_value(rapl->fd_pkg, &stop_pkg);
+    if (readed_value != 0) {
         return -1;
     }
-    delta = energy_delta(rapl->start_energy_pkg_uj, stop_pkg, rapl->max_energy_pkg_uj);
+    delta = energy_delta(
+        rapl->start_energy_pkg_uj,
+        stop_pkg,
+        rapl->max_energy_pkg_uj
+    );
     data->energy_pkg_joules = delta * rapl->scale_pkg;
     data->energy_dram_joules = NAN;
     if (rapl->fd_dram >= 0) {
-        if (read_value(rapl->fd_dram, &stop_dram) == 0) {
-            delta = energy_delta(rapl->start_energy_dram_uj, stop_dram, rapl->max_energy_dram_uj);
+        readed_value = read_value(rapl->fd_dram, &stop_dram);
+        if (readed_value == 0) {
+            delta = energy_delta(
+                rapl->start_energy_dram_uj,
+                stop_dram,
+                rapl->max_energy_dram_uj
+            );
             data->energy_dram_joules = delta * rapl->scale_dram;
         } else {
             close(rapl->fd_dram);

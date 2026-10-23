@@ -23,8 +23,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "core/TestPlan.h"
 #include "kernels/KernelRegistry.h"
+
 typedef struct Profiler Profiler;
 typedef struct PerformanceMetric PerformanceMetric;
 

@@ -25,8 +25,7 @@
  * @file collapse.c
  * @brief OpenMP worksharing execution for the collapse construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/worksharing/collapse.h"

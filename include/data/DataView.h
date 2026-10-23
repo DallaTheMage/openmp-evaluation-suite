@@ -124,8 +124,6 @@ typedef struct {
 /**
  * @brief Layout-specific metadata associated with a DataView.
  *
- * Only the member corresponding to DataView::type is valid.
- *
  * The metadata combines configuration parameters with quantities derived
  * from the logical DataView window.
  */
@@ -142,40 +140,25 @@ typedef union {
  * @brief Runtime descriptor used to construct a DataView.
  *
  * The descriptor contains only the parameters that define the selected
- * layout. Quantities derived from the logical window are computed by
- * the view-shape functions.
- *
- * Only the member corresponding to the requested ViewType is valid.
+ * layout.
  */
 typedef union {
-    /**
-     * @brief Parameters for a one-dimensional view.
-     */
+    /** @brief Parameters for a one-dimensional view. */
     struct { uint64_t length; } v1d;
 
-    /**
-     * @brief Parameters for a two-dimensional view.
-     */
+    /** @brief Parameters for a two-dimensional view. */
     struct { uint64_t cols; } v2d;
 
-    /**
-     * @brief Parameters for a three-dimensional view.
-     */
+    /** @brief Parameters for a three-dimensional view. */
     struct { uint64_t depth; uint64_t cols; } v3d;
 
-    /**
-     * @brief Parameters for an Array-of-Structures view.
-     */
+    /** @brief Parameters for an Array-of-Structures view. */
     struct { uint64_t struct_size; } aos;
 
-    /**
-     * @brief Parameters for a Structure-of-Arrays view.
-     */
+    /** @brief Parameters for a Structure-of-Arrays view. */
     struct { uint64_t num_fields; } soa;
 
-    /**
-     * @brief Parameters for an Array-of-Structures-of-Arrays view.
-     */
+    /** @brief Parameters for an Array-of-Structures-of-Arrays view. */
     struct { uint64_t vector_length; uint64_t num_fields; } aosoa;
 } ViewCreateConfig;
 
@@ -184,12 +167,6 @@ typedef union {
  *
  * A DataView combines a data buffer, a logical window and the metadata
  * required to interpret that window according to a specific layout.
- *
- * Ownership:
- * - the DataBuffer is not owned.
- *
- * The referenced DataBuffer must remain alive for the entire lifetime
- * of the DataView.
  */
 typedef struct {
     DataBuffer  *buffer;
@@ -200,9 +177,6 @@ typedef struct {
 
 /**
  * @brief Creates a DataView over an existing DataBuffer.
- *
- * The function initializes the view metadata according to the requested
- * ViewType and the supplied creation descriptor.
  *
  * @param buffer DataBuffer referenced by the view.
  * @param type Logical layout used to interpret the view.

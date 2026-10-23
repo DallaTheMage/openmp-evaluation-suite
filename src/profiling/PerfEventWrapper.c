@@ -38,8 +38,7 @@ int sys_perf_event_open(
     int cpu,
     int group_fd,
     unsigned long flags) {
-
-    return (int) syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+    return (int)syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
 }
 
 int perf_counter_open_process(uint32_t type, uint64_t config, int group_fd) {

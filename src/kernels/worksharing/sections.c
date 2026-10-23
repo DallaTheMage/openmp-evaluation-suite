@@ -25,8 +25,7 @@
  * @file sections.c
  * @brief OpenMP worksharing execution for the sections construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/worksharing/sections.h"

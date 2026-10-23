@@ -25,8 +25,6 @@
  * @file Generator.c
  * @brief Deterministic generation of benchmark input values using xoshiro256.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
  */
 
 #include "data/Generator.h"

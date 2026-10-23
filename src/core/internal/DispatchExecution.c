@@ -26,10 +26,10 @@
  * @brief Kernel preparation and invocation for the dispatcher.
  */
 
-/* Kernel invocation and work-buffer preparation. */
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+
 #include "core/internal/DispatchExecution.h"
 
 /**
@@ -39,10 +39,8 @@
  * The memory manager copies that window into the beginning of its working
  * buffer, outside the kernel profiling interval.
  *
- * The kernel receives a local copy of the original view. Its buffer points
- * to the working buffer, and its window offset is zero.
- *
- * The original view and test plan are not modified.
+ * The kernel receives a local copy of the original view
+ * and its buffer points to the working buffer.
  *
  * @param function Kernel function.
  * @param view Original logical data view.
@@ -73,55 +71,42 @@ DispatchStatus dispatch_execute_kernel(
         || (metric == NULL)) {
         return DISPATCH_INVALID_ARGUMENT;
     }
-
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
     }
-
-    if (view->window.size > (uint64_t)SIZE_MAX ||
-        memory_manager_restore_window(
+    if (view->window.size > (uint64_t)SIZE_MAX
+        || memory_manager_restore_window(
             memory_manager,
             view->window.offset,
             (size_t)view->window.size) != 0) {
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
-
     working_buffer = memory_manager_work_buffer(memory_manager);
-
-    if (working_buffer == NULL ||
-        working_buffer->pool == NULL ||
-        working_buffer->element_count < (size_t)view->window.size) {
+    if (working_buffer == NULL
+        || working_buffer->pool == NULL
+        || working_buffer->element_count < (size_t)view->window.size) {
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
-
     execution_view               = *view;
     execution_view.buffer        = working_buffer;
     execution_view.window.offset = UINT64_C(0);
-
     if (eviction != NULL) {
         cache_eviction_run(eviction);
     }
-
     memset(metric, 0, sizeof(*metric));
     kernel_status = function(&execution_view, test_case, profiler, metric);
-
     if (profiler->is_running) {
         return DISPATCH_PROFILER_FAILURE;
     }
-
     switch (kernel_status) {
         case KERNEL_STATUS_OK:
             return DISPATCH_OK;
-
         case KERNEL_STATUS_PROFILER_FAILURE:
             return DISPATCH_PROFILER_FAILURE;
-
         case KERNEL_STATUS_INVALID_ARGUMENT:
             return DISPATCH_INVALID_ARGUMENT;
-
         case KERNEL_STATUS_ALLOCATION_FAILURE:
             return DISPATCH_ALLOCATION_FAILURE;
-
         case KERNEL_STATUS_EXECUTION_FAILURE:
         default:
             return DISPATCH_KERNEL_EXECUTION_FAILURE;

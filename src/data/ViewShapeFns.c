@@ -25,20 +25,12 @@
 /**
  * @file ViewShapeFns.c
  * @brief Shape computation and validation for DataView layouts.
- *
- * Shape computation is performed during benchmark setup. No function in
- * this module allocates memory, performs I/O or belongs in a benchmark
- * measurement region.
  */
 
 
 #include <stdint.h>
+
 #include "data/views/ViewShapeFns.h"
-
-
-/* ========================================================================= */
-/* --- 1D ------------------------------------------------------------------ */
-/* ========================================================================= */
 
 void shape_1d_recompute(DataView *view) {
     if (view == NULL) {
@@ -47,18 +39,12 @@ void shape_1d_recompute(DataView *view) {
     view->meta.v1d.length = view->window.size;
 }
 
-
 bool shape_1d_validate(const DataView *view) {
     if (view == NULL || view->type != VIEW_1D) {
         return false;
     }
     return view->meta.v1d.length == view->window.size;
 }
-
-
-/* ========================================================================= */
-/* --- 2D ------------------------------------------------------------------ */
-/* ========================================================================= */
 
 void shape_2d_recompute(DataView *view) {
     uint64_t cols;
@@ -72,7 +58,6 @@ void shape_2d_recompute(DataView *view) {
     }
     view->meta.v2d.rows = view->window.size / cols;
 }
-
 
 bool shape_2d_validate(const DataView *view) {
     uint64_t rows;
@@ -94,11 +79,6 @@ bool shape_2d_validate(const DataView *view) {
            rows == view->window.size / cols;
 }
 
-
-/* ========================================================================= */
-/* --- 3D ------------------------------------------------------------------ */
-/* ========================================================================= */
-
 void shape_3d_recompute(DataView *view) {
     uint64_t depth;
     uint64_t cols;
@@ -117,7 +97,6 @@ void shape_3d_recompute(DataView *view) {
     plane_size = depth * cols;
     view->meta.v3d.height = view->window.size / plane_size;
 }
-
 
 bool shape_3d_validate(const DataView *view) {
     uint64_t height;
@@ -138,11 +117,6 @@ bool shape_3d_validate(const DataView *view) {
            view->window.size % plane_size == 0U &&
            height == view->window.size / plane_size;
 }
-
-
-/* ========================================================================= */
-/* --- AoS ----------------------------------------------------------------- */
-/* ========================================================================= */
 
 void shape_aos_recompute(DataView *view) {
     uint64_t struct_size;
@@ -171,13 +145,7 @@ bool shape_aos_validate(const DataView *view) {
            view->meta.aos.num_structs == (view->window.size / struct_size);
 }
 
-
-/* ========================================================================= */
-/* --- SoA ----------------------------------------------------------------- */
-/* ========================================================================= */
-
-void shape_soa_recompute(DataView *view)
-{
+void shape_soa_recompute(DataView *view) {
     uint64_t num_fields;
 
     if (view == NULL) {
@@ -208,11 +176,6 @@ bool shape_soa_validate(const DataView *view) {
            view->window.size % num_fields == 0U &&
            view->meta.soa.field_length == (view->window.size / num_fields);
 }
-
-
-/* ========================================================================= */
-/* --- AoSoA ---------------------------------------------------------------- */
-/* ========================================================================= */
 
 void shape_aosoa_recompute(DataView *view) {
     uint64_t num_fields;

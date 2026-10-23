@@ -28,17 +28,12 @@
  * The dispatcher translates a TestPlan into benchmark kernel executions.
  *
  * Its responsibilities include:
- *
  * - iterating over test sets and kernel groups;
  * - resolving kernel implementations through the registry;
  * - restoring working data before each invocation;
  * - executing warm-up and measured repetitions;
  * - collecting performance metrics;
  * - storing measured executions as RawSample objects.
- *
- * The dispatcher does not select OpenMP scheduling policies, perform
- * statistical analysis, or own the profiler and data buffers.
- *
  * Kernel execution failures are propagated through DispatchStatus.
  */
 

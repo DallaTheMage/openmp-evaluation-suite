@@ -25,8 +25,7 @@
  * @file taskloop.c
  * @brief OpenMP task-based execution for the taskloop construct.
  *
- * Implementation details are kept separate from the public API contracts
- * documented in the corresponding header.
+
  */
 
 #include "kernels/tasking/taskloop.h"

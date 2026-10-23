@@ -49,10 +49,6 @@
 
 #include "data/views/ViewType.h"
 
-/* ========================================================================= */
-/* Configuration-owned dynamic arrays                                        */
-/* ========================================================================= */
-
 /** @brief Dynamically allocated array of 32-bit unsigned integers. */
 typedef struct {
     uint32_t *data;
@@ -64,10 +60,6 @@ typedef struct {
     uint64_t *data;
     size_t    count;
 } ConfigU64List;
-
-/* ========================================================================= */
-/* DataView shape configuration                                              */
-/* ========================================================================= */
 
 /** @brief Configuration parameters for a two-dimensional view. */
 typedef struct {
@@ -96,12 +88,7 @@ typedef struct {
     uint64_t num_fields;
 } ViewShapeAoSoAConfig;
 
-/**
- * @brief Shape-specific configuration.
- *
- * VIEW_1D does not require additional shape parameters.
- * The active member is selected according to the corresponding ViewType.
- */
+/** @brief Shape-specific configuration. */
 typedef union {
     ViewShape2DConfig    v2d;
     ViewShape3DConfig    v3d;
@@ -110,15 +97,10 @@ typedef union {
     ViewShapeAoSoAConfig aosoa;
 } ViewShapeConfig;
 
-/* ========================================================================= */
-/* Build metadata                                                            */
-/* ========================================================================= */
-
 /**
  * @brief Metadata describing the binary that executes the benchmark.
  *
  * These fields are descriptive metadata only.
- * They do not control the OpenMP runtime during benchmark execution.
  */
 typedef struct {
     char compiler_family[32];
@@ -127,10 +109,6 @@ typedef struct {
     char compiler_flags[256];
     char openmp_version[16];
 } BuildConfig;
-
-/* ========================================================================= */
-/* Execution configuration                                                   */
-/* ========================================================================= */
 
 /** @brief Parameters defining the benchmark execution space. */
 typedef struct {
@@ -149,10 +127,6 @@ typedef struct {
     /** @brief Chunk sizes used by scheduling policies that accept a chunk. */
     ConfigU64List chunk_sizes;
 } ExecutionConfig;
-
-/* ========================================================================= */
-/* Benchmark configuration                                                   */
-/* ========================================================================= */
 
 /** @brief Parameters controlling benchmark repetition and data generation. */
 typedef struct {
@@ -175,10 +149,6 @@ typedef struct {
     size_t   stride_bytes;
 } CacheEvictionConfig;
 
-/* ========================================================================= */
-/* Memory configuration                                                      */
-/* ========================================================================= */
-
 /** @brief Parameters controlling benchmark data allocation. */
 typedef struct {
     /** @brief Required alignment in bytes. */
@@ -191,7 +161,7 @@ typedef struct {
     uint64_t detected_llc_size_bytes;
 
     /**
-     * @brief Auxiliary buffer capacity, expressed in double elements.
+     * @brief (DEPRECATED) Auxiliary buffer capacity, expressed in double elements.
      *        The capacity is twice the detected LLC size divided by sizeof(double).
      *        Zero means that no auxiliary buffer is configured.
      */
@@ -199,10 +169,6 @@ typedef struct {
 
     CacheEvictionConfig cache_eviction;
 } MemoryConfig;
-
-/* ========================================================================= */
-/* Derived configuration metrics                                             */
-/* ========================================================================= */
 
 /**
  * @brief Values derived from the global benchmark configuration.
