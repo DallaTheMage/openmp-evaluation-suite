@@ -8,6 +8,4 @@ backup.*
 BACKUP/*
 autotune.conf
 TODO
-*.py
-grafici/
 .venv/
