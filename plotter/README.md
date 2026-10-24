@@ -23,7 +23,7 @@ pip install -r requirements.txt
 Run the utility from the project root:
 
 ```bash
-python plot_benchmarks.py
+python main.py
 ```
 
 By default, the script reads benchmark results from `output/` and saves generated plots and CSV summaries to `plots/`.
@@ -33,7 +33,7 @@ By default, the script reads benchmark results from `output/` and saves generate
 Specify custom input and output directories using `-i` and `-o`:
 
 ```bash
-python plot_benchmarks.py -i /path/to/benchmark/output -o /path/to/plots
+python main.py -i /path/to/benchmark/output -o /path/to/plots
 ```
 
 ### Additional Options
@@ -41,19 +41,19 @@ python plot_benchmarks.py -i /path/to/benchmark/output -o /path/to/plots
 Display plots interactively:
 
 ```bash
-python plot_benchmarks.py --show
+python main.py --show
 ```
 
 Enable verbose logging:
 
 ```bash
-python plot_benchmarks.py --verbose
+python main.py --verbose
 ```
 
 Show all available options:
 
 ```bash
-python plot_benchmarks.py --help
+python main.py --help
 ```
 
 ## Output
