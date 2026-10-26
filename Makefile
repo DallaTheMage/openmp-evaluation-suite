@@ -59,6 +59,9 @@ $(BUILD_DIR)/%.o: src/%.c
 # Header changes trigger incremental recompilation.
 -include $(DEPS)
 
+clean-all:
+	rm -rf build output plotter/plots
+
 clean-build:
 	rm -rf build
 
