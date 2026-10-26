@@ -24,8 +24,6 @@
 /**
  * @file taskloop.c
  * @brief OpenMP task-based execution for the taskloop construct.
- *
-
  */
 
 #include "kernels/tasking/taskloop.h"
@@ -72,7 +70,6 @@ KernelStatus kernel_1d_taskloop(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
 KernelStatus kernel_2d_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -112,8 +109,6 @@ KernelStatus kernel_2d_taskloop(DataView *view,
     }
     return KERNEL_STATUS_OK;
 }
-
-
 
 KernelStatus kernel_3d_taskloop(DataView *view,
     const TestCase *test_case,
@@ -158,8 +153,6 @@ KernelStatus kernel_3d_taskloop(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-
 KernelStatus kernel_aos_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -200,21 +193,20 @@ KernelStatus kernel_aos_taskloop(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-
 KernelStatus kernel_soa_taskloop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
+
     const uint32_t num_threads = test_case->num_threads;
     const uint64_t chunk       = test_case->chunk_size;
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
+
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
-
     #pragma omp parallel \
         default(none) \
         num_threads(num_threads) \
@@ -222,12 +214,14 @@ KernelStatus kernel_soa_taskloop(DataView *view,
     {
         #pragma omp single
         {
-            #pragma omp taskloop \
-                default(none) \
-                grainsize(chunk) \
-                shared(num_elems, num_fields, pool)
             for (uint64_t f = 0; f < num_fields; f++) {
                 const uint64_t field_offset = f * num_elems;
+
+                #pragma omp taskloop \
+                    default(none) \
+                    grainsize(chunk) \
+                    firstprivate(field_offset) \
+                    shared(num_elems, pool)
                 for (uint64_t i = 0; i < num_elems; i++) {
                     pool[field_offset + i] = pool[field_offset + i] * 2.0 + 1.0;
                     SLOWDOWN_AFTER_UPDATE(field_offset + i);
@@ -235,14 +229,11 @@ KernelStatus kernel_soa_taskloop(DataView *view,
             }
         }
     }
-
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
     return KERNEL_STATUS_OK;
 }
-
-
 
 KernelStatus kernel_aosoa_taskloop(DataView *view,
     const TestCase *test_case,

@@ -143,7 +143,7 @@ fi
 
 info "Cleaning previous build..."
 
-make "${MAKE_FLAGS[@]}" -C "$SCRIPT_DIR" clean
+make "${MAKE_FLAGS[@]}" -C "$SCRIPT_DIR" clean-build
 
 info "Building project..."
 

@@ -211,44 +211,51 @@ KernelStatus kernel_aos_task(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-
 KernelStatus kernel_soa_task(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
     PerformanceMetric *metric) {
+
     const uint32_t num_threads = test_case->num_threads;
     const uint64_t chunk       = test_case->chunk_size;
+
     double *restrict pool      = view->buffer->pool;
     const uint64_t num_elems   = view->meta.soa.field_length;
     const uint64_t num_fields  = view->meta.soa.num_fields;
+
     if (profiler_start(profiler) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
 
-    #pragma omp parallel num_threads(num_threads) default(none) shared(pool, num_elems, num_fields, chunk)
+    #pragma omp parallel num_threads(num_threads) \
+        default(none) shared(pool, num_elems, num_fields, chunk)
     {
         #pragma omp single
         {
-            for (uint64_t begin = 0; begin < num_fields; begin += chunk) {
-                const uint64_t end = (begin + chunk < num_fields) ? begin + chunk : num_fields;
+            for (uint64_t begin = 0; begin < num_elems; begin += chunk) {
+
+                const uint64_t end =
+                    (num_elems - begin < chunk)
+                    ? num_elems
+                    : begin + chunk;
+
                 #pragma omp task \
                     default(none) \
                     firstprivate(begin, end) \
-                    shared(pool, num_elems)
+                    shared(pool, num_elems, num_fields)
                 {
-                    for (uint64_t f = begin; f < end; f++) {
+                    for (uint64_t f = 0; f < num_fields; f++) {
                         const uint64_t offset = f * num_elems;
-                        for (uint64_t i = 0; i < num_elems; i++) {
-                            pool[offset + i] = pool[offset + i] * 2.0 + 1.0;
-                            SLOWDOWN_AFTER_UPDATE(offset + i);
+                        for (uint64_t i = begin; i < end; i++) {
+                            const uint64_t idx = offset + i;
+                            pool[idx] = pool[idx] * 2.0 + 1.0;
+                            SLOWDOWN_AFTER_UPDATE(idx);
                         }
                     }
                 }
             }
         }
     }
-
     if (profiler_stop(profiler, metric) != 0) {
         return KERNEL_STATUS_PROFILER_FAILURE;
     }
