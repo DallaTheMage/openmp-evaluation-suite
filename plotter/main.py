@@ -48,7 +48,7 @@ def parse_args() -> argparse.Namespace:
         '-i',
         '--input',
         type = Path,
-        default = Path('output'),
+        default = Path('../output'),
         help = ('Directory containing benchmark results (default: output)'),
     )
 

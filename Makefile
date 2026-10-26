@@ -66,4 +66,4 @@ clean-output:
 	rm -rf output
 
 clean-plots:
-	rm -rf plots
+	rm -rf plotter/plots

@@ -9,3 +9,5 @@ BACKUP/*
 autotune.conf
 TODO
 .venv/
+*.pyc
+plotter/plots/*
