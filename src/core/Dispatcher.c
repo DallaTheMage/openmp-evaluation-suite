@@ -187,8 +187,7 @@ static DispatchStatus dispatch_execute_test_case(
      * itself happens strictly AFTER profiler_stop(). */
     if (group->kernel == KERNEL_LOOP ||
         group->kernel == KERNEL_REDUCTION ||
-        group->kernel == KERNEL_LOOP_SOA_INNER ||
-        group->kernel == KERNEL_REDUCTION_SOA_INNER) {
+        group->kernel == KERNEL_LOOP) {
         PerformanceMetric validation_metric;
         status = dispatch_execute_kernel(
             function, &view, test_case, memory_manager,
@@ -203,9 +202,6 @@ static DispatchStatus dispatch_execute_test_case(
     }
     #endif
 
-    /*
-     * Execute warm-up repetitions without storing their metrics.
-     */
     for (uint32_t warmup = 0U; warmup < warmup_reps; ++warmup) {
         PerformanceMetric warmup_metric;
         status = dispatch_execute_kernel(
@@ -222,9 +218,6 @@ static DispatchStatus dispatch_execute_test_case(
         }
     }
 
-    /*
-     * Execute measured repetitions and store their metrics.
-     */
     for (uint32_t run_id = 0U; run_id < work_reps; ++run_id) {
         RawSample *sample = &out_samples->samples[(*sample_index)];
         status = dispatch_execute_kernel(
@@ -244,7 +237,7 @@ static DispatchStatus dispatch_execute_test_case(
         sample->kernel       = group->kernel;
         sample->run_id       = run_id;
         total_wall_time     += sample->metric.wall_time_sec;
-        ++(*sample_index);
+        (*sample_index)++;
     }
 
     printf(

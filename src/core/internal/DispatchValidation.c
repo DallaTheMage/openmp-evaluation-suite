@@ -51,7 +51,7 @@ DispatchStatus dispatch_validate_loop_or_reduction(
         (count > (uint64_t)work->element_count)) {
         return DISPATCH_MEMORY_PREPARATION_FAILURE;
     }
-    if (kernel == KERNEL_LOOP || kernel == KERNEL_LOOP_SOA_INNER) {
+    if (kernel == KERNEL_LOOP) {
         for (uint64_t i = 0U; i < count; i++) {
             const double expected = (source->pool[(size_t)(offset + i)] * 2.0) + 1.0;
             const double actual   = work->pool[(size_t)i];
@@ -63,7 +63,7 @@ DispatchStatus dispatch_validate_loop_or_reduction(
                 return DISPATCH_KERNEL_EXECUTION_FAILURE;
             }
         }
-    } else if (kernel == KERNEL_REDUCTION || kernel == KERNEL_REDUCTION_SOA_INNER) {
+    } else if (kernel == KERNEL_REDUCTION) {
         long double expected = 0.0L;
         for (uint64_t i = 0U; i < count; i++) {
             expected += (long double)source->pool[(size_t)(offset + i)];

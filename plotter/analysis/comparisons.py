@@ -147,3 +147,105 @@ def compiler_comparisons(benchmarks: pd.DataFrame, output_dir: Path, show: bool 
         plot_compiler_speedup(paired, reference, other, folder, show,)
         summary = compute_geometric_speedup(paired)
         plot_geometric_speedup(summary, reference, other, folder, show,)
+        plot_chunked_compiler_comparisons(paired, reference, other, folder, show,)
+        plot_threaded_compiler_comparisons(paired, reference, other, folder, show,)
+
+def plot_chunked_compiler_comparisons(
+    paired: pd.DataFrame,
+    reference: str,
+    other: str,
+    folder: Path,
+    show: bool = False,
+) -> None:
+    """Create kernel comparisons at fixed scaling type and chunk size.
+    All other matched benchmark dimensions remain as observations in the
+    distribution; no measurements are discarded or silently averaged.
+    """
+    if paired.empty or 'chunk_size' not in paired.columns:
+        return
+    chunk_folder = folder / f'by_chunk_{safe_name(other)}_vs_{safe_name(reference)}'
+    chunk_folder.mkdir(parents=True, exist_ok=True)
+    group_columns = ['scaling_type', 'chunk_size']
+    for (scaling, chunk), subset in paired.dropna(subset=['chunk_size']).groupby(group_columns, sort=True):
+        if subset.empty:
+            continue
+        suffix = f'{safe_name(str(scaling))}_chunk_{safe_name(str(chunk))}'
+        fig, ax = plt.subplots(figsize=(14, 6))
+        sns.boxplot(data=subset, x='kernel', y='speedup', ax=ax)
+        ax.axhline(1, color='red', linestyle='--')
+        ax.set_yscale('log')
+        ax.tick_params(axis='x', labelrotation=45)
+        ax.set_ylabel(f'Speedup {other} / {reference} (log scale)')
+        ax.set_title(f'{other} vs {reference} | {scaling} | chunk_size={chunk}')
+        fig.tight_layout()
+        save_figure(fig, chunk_folder / f'speedup_{suffix}.png', show)
+
+        summary = compute_geometric_speedup(subset)
+        fig, ax = plt.subplots(figsize=(14, 6))
+        sns.barplot(data=summary, x='kernel', y='speedup', ax=ax, color='steelblue')
+        ax.axhline(1, color='red', linestyle='--')
+        ax.tick_params(axis='x', labelrotation=45)
+        ax.set_ylabel(f'Geometric mean speedup {other} / {reference}')
+        ax.set_title(f'Geometric mean | {other} vs {reference} | {scaling} | chunk_size={chunk}')
+        fig.tight_layout()
+        save_figure(fig, chunk_folder / f'geomean_{suffix}.png', show)
+        summary.to_csv(chunk_folder / f'geomean_{suffix}.csv', index=False)
+
+def plot_threaded_compiler_comparisons(
+    paired: pd.DataFrame,
+    reference: str,
+    other: str,
+    folder: Path,
+    show: bool = False,
+) -> None:
+    """Plot speedup by kernel with a distinct series for each thread count.
+    Scaling type and chunk size are fixed within each plot. Points represent
+    geometric means of the matched configurations for that kernel/thread count.
+    """
+    required = ['scaling_type', 'chunk_size', 'kernel', 'num_threads', 'speedup']
+    if paired.empty or any(column not in paired.columns for column in required):
+        return
+
+    valid = paired.replace([np.inf, -np.inf], np.nan).dropna(subset=required)
+    valid = valid[valid['speedup'] > 0]
+    if valid.empty:
+        return
+
+    thread_folder = folder / f'by_chunk_threads_{safe_name(other)}_vs_{safe_name(reference)}'
+    thread_folder.mkdir(parents=True, exist_ok=True)
+
+    for (scaling, chunk), subset in valid.groupby(['scaling_type', 'chunk_size'], sort=True):
+        summary = (
+            subset.groupby(['kernel', 'num_threads'], as_index=False)
+            .agg(
+                speedup=('speedup', lambda values: np.exp(np.log(values).mean())),
+                samples=('speedup', 'size'),
+            )
+        )
+        if summary.empty:
+            continue
+
+        suffix = f'{safe_name(str(scaling))}_chunk_{safe_name(str(chunk))}'
+        summary.to_csv(thread_folder / f'geomean_by_threads_{suffix}.csv', index=False)
+
+        fig, ax = plt.subplots(figsize=(15, 7))
+        sns.lineplot(
+            data=summary,
+            x='kernel',
+            y='speedup',
+            hue='num_threads',
+            style='num_threads',
+            markers=True,
+            dashes=False,
+            estimator=None,
+            sort=False,
+            ax=ax,
+        )
+        ax.axhline(1, color='red', linestyle='--', label='Parity (1x)')
+        ax.set_yscale('log')
+        ax.set_xlabel('Kernel')
+        ax.set_ylabel(f'Geometric mean speedup {other} / {reference} (log scale)')
+        ax.set_title(f'{other} vs {reference} by threads | {scaling} | chunk_size={chunk}')
+        ax.tick_params(axis='x', labelrotation=45)
+        ax.legend(title='Threads', bbox_to_anchor=(1.02, 1), loc='upper left')
+        save_figure(fig, thread_folder / f'geomean_by_threads_{suffix}.png', show)

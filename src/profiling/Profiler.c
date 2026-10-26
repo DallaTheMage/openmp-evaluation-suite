@@ -59,13 +59,13 @@ int profiler_start(Profiler *p) {
     if (p == NULL || p->is_running) {
         return -1;
     }
-    p->start_wtime = omp_get_wtime();
     if (p->hw.is_initialized && hw_counters_start(&p->hw) != 0) {
         hw_counters_cleanup(&p->hw);
     }
     if (p->rapl.is_supported && rapl_power_start(&p->rapl) != 0) {
         rapl_power_cleanup(&p->rapl);
     }
+    p->start_wtime = omp_get_wtime();
     p->is_running = true;
     return 0;
 }
