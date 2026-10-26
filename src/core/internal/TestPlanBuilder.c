@@ -153,7 +153,6 @@ static bool initialize_test_set_view(
     return true;
 }
 
-
 /**
  * @brief Populate one kernel group for a test set.
  *
