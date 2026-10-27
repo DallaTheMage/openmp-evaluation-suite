@@ -24,8 +24,6 @@
 /**
  * @file task.c
  * @brief OpenMP task-based execution for the task construct.
- *
-
  */
 
 #include "kernels/tasking/task.h"

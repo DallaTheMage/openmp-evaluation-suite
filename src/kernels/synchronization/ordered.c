@@ -24,8 +24,6 @@
 /**
  * @file ordered.c
  * @brief OpenMP synchronization execution for the ordered construct.
- *
-
  */
 
 #include "kernels/synchronization/ordered.h"

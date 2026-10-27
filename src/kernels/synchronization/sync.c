@@ -24,8 +24,6 @@
 /**
  * @file sync.c
  * @brief OpenMP synchronization execution for the sync construct.
- *
-
  */
 
 #include "kernels/synchronization/sync.h"

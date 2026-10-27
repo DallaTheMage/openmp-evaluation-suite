@@ -24,8 +24,6 @@
 /**
  * @file critical.c
  * @brief OpenMP synchronization execution for the critical construct.
- *
-
  */
 
 #include "kernels/synchronization/critical.h"

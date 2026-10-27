@@ -24,8 +24,6 @@
 /**
  * @file collapse.c
  * @brief OpenMP worksharing execution for the collapse construct.
- *
-
  */
 
 #include "kernels/worksharing/collapse.h"

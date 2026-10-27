@@ -24,8 +24,6 @@
 /**
  * @file loop.c
  * @brief OpenMP worksharing execution for the loop construct.
- *
-
  */
 
 #include "kernels/worksharing/loop.h"

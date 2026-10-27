@@ -24,8 +24,6 @@
 /**
  * @file RAPLPower.c
  * @brief Linux powercap RAPL package and optional DRAM energy readings.
- *
-
 
  * @note Wraparound correction assumes at most one counter wrap per interval.
  *       RAPL measurements are restricted to package-0 and optional DRAM.

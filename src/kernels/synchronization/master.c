@@ -24,8 +24,6 @@
 /**
  * @file master.c
  * @brief OpenMP synchronization execution for the master construct.
- *
-
  */
 
 #include "kernels/synchronization/master_masked.h"

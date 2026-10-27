@@ -24,8 +24,6 @@
 /**
  * @file atomic.c
  * @brief OpenMP synchronization execution for the atomic construct.
- *
-
  */
 
 #include "kernels/synchronization/atomic.h"

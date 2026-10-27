@@ -24,8 +24,6 @@
 /**
  * @file sections.c
  * @brief OpenMP worksharing execution for the sections construct.
- *
-
  */
 
 #include "kernels/worksharing/sections.h"

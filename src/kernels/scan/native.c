@@ -24,8 +24,6 @@
 /**
  * @file native.c
  * @brief OpenMP scan execution for the native construct.
- *
-
  */
 
 #include "kernels/scan/native.h"

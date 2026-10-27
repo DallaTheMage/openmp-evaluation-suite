@@ -24,8 +24,6 @@
 /**
  * @file masked.c
  * @brief OpenMP synchronization execution for the masked construct.
- *
-
  */
 
 #include "kernels/synchronization/master_masked.h"

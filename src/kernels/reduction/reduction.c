@@ -24,8 +24,6 @@
 /**
  * @file reduction.c
  * @brief OpenMP reduction execution for the reduction construct.
- *
-
  */
 
 #include "kernels/reduction/reduction.h"
