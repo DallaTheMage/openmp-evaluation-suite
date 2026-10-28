@@ -47,6 +47,9 @@
 #include "kernels/algorithms/jacobi.h"
 #include "kernels/algorithms/cg.h"
 
+#define KERNEL_WITH_CHUNK(fn) { .function = (fn), .is_chunk_supported = true }
+#define KERNEL_WITHOUT_CHUNK(fn) { .function = (fn), .is_chunk_supported = false }
+
 /*
  * The registry is indexed by ViewType first and KernelType second.
  * Unspecified entries are initialized to zero, which means that their
@@ -56,172 +59,175 @@ const KernelDescriptor
     KERNEL_REGISTRY[VIEW_TYPE_COUNT][KERNEL_COUNT] = {
     [VIEW_1D] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_LOOP]      = { kernel_1d_loop },
-                [KERNEL_SECTIONS]  = { kernel_1d_sections },
-                [KERNEL_MASTER]    = { kernel_1d_master },
-                [KERNEL_ORDERED]   = { kernel_1d_ordered },
-                [KERNEL_SYNC]      = { kernel_1d_sync },
-                [KERNEL_REDUCTION] = { kernel_1d_reduction },
-                [KERNEL_CRITICAL]  = { kernel_1d_critical },
+                [KERNEL_LOOP]      = KERNEL_WITH_CHUNK(kernel_1d_loop),
+                [KERNEL_SECTIONS]  = KERNEL_WITHOUT_CHUNK(kernel_1d_sections),
+                [KERNEL_MASTER]    = KERNEL_WITHOUT_CHUNK(kernel_1d_master),
+                [KERNEL_ORDERED]   = KERNEL_WITH_CHUNK(kernel_1d_ordered),
+                [KERNEL_SYNC]      = KERNEL_WITH_CHUNK(kernel_1d_sync),
+                [KERNEL_REDUCTION] = KERNEL_WITH_CHUNK(kernel_1d_reduction),
+                [KERNEL_CRITICAL]  = KERNEL_WITH_CHUNK(kernel_1d_critical),
         #endif
         #if OPENMP_HAS_3_0
-                [KERNEL_TASK]      = { kernel_1d_task },
+                [KERNEL_TASK]      = KERNEL_WITH_CHUNK(kernel_1d_task),
         #endif
         #if OPENMP_HAS_3_1
-                [KERNEL_ATOMIC]    = { kernel_1d_atomic },
+                [KERNEL_ATOMIC]    = KERNEL_WITH_CHUNK(kernel_1d_atomic),
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY]  = { kernel_1d_simd_memory },
-                [KERNEL_SIMD_COMPUTE] = { kernel_1d_simd_compute },
+                [KERNEL_SIMD_MEMORY]  = KERNEL_WITH_CHUNK(kernel_1d_simd_memory),
+                [KERNEL_SIMD_COMPUTE] = KERNEL_WITH_CHUNK(kernel_1d_simd_compute),
         #endif
         #if OPENMP_HAS_TASKLOOP
-                [KERNEL_TASKLOOP] = { kernel_1d_taskloop },
+                [KERNEL_TASKLOOP] = KERNEL_WITH_CHUNK(kernel_1d_taskloop),
         #endif
         #if OPENMP_HAS_MASKED
-                [KERNEL_MASKED] = { kernel_1d_masked },
+                [KERNEL_MASKED] = KERNEL_WITHOUT_CHUNK(kernel_1d_masked),
         #endif
         #if OPENMP_HAS_NATIVE_SCAN
-                [KERNEL_NATIVE_SCAN] = { kernel_1d_native_scan },
+                [KERNEL_NATIVE_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_1d_native_scan),
         #endif
         #if OPENMP_HAS_TWO_PASS_SCAN
-                [KERNEL_TWO_PASS_SCAN] = { kernel_1d_two_pass_scan },
+                [KERNEL_TWO_PASS_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_1d_two_pass_scan),
         #endif
     },
 
     [VIEW_2D] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_LOOP]      = { kernel_2d_loop },
-                [KERNEL_GEMM]      = { kernel_2d_gemm },
-                [KERNEL_JACOBI]    = { kernel_2d_jacobi },
-                [KERNEL_CG]        = { kernel_2d_cg },
-                [KERNEL_SECTIONS]  = { kernel_2d_sections },
-                [KERNEL_MASTER]    = { kernel_2d_master },
-                [KERNEL_ORDERED]   = { kernel_2d_ordered },
-                [KERNEL_SYNC]      = { kernel_2d_sync },
-                [KERNEL_REDUCTION] = { kernel_2d_reduction },
+                [KERNEL_LOOP]      = KERNEL_WITH_CHUNK(kernel_2d_loop),
+                [KERNEL_GEMM]      = KERNEL_WITH_CHUNK(kernel_2d_gemm),
+                [KERNEL_JACOBI]    = KERNEL_WITH_CHUNK(kernel_2d_jacobi),
+                [KERNEL_CG]        = KERNEL_WITH_CHUNK(kernel_2d_cg),
+                [KERNEL_SECTIONS]  = KERNEL_WITHOUT_CHUNK(kernel_2d_sections),
+                [KERNEL_MASTER]    = KERNEL_WITHOUT_CHUNK(kernel_2d_master),
+                [KERNEL_ORDERED]   = KERNEL_WITH_CHUNK(kernel_2d_ordered),
+                [KERNEL_SYNC]      = KERNEL_WITH_CHUNK(kernel_2d_sync),
+                [KERNEL_REDUCTION] = KERNEL_WITH_CHUNK(kernel_2d_reduction),
         #endif
         #if OPENMP_HAS_3_0
-                [KERNEL_COLLAPSE]  = { kernel_2d_collapse },
-                [KERNEL_TASK]      = { kernel_2d_task },
+                [KERNEL_COLLAPSE]  = KERNEL_WITH_CHUNK(kernel_2d_collapse),
+                [KERNEL_TASK]      = KERNEL_WITH_CHUNK(kernel_2d_task),
         #endif
         #if OPENMP_HAS_3_1
-                [KERNEL_ATOMIC]    = { kernel_2d_atomic },
+                [KERNEL_ATOMIC]    = KERNEL_WITH_CHUNK(kernel_2d_atomic),
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY]  = { kernel_2d_simd_memory },
-                [KERNEL_SIMD_COMPUTE] = { kernel_2d_simd_compute },
+                [KERNEL_SIMD_MEMORY]  = KERNEL_WITH_CHUNK(kernel_2d_simd_memory),
+                [KERNEL_SIMD_COMPUTE] = KERNEL_WITH_CHUNK(kernel_2d_simd_compute),
         #endif
         #if OPENMP_HAS_TASKLOOP
-                [KERNEL_TASKLOOP] = { kernel_2d_taskloop },
+                [KERNEL_TASKLOOP] = KERNEL_WITH_CHUNK(kernel_2d_taskloop),
         #endif
         #if OPENMP_HAS_MASKED
-                [KERNEL_MASKED] = { kernel_2d_masked },
+                [KERNEL_MASKED] = KERNEL_WITHOUT_CHUNK(kernel_2d_masked),
         #endif
         #if OPENMP_HAS_NATIVE_SCAN
-                [KERNEL_NATIVE_SCAN] = { kernel_2d_native_scan },
+                [KERNEL_NATIVE_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_2d_native_scan),
         #endif
         #if OPENMP_HAS_TWO_PASS_SCAN
-                [KERNEL_TWO_PASS_SCAN] = { kernel_2d_two_pass_scan },
+                [KERNEL_TWO_PASS_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_2d_two_pass_scan),
         #endif
             },
 
         [VIEW_3D] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_LOOP]      = { kernel_3d_loop },
-                [KERNEL_SYNC]      = { kernel_3d_sync },
-                [KERNEL_REDUCTION] = { kernel_3d_reduction },
+                [KERNEL_LOOP]      = KERNEL_WITH_CHUNK(kernel_3d_loop),
+                [KERNEL_SYNC]      = KERNEL_WITH_CHUNK(kernel_3d_sync),
+                [KERNEL_REDUCTION] = KERNEL_WITH_CHUNK(kernel_3d_reduction),
         #endif
         #if OPENMP_HAS_3_0
-                [KERNEL_COLLAPSE] = { kernel_3d_collapse },
-                [KERNEL_TASK]     = { kernel_3d_task },
+                [KERNEL_COLLAPSE] = KERNEL_WITH_CHUNK(kernel_3d_collapse),
+                [KERNEL_TASK]     = KERNEL_WITH_CHUNK(kernel_3d_task),
         #endif
         #if OPENMP_HAS_3_1
-                [KERNEL_ATOMIC]   = { kernel_3d_atomic },
+                [KERNEL_ATOMIC]   = KERNEL_WITH_CHUNK(kernel_3d_atomic),
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY]  = { kernel_3d_simd_memory },
-                [KERNEL_SIMD_COMPUTE] = { kernel_3d_simd_compute },
+                [KERNEL_SIMD_MEMORY]  = KERNEL_WITH_CHUNK(kernel_3d_simd_memory),
+                [KERNEL_SIMD_COMPUTE] = KERNEL_WITH_CHUNK(kernel_3d_simd_compute),
         #endif
         #if OPENMP_HAS_TASKLOOP
-                [KERNEL_TASKLOOP] = { kernel_3d_taskloop },
+                [KERNEL_TASKLOOP] = KERNEL_WITH_CHUNK(kernel_3d_taskloop),
         #endif
         #if OPENMP_HAS_TWO_PASS_SCAN
-                [KERNEL_TWO_PASS_SCAN] = { kernel_3d_two_pass_scan },
+                [KERNEL_TWO_PASS_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_3d_two_pass_scan),
         #endif
         #if OPENMP_HAS_NATIVE_SCAN
-                [KERNEL_NATIVE_SCAN] = { kernel_3d_native_scan },
+                [KERNEL_NATIVE_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_3d_native_scan),
         #endif
             },
 
         [VIEW_AOS] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_LOOP]      = { kernel_aos_loop },
-                [KERNEL_REDUCTION] = { kernel_aos_reduction },
+                [KERNEL_LOOP]      = KERNEL_WITH_CHUNK(kernel_aos_loop),
+                [KERNEL_REDUCTION] = KERNEL_WITH_CHUNK(kernel_aos_reduction),
         #endif
         #if OPENMP_HAS_3_0
-                [KERNEL_TASK] = { kernel_aos_task },
+                [KERNEL_TASK] = KERNEL_WITH_CHUNK(kernel_aos_task),
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY]  = { kernel_aos_simd_memory },
-                [KERNEL_SIMD_COMPUTE] = { kernel_aos_simd_compute },
+                [KERNEL_SIMD_MEMORY]  = KERNEL_WITH_CHUNK(kernel_aos_simd_memory),
+                [KERNEL_SIMD_COMPUTE] = KERNEL_WITH_CHUNK(kernel_aos_simd_compute),
         #endif
         #if OPENMP_HAS_TASKLOOP
-                [KERNEL_TASKLOOP] = { kernel_aos_taskloop },
+                [KERNEL_TASKLOOP] = KERNEL_WITH_CHUNK(kernel_aos_taskloop),
         #endif
         #if OPENMP_HAS_TWO_PASS_SCAN
-                [KERNEL_TWO_PASS_SCAN] = { kernel_aos_two_pass_scan },
+                [KERNEL_TWO_PASS_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_aos_two_pass_scan),
         #endif
         #if OPENMP_HAS_NATIVE_SCAN
-                [KERNEL_NATIVE_SCAN] = { kernel_aos_native_scan },
+                [KERNEL_NATIVE_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_aos_native_scan),
         #endif
             },
 
         [VIEW_SOA] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_LOOP]      = { kernel_soa_loop },
-                [KERNEL_REDUCTION] = { kernel_soa_reduction },
+                [KERNEL_LOOP]      = KERNEL_WITH_CHUNK(kernel_soa_loop),
+                [KERNEL_REDUCTION] = KERNEL_WITH_CHUNK(kernel_soa_reduction),
         #endif
         #if OPENMP_HAS_3_0
-                [KERNEL_TASK] = { kernel_soa_task },
+                [KERNEL_TASK] = KERNEL_WITH_CHUNK(kernel_soa_task),
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY]  = { kernel_soa_simd_memory },
-                [KERNEL_SIMD_COMPUTE] = { kernel_soa_simd_compute },
+                [KERNEL_SIMD_MEMORY]  = KERNEL_WITH_CHUNK(kernel_soa_simd_memory),
+                [KERNEL_SIMD_COMPUTE] = KERNEL_WITH_CHUNK(kernel_soa_simd_compute),
         #endif
         #if OPENMP_HAS_TASKLOOP
-                [KERNEL_TASKLOOP] = { kernel_soa_taskloop },
+                [KERNEL_TASKLOOP] = KERNEL_WITH_CHUNK(kernel_soa_taskloop),
         #endif
         #if OPENMP_HAS_TWO_PASS_SCAN
-                [KERNEL_TWO_PASS_SCAN] = { kernel_soa_two_pass_scan },
+                [KERNEL_TWO_PASS_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_soa_two_pass_scan),
         #endif
         #if OPENMP_HAS_NATIVE_SCAN
-                [KERNEL_NATIVE_SCAN] = { kernel_soa_native_scan },
+                [KERNEL_NATIVE_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_soa_native_scan),
         #endif
             },
 
         [VIEW_AOSOA] = {
         #if OPENMP_HAS_2_0
-                [KERNEL_LOOP]      = { kernel_aosoa_loop },
-                [KERNEL_REDUCTION] = { kernel_aosoa_reduction },
+                [KERNEL_LOOP]      = KERNEL_WITH_CHUNK(kernel_aosoa_loop),
+                [KERNEL_REDUCTION] = KERNEL_WITH_CHUNK(kernel_aosoa_reduction),
         #endif
         #if OPENMP_HAS_3_0
-                [KERNEL_TASK] = { kernel_aosoa_task },
+                [KERNEL_TASK] = KERNEL_WITH_CHUNK(kernel_aosoa_task),
         #endif
         #if OPENMP_HAS_SIMD
-                [KERNEL_SIMD_MEMORY]  = { kernel_aosoa_simd_memory },
-                [KERNEL_SIMD_COMPUTE] = { kernel_aosoa_simd_compute },
+                [KERNEL_SIMD_MEMORY]  = KERNEL_WITH_CHUNK(kernel_aosoa_simd_memory),
+                [KERNEL_SIMD_COMPUTE] = KERNEL_WITH_CHUNK(kernel_aosoa_simd_compute),
         #endif
         #if OPENMP_HAS_TASKLOOP
-                [KERNEL_TASKLOOP] = { kernel_aosoa_taskloop },
+                [KERNEL_TASKLOOP] = KERNEL_WITH_CHUNK(kernel_aosoa_taskloop),
         #endif
         #if OPENMP_HAS_TWO_PASS_SCAN
-                [KERNEL_TWO_PASS_SCAN] = { kernel_aosoa_two_pass_scan },
+                [KERNEL_TWO_PASS_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_aosoa_two_pass_scan),
         #endif
         #if OPENMP_HAS_NATIVE_SCAN
-                [KERNEL_NATIVE_SCAN] = { kernel_aosoa_native_scan },
+                [KERNEL_NATIVE_SCAN] = KERNEL_WITHOUT_CHUNK(kernel_aosoa_native_scan),
         #endif
             },
         };
+
+#undef KERNEL_WITH_CHUNK
+#undef KERNEL_WITHOUT_CHUNK
 
 const KernelDescriptor *kernel_registry_get(ViewType view_type, KernelType kernel_type) {
     if ((unsigned) view_type >= VIEW_TYPE_COUNT ||

@@ -46,11 +46,14 @@
  * @brief Describes one KernelType/ViewType registration.
  *
  * The KernelType and ViewType are already encoded by the registry indices,
- * so the descriptor only stores the executable implementation.
+ * so the descriptor stores the executable implementation and its
+ * chunk-size support metadata.
  */
 typedef struct KernelDescriptor {
     /** Concrete implementation, or NULL when unavailable. */
     KernelFunc function;
+    /** Whether the implementation consumes TestCase.chunk_size. */
+    bool is_chunk_supported;
 } KernelDescriptor;
 
 /**

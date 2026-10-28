@@ -172,10 +172,22 @@ static bool populate_kernel_group(
     KernelTestGroup *group;
     size_t case_count = 0U;
     size_t case_index = 0U;
+    size_t chunk_variants;
+    const KernelDescriptor *descriptor;
 
     if (test_set == NULL || config == NULL) {
         return false;
     }
+
+    descriptor = kernel_registry_get(test_set->view.type, kernel_type);
+    if (descriptor == NULL || descriptor->function == NULL) {
+        return false;
+    }
+
+    /* An ignored chunk at the moment is represented by the first configured value. */
+    chunk_variants = descriptor->is_chunk_supported
+        ? config->execution.chunk_sizes.count
+        : (config->execution.chunk_sizes.count != 0U ? 1U : 0U);
 
     group = &test_set->kernels.data[test_set->kernels.count];
     group->kernel = kernel_type;
@@ -183,20 +195,20 @@ static bool populate_kernel_group(
     if (fixed_thread_count != 0U) {
         for (size_t i = 0U; i < config->execution.threads.count; i++) {
             if (config->execution.threads.data[i] == fixed_thread_count) {
-                case_count = config->execution.chunk_sizes.count;
+                case_count = chunk_variants;
                 break;
             }
         }
-    } else if (config->execution.chunk_sizes.count == 0U) {
+    } else if (chunk_variants == 0U) {
         case_count = 0U;
     } else {
         if (config->execution.threads.count >
-            SIZE_MAX / config->execution.chunk_sizes.count) {
+            SIZE_MAX / chunk_variants) {
             return false;
         }
 
         case_count = config->execution.threads.count *
-                     config->execution.chunk_sizes.count;
+                     chunk_variants;
     }
 
     if (case_count == 0U) {
@@ -212,7 +224,7 @@ static bool populate_kernel_group(
         for (size_t i = 0U; i < config->execution.threads.count; i++) {
             const uint32_t num_threads = config->execution.threads.data[i];
             if (fixed_thread_count == 0U || num_threads == fixed_thread_count) {
-                for (size_t c = 0U; c < config->execution.chunk_sizes.count; c++) {
+                for (size_t c = 0U; c < chunk_variants; c++) {
                     TestCase *test_case    = &group->cases.data[case_index];
                     test_case->uid         = (TestCaseUID)case_index;
                     test_case->num_threads = num_threads;
