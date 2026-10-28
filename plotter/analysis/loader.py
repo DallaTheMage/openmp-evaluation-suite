@@ -32,7 +32,7 @@ import pandas as pd
 from .config import (COMPILERS, SCALING_TYPES, DATASETS, REQUIRED_DATASETS,)
 logger = logging.getLogger(__name__)
 
-def load_data(data_dir: Path,) -> dict[str, dict]:
+def load_data(data_dir: Path, schedule_str: str,) -> dict[str, dict]:
     """
     Load benchmark datasets from the input directory.
 
@@ -53,7 +53,7 @@ def load_data(data_dir: Path,) -> dict[str, dict]:
     """
     datasets = {}
     for compiler in COMPILERS:
-        base = data_dir / compiler / 'static'
+        base = data_dir / compiler / schedule_str
         if not base.is_dir():
             logger.warning(
                 "Skipping compiler %s: directory not found (%s)",

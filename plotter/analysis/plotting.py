@@ -266,11 +266,11 @@ def plot_correlations(df: pd.DataFrame, folder: Path, show: bool = False,) -> No
     ax.set_title('Spearman correlations')
     save_figure(fig, folder / 'correlation.png', show,)
 
-def plot_compiler_results(df: pd.DataFrame, compiler: str, scaling: str, output_dir: Path, show: bool = False,) -> None:
+def plot_compiler_results(df: pd.DataFrame, compiler: str, schedule:str, scaling: str, output_dir: Path, show: bool = False,) -> None:
     """
     Generate all plots for a compiler/scaling combination.
     """
-    folder = (output_dir / safe_name(compiler) / safe_name(scaling))
+    folder = (output_dir / safe_name(compiler) / safe_name(schedule) / safe_name(scaling))
     logger.info("Generating plots for %s/%s (%d rows)", compiler, scaling, len(df),)
     boxplots = (
         ('wall_time_sec_mean', 'Execution time', 'execution_time.png', True,),
@@ -294,9 +294,9 @@ def plot_compiler_results(df: pd.DataFrame, compiler: str, scaling: str, output_
     plot_scaling(df, folder, compiler, scaling, show,)
     plot_correlations(df, folder, show)
 
-def per_compiler_plots(benchmarks: pd.DataFrame, output_dir: Path, show: bool = False,) -> None:
+def per_compiler_plots(benchmarks: pd.DataFrame, output_dir: Path, schedule: str, show: bool = False,) -> None:
     """
     Generate plots for every available compiler/scaling pair.
     """
     for (compiler, scaling), df in benchmarks.groupby(['compiler', 'scaling_type']):
-        plot_compiler_results(df, str(compiler), str(scaling), output_dir, show,)
+        plot_compiler_results(df, str(compiler), str(schedule), str(scaling), output_dir, show,)

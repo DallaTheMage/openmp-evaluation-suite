@@ -50,3 +50,5 @@ CORRELATION_METRICS = (
     'energy_dram_joules_mean',
     'wall_time_cv_pct',
 )
+
+SCHEDULES = ('static', 'dynamic', 'guided')

@@ -30,7 +30,7 @@ CLI utility for benchmark analysis and visualization.
 import argparse
 import logging
 from pathlib import Path
-
+from analysis.config import SCHEDULES
 from analysis.loader import load_data
 from analysis.processing import prepare
 from analysis.plotting import per_compiler_plots
@@ -87,18 +87,20 @@ def main() -> None:
     output_dir = args.output.resolve()
     logger.info("Input directory: %s", input_dir,)
     logger.info("Output directory: %s", output_dir,)
-    # Load benchmark datasets
-    datasets = load_data(input_dir)
-    # Prepare and enrich data
-    benchmarks = prepare(datasets)
-    logger.info("Loaded compilers: %s", sorted(benchmarks['compiler'].unique()),)
-    logger.info("Total benchmark rows: %d", len(benchmarks),)
-    # Generate compiler-specific plots
-    per_compiler_plots(benchmarks, output_dir, show = args.show,)
-    # Compare compiler performance
-    compiler_comparisons(benchmarks, output_dir, show = args.show,)
-    # Export summary tables
-    export_tables(benchmarks, output_dir,)
+    for schedule_str in SCHEDULES:
+        # Load benchmark datasets
+        datasets = load_data(input_dir, schedule_str)
+        # Prepare and enrich data
+        benchmarks = prepare(datasets)
+        logger.info("Loaded compilers: %s", sorted(benchmarks['compiler'].unique()),)
+        logger.info("Total benchmark rows: %d", len(benchmarks),)
+        # Generate compiler-specific plots
+        per_compiler_plots(benchmarks, output_dir, schedule_str, show = args.show,)
+        # Compare compiler performance
+        compiler_comparisons(benchmarks, output_dir, show = args.show,)
+        # Export summary tables
+        export_tables(benchmarks, output_dir,)
+
     logger.info("Analysis completed: %s", output_dir,)
 
 if __name__ == '__main__':
