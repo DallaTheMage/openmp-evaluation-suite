@@ -59,6 +59,7 @@ python main.py --help
 ## Output
 
 The generated files are organized by compiler (`gcc`, `clang`, `icx`) and scaling type (`Full_scale`, `Proportional`).
+At the moment the plotter utility generates only static schedule plots, soon will be an update to support a full plotting tool.
 
 The utility produces:
 
