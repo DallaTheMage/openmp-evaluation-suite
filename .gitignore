@@ -2,12 +2,13 @@
 *.o
 *.csv
 *.json
+*.pyc
+*.tex
 main
 build/
 backup.*
-BACKUP/*
+BACKUP/
 autotune.conf
 TODO
 .venv/
-*.pyc
-plotter/plots/*
+plotter/plots/
