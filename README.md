@@ -258,6 +258,7 @@ OpenMP affinity settings are interpreted by the runtime and may behave different
 **`Permission denied` when running a script:** run `chmod +x build.sh autotune.sh`, or invoke it with `bash ./build.sh`.
 
 **Compiler not found / OpenMP unavailable:** verify `CC`, `COMPILERNAME`, the OpenMP runtime installation, and the relevant flags. Run `VERBOSE=1 ./build.sh` to inspect the build commands.
+If you are using intel oneAPI compiler (icc or icx) you need to execute `source /opt/intel/oneapi/setvars.sh` before compilation or insert that line inside your shell startup configuration file.
 
 **Error indicating `SIZE_PER_THREAD` is derived:** replace the old `SIZE_PER_THREAD=...` configuration entry with `SIZE_PER_THREAD_LOG2=...`.
 

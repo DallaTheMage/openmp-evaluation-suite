@@ -96,5 +96,5 @@ def load_data(data_dir: Path, schedule_str: str,) -> dict[str, dict]:
         if any(scaling in compiler_data for scaling in SCALING_TYPES):
             datasets[compiler] = compiler_data
     if not datasets:
-        raise FileNotFoundError(f"No valid benchmark datasets found in {data_dir}")
+        print(f"[WARNING] No valid benchmark datasets found in {data_dir / compiler / schedule_str}, skipping")
     return datasets
