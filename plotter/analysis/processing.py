@@ -29,16 +29,9 @@ Benchmark data preparation and metric computation.
 import logging
 import numpy as np
 import pandas as pd
-from analysis.config import KEYS, SCALING_TYPES
+from analysis.config import KEYS, REQUIRED_METRIC_COLUMNS, SCALING_TYPES
 
 logger = logging.getLogger(__name__)
-
-REQUIRED_METRIC_COLUMNS = (
-    'wall_time_sec_mean',
-    'wall_time_sec_min',
-    'wall_time_sec_max',
-    'wall_time_sec_variance',
-)
 
 def flatten_index(df: pd.DataFrame,) -> pd.DataFrame:
     """

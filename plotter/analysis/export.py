@@ -31,21 +31,10 @@ import logging
 from pathlib import Path
 import pandas as pd
 
+from analysis.config import GROUP_COLUMNS, SUMMARY_COLUMNS
+
 logger = logging.getLogger(__name__)
 
-SUMMARY_COLUMNS = (
-    'compiler',
-    'scaling_type',
-    'kernel',
-    'view_type',
-    'num_threads',
-    'chunk_size',
-    'window_size',
-    'wall_time_sec_mean',
-    'energy_total',
-    'edp',
-)
-GROUP_COLUMNS = ('compiler', 'scaling_type', 'kernel',)
 
 def select_summary_columns(df: pd.DataFrame,) -> pd.DataFrame:
     columns = [column for column in SUMMARY_COLUMNS

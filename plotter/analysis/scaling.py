@@ -32,14 +32,10 @@ import pandas as pd
 import seaborn as sns
 
 from analysis.plotting import safe_name, save_figure
+from analysis.config import SCALING_NUMERIC
 
 logger = logging.getLogger(__name__)
 
-SCALING_NUMERIC = (
-    'baseline_threads', 'scaled_threads', 'baseline_time_sec',
-    'scaled_time_sec', 'baseline_work_elements', 'scaled_work_elements',
-    'work_scale', 'speedup', 'efficiency', 'overhead_sec', 'chunk_size',
-)
 
 def _reconstruct(df: pd.DataFrame, mode: str) -> pd.DataFrame:
     needed = {'kernel', 'view_type', 'num_threads', 'window_size', 'wall_time_sec_mean'}
