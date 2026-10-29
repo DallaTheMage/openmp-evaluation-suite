@@ -28,6 +28,7 @@ Compiler performance comparisons.
 """
 
 import logging
+from itertools import combinations
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,7 +44,7 @@ def pair_compiler_results(benchmarks: pd.DataFrame, reference: str, other: str,)
     """
     Match equivalent benchmark configurations and compute speedup.
     """
-    keys = ['scaling_type', 'test_set_id', 'test_case_id', 'kernel',]
+    keys = ['scaling_type', 'kernel',]
     keys.extend(column for column in COMPARISON_COLUMNS
                 if column in benchmarks.columns)
     required = keys + ['compiler', 'wall_time_sec_mean',]
@@ -73,14 +74,8 @@ def compute_geometric_speedup(paired: pd.DataFrame,) -> pd.DataFrame:
     if paired.empty:
         return pd.DataFrame()
     return (
-        paired.groupby(
-            ['kernel', 'scaling_type']
-        )['speedup']
-        .agg(
-            lambda values: np.exp(
-                np.log(values).mean()
-            )
-        )
+        paired.groupby(['kernel', 'scaling_type'])['speedup']
+        .agg(lambda values: np.exp(np.log(values).mean()))
         .reset_index()
     )
 
@@ -124,31 +119,36 @@ def plot_geometric_speedup(
                 show,
             )
 
-def compiler_comparisons(benchmarks: pd.DataFrame, output_dir: Path, show: bool = False,) -> None:
+def compiler_comparisons(benchmarks: pd.DataFrame, output_dir: Path, show: bool = False, detailed: bool = False) -> None:
     """
-    Compare all available compilers against a reference.
+    Compare every unordered pair of available compilers.
+
+    Keep gcc as the first reference when present for consistent filenames
+    with previous runs, but also compare all remaining compilers to each other.
     """
-    available = (benchmarks['compiler'].dropna().unique().tolist())
+    available = sorted(benchmarks['compiler'].dropna().unique().tolist())
     if len(available) < 2:
         logger.info("Skipping compiler comparisons: fewer than two compilers available")
         return
-    reference = ('gcc' if 'gcc' in available else available[0])
+    if 'gcc' in available:
+        available.remove('gcc')
+        available.insert(0, 'gcc')
     folder = output_dir / 'comparisons'
-    folder.mkdir(parents = True, exist_ok = True,)
-    for other in available:
-        if other == reference:
-            continue
-        paired = pair_compiler_results(benchmarks, reference, other,)
+    folder.mkdir(parents=True, exist_ok=True)
+    for reference, other in combinations(available, 2):
+        paired = pair_compiler_results(benchmarks, reference, other)
         if paired.empty:
-            logger.warning("No comparable benchmarks for %s vs %s", reference, other,)
+            logger.warning("No comparable benchmarks for %s vs %s", reference, other)
             continue
-        filename = (f'paired_{safe_name(other)}_vs_{safe_name(reference)}.csv')
-        paired.to_csv(folder / filename, index = False,)
-        plot_compiler_speedup(paired, reference, other, folder, show,)
-        summary = compute_geometric_speedup(paired)
-        plot_geometric_speedup(summary, reference, other, folder, show,)
-        plot_chunked_compiler_comparisons(paired, reference, other, folder, show,)
-        plot_threaded_compiler_comparisons(paired, reference, other, folder, show,)
+        filename = f'paired_{safe_name(other)}_vs_{safe_name(reference)}.csv'
+        paired.to_csv(folder / filename, index=False)
+        # Controlled comparisons by scaling type, thread count and chunk size.
+        plot_threaded_compiler_comparisons(paired, reference, other, folder, show)
+        if detailed:
+            plot_compiler_speedup(paired, reference, other, folder, show)
+            summary = compute_geometric_speedup(paired)
+            plot_geometric_speedup(summary, reference, other, folder, show)
+            plot_chunked_compiler_comparisons(paired, reference, other, folder, show)
 
 def plot_chunked_compiler_comparisons(
     paired: pd.DataFrame,
@@ -157,7 +157,8 @@ def plot_chunked_compiler_comparisons(
     folder: Path,
     show: bool = False,
 ) -> None:
-    """Create kernel comparisons at fixed scaling type and chunk size.
+    """
+    Create kernel comparisons at fixed scaling type and chunk size.
     All other matched benchmark dimensions remain as observations in the
     distribution; no measurements are discarded or silently averaged.
     """
@@ -198,7 +199,8 @@ def plot_threaded_compiler_comparisons(
     folder: Path,
     show: bool = False,
 ) -> None:
-    """Plot speedup by kernel with a distinct series for each thread count.
+    """
+    Plot speedup by kernel with a distinct series for each thread count.
     Scaling type and chunk size are fixed within each plot. Points represent
     geometric means of the matched configurations for that kernel/thread count.
     """

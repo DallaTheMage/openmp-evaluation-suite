@@ -26,7 +26,6 @@
 """
 Shared configuration for benchmark analysis.
 """
-COMPILERS = ('gcc', 'clang', 'icx',)
 SCALING_TYPES = ('Full_scale', 'Proportional',)
 DATASETS = ('raw_samples', 'aggregated_samples', 'scaling', 'test_plan',)
 REQUIRED_DATASETS = ('aggregated_samples', 'test_plan',)

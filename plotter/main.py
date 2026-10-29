@@ -36,6 +36,8 @@ from analysis.processing import prepare
 from analysis.plotting import per_compiler_plots
 from analysis.comparisons import compiler_comparisons
 from analysis.export import export_tables
+from analysis.scaling import prepare_scaling, generate_scaling_plots, plot_fixed_thread_metrics
+from analysis.plotting import safe_name
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,14 @@ def parse_args() -> argparse.Namespace:
         action = 'store_true',
         help = 'Enable verbose logging',
     )
+    parser.add_argument(
+        '--exploratory', action='store_true',
+        help='Also generate legacy exploratory boxplots, scatter plots and correlations',
+    )
+    parser.add_argument(
+        '--correlations', action='store_true',
+        help='Generate Spearman correlations even without --exploratory',
+    )
     return parser.parse_args()
 
 def configure_logging(verbose: bool,) -> None:
@@ -88,19 +98,31 @@ def main() -> None:
     logger.info("Input directory: %s", input_dir,)
     logger.info("Output directory: %s", output_dir,)
     for schedule_str in SCHEDULES:
-        # Load benchmark datasets
         datasets = load_data(input_dir, schedule_str)
         if datasets:
-            # Prepare and enrich data
             benchmarks = prepare(datasets)
             logger.info("Loaded compilers: %s", sorted(benchmarks['compiler'].unique()),)
             logger.info("Total benchmark rows: %d", len(benchmarks),)
-            # Generate compiler-specific plots
-            per_compiler_plots(benchmarks, output_dir, schedule_str, show = args.show,)
-            # Compare compiler performance
-            compiler_comparisons(benchmarks, output_dir, show = args.show,)
-            # Export summary tables
-            export_tables(benchmarks, output_dir,)
+            benchmarks['schedule'] = schedule_str
+            for compiler, entries in datasets.items():
+                for mode in ('Full_scale', 'Proportional'):
+                    if mode not in entries:
+                        continue
+                    subset = benchmarks[(benchmarks.compiler == compiler)
+                                        & (benchmarks.scaling_type == mode)]
+                    enriched = prepare_scaling(entries[mode].get('scaling'), subset, mode)
+                    folder = (output_dir / safe_name(compiler)
+                              / safe_name(schedule_str) / safe_name(mode))
+                    generate_scaling_plots(enriched, folder, mode, show=args.show)
+                    plot_fixed_thread_metrics(subset, folder, mode, show=args.show)
+            if args.exploratory or args.correlations:
+                per_compiler_plots(benchmarks, output_dir, schedule_str,
+                                   show=args.show, exploratory=args.exploratory,
+                                   correlations=args.correlations or args.exploratory)
+            schedule_dir = output_dir / safe_name(schedule_str)
+            compiler_comparisons(benchmarks, schedule_dir, show=args.show,
+                                 detailed=args.exploratory)
+            export_tables(benchmarks, schedule_dir)
     logger.info("Analysis completed: %s", output_dir,)
 
 if __name__ == '__main__':

@@ -29,19 +29,19 @@ Utilities for loading benchmark datasets.
 import logging
 from pathlib import Path
 import pandas as pd
-from .config import (COMPILERS, SCALING_TYPES, DATASETS, REQUIRED_DATASETS,)
+from analysis.config import (SCALING_TYPES, DATASETS, REQUIRED_DATASETS,)
+
 logger = logging.getLogger(__name__)
 
 def load_data(data_dir: Path, schedule_str: str,) -> dict[str, dict]:
     """
     Load benchmark datasets from the input directory.
-
     Expected structure:
         data_dir/
-            compiler/
-                static/
+            <compiler>/
+                <schedule>/
                     metadata.csv
-                    scaling_type/
+                    <scaling_type>/
                         aggregated_samples.csv
                         test_plan.csv
                         ...
@@ -52,15 +52,17 @@ def load_data(data_dir: Path, schedule_str: str,) -> dict[str, dict]:
         Nested dictionary containing the loaded DataFrames.
     """
     datasets = {}
-    for compiler in COMPILERS:
-        base = data_dir / compiler / schedule_str
-        if not base.is_dir():
-            logger.warning(
-                "Skipping compiler %s: directory not found (%s)",
-                compiler,
-                base,
-            )
-            continue
+    if not data_dir.is_dir():
+        logger.warning("Input directory not found: %s", data_dir)
+        return datasets
+    compiler_dirs = sorted(
+        (directory for directory in data_dir.iterdir()
+         if directory.is_dir() and (directory / schedule_str).is_dir()),
+        key=lambda directory: directory.name,
+    )
+    for compiler_dir in compiler_dirs:
+        compiler = compiler_dir.name
+        base = compiler_dir / schedule_str
         compiler_data = {}
         metadata_path = base / 'metadata.csv'
         if metadata_path.is_file():
@@ -96,5 +98,5 @@ def load_data(data_dir: Path, schedule_str: str,) -> dict[str, dict]:
         if any(scaling in compiler_data for scaling in SCALING_TYPES):
             datasets[compiler] = compiler_data
     if not datasets:
-        print(f"[WARNING] No valid benchmark datasets found in {data_dir / compiler / schedule_str}, skipping")
+        logger.info("No valid benchmark datasets for scheduling %s in %s", schedule_str, data_dir)
     return datasets

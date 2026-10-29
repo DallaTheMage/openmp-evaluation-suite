@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from analysis.config import (CONFIG_COLUMNS, CORRELATION_METRICS,)
+from analysis.config import CORRELATION_METRICS
 
 logger = logging.getLogger(__name__)
 sns.set_theme(style='whitegrid')
@@ -75,22 +75,6 @@ def plot_boxplot(
     ax.tick_params(axis='x', labelrotation=45,)
     ax.set_title(title)
     save_figure(fig, path, show)
-
-def plot_kernel_view_heatmap(df: pd.DataFrame, folder: Path, show: bool = False,) -> None:
-    if not has_columns(df, 'kernel', 'view_type', 'wall_time_sec_mean',):
-        return
-    matrix = df.pivot_table(
-        index = 'kernel',
-        columns = 'view_type',
-        values = 'wall_time_sec_mean',
-        aggfunc = 'median',
-    )
-    if matrix.empty:
-        return
-    fig, ax = plt.subplots(figsize=(12, 8))
-    sns.heatmap(matrix, annot = True, fmt = '.3g', cmap = 'viridis', ax = ax,)
-    ax.set_title('Kernel vs view type')
-    save_figure(fig, folder / 'kernel_view_type.png', show,)
 
 def plot_energy_vs_time(df: pd.DataFrame, folder: Path, show: bool = False,) -> None:
     required = ('wall_time_sec_mean', 'energy_total', 'kernel',)
@@ -135,115 +119,6 @@ def plot_cache_vs_time(df: pd.DataFrame, folder: Path, show: bool = False,) -> N
     ax.set_title('Cache misses vs execution time')
     save_figure(fig,folder / 'cache_vs_time.png',show,)
 
-def plot_chunk_size(df: pd.DataFrame, folder: Path, show: bool = False,) -> None:
-    required = ('kernel', 'chunk_size', 'num_threads', 'wall_time_sec_mean',)
-    if not has_columns(df, *required):
-        return
-    valid = df[
-        (df['num_threads'] == 8)
-        & df['chunk_size'].notna()
-    ]
-    if valid.empty:
-        return
-    grid = sns.relplot(
-        data=valid,
-        x='chunk_size',
-        y='wall_time_sec_mean',
-        col='kernel',
-        col_wrap=3,
-        hue=(
-            'view_type'
-            if 'view_type' in valid.columns
-            else None
-        ),
-        kind='line',
-        marker='o',
-        facet_kws={
-            'sharey': False,
-        },
-        height=3.5,
-    )
-    save_figure(grid.figure, folder / 'chunk_size.png', show,)
-
-def compute_scaling(df: pd.DataFrame,) -> pd.DataFrame:
-    required = ('kernel', 'num_threads', 'wall_time_sec_mean',)
-    if not has_columns(df, *required):
-        return pd.DataFrame()
-    config = [column for column in CONFIG_COLUMNS
-              if column in df.columns]
-    frames = []
-    for kernel, kernel_df in df.groupby('kernel'):
-        valid = kernel_df.dropna(subset=config + ['num_threads', 'wall_time_sec_mean',])
-        if valid.empty:
-            continue
-        group_columns = config + ['num_threads']
-        grouped = (
-            valid.groupby(group_columns, dropna=False, as_index=False,)['wall_time_sec_mean']
-            .mean()
-        )
-        baseline = grouped[
-            grouped['num_threads'] == 1
-        ][
-            config + ['wall_time_sec_mean']
-        ].rename(
-            columns={'wall_time_sec_mean': 'baseline'}
-        )
-        if baseline.empty:
-            continue
-        if config:
-            grouped = grouped.merge(baseline, on = config, how = 'inner',)
-        else:
-            grouped['baseline'] = (baseline['baseline'].iloc[0])
-        grouped = grouped[
-            (grouped['wall_time_sec_mean'] > 0)
-            & (grouped['num_threads'] > 0)
-            & (grouped['baseline'] > 0)
-        ].copy()
-        if grouped['num_threads'].nunique() < 2:
-            continue
-        grouped['speedup'] = (grouped['baseline'] / grouped['wall_time_sec_mean'])
-        grouped['efficiency'] = (grouped['speedup'] / grouped['num_threads'])
-        if config:
-            grouped['configuration'] = (grouped[config] .astype(str) .agg(' | '.join, axis=1))
-        else:
-            grouped['configuration'] = 'default'
-        grouped['kernel'] = kernel
-        frames.append(grouped)
-    if not frames:
-        return pd.DataFrame()
-    return pd.concat(frames, ignore_index=True,)
-
-def plot_scaling(
-    df: pd.DataFrame,
-    folder: Path,
-    compiler: str,
-    scaling: str,
-    show: bool = False,
-) -> None:
-    scaling_data = compute_scaling(df)
-    if scaling_data.empty:
-        return
-    for kernel, kernel_df in scaling_data.groupby('kernel'):
-        for metric in ('speedup', 'efficiency'):
-            fig, ax = plt.subplots(figsize=(11, 6))
-            sns.lineplot(
-                data = kernel_df,
-                x = 'num_threads',
-                y = metric,
-                hue = 'configuration',
-                estimator = None,
-                marker = 'o',
-                ax = ax,
-            )
-            if metric == 'speedup':
-                threads = sorted(kernel_df['num_threads'].unique())
-                ax.plot(threads, threads, 'k--', label='Ideal',)
-            else:
-                ax.axhline(1, color='red', linestyle='--', label='Ideal',)
-            ax.set_title(f'{metric.title()} - ' f'{kernel} - {compiler}/{scaling}')
-            ax.legend(bbox_to_anchor = (1.05, 1), loc = 'upper left',)
-            save_figure(fig, folder / (f'{metric}_{safe_name(kernel)}.png'), show,)
-
 def plot_correlations(df: pd.DataFrame, folder: Path, show: bool = False,) -> None:
     metrics = [column for column in CORRELATION_METRICS
                if column in df.columns]
@@ -266,37 +141,39 @@ def plot_correlations(df: pd.DataFrame, folder: Path, show: bool = False,) -> No
     ax.set_title('Spearman correlations')
     save_figure(fig, folder / 'correlation.png', show,)
 
-def plot_compiler_results(df: pd.DataFrame, compiler: str, schedule:str, scaling: str, output_dir: Path, show: bool = False,) -> None:
+def plot_compiler_results(df: pd.DataFrame, compiler: str, schedule: str,
+                          scaling: str, output_dir: Path, show: bool = False,
+                          exploratory: bool = False, correlations: bool = False) -> None:
     """
-    Generate all plots for a compiler/scaling combination.
+    Optional exploratory charts; canonical scaling plots are in scaling.py.
+    These figures span different workloads and thread counts, so they must not
+    be interpreted as controlled comparisons. No incorrectly paired
+    Proportional 'speedup' graph is produced.
     """
-    folder = (output_dir / safe_name(compiler) / safe_name(schedule) / safe_name(scaling))
-    logger.info("Generating plots for %s/%s (%d rows)", compiler, scaling, len(df),)
-    boxplots = (
-        ('wall_time_sec_mean', 'Execution time', 'execution_time.png', True,),
-        ('wall_time_cv_pct', 'Variability', 'variability.png', False,),
-        ('ipc_mean', 'IPC', 'ipc.png', False,),
-        ('edp', 'EDP', 'edp.png', True,),
-    )
-    for metric, title, filename, log_scale in boxplots:
-        plot_boxplot(
-            df = df,
-            metric = metric,
-            title = f'{title} - {compiler}/{scaling}',
-            path = folder / filename,
-            log_scale = log_scale,
-            show = show,
+    folder = (output_dir / safe_name(compiler) / safe_name(schedule)
+              / safe_name(scaling) / 'exploratory')
+    if exploratory:
+        boxplots = (
+            ('wall_time_sec_mean', 'Execution time (mixed configurations)',
+             'execution_time.png', True),
+            ('wall_time_cv_pct', 'Variability (mixed configurations)',
+             'variability.png', False),
+            ('ipc_mean', 'IPC (mixed configurations)', 'ipc.png', False),
+            ('edp', 'EDP (mixed configurations)', 'edp.png', True),
         )
-    plot_kernel_view_heatmap(df, folder, show)
-    plot_energy_vs_time(df, folder, show)
-    plot_cache_vs_time(df, folder, show)
-    plot_chunk_size(df, folder, show)
-    plot_scaling(df, folder, compiler, scaling, show,)
-    plot_correlations(df, folder, show)
+        for metric, title, filename, log_scale in boxplots:
+            plot_boxplot(df, metric, f'{title} - {compiler}/{scaling}',
+                         folder / filename, log_scale, show)
+        plot_energy_vs_time(df, folder, show)
+        plot_cache_vs_time(df, folder, show)
+    if correlations:
+        plot_correlations(df, folder, show)
 
-def per_compiler_plots(benchmarks: pd.DataFrame, output_dir: Path, schedule: str, show: bool = False,) -> None:
-    """
-    Generate plots for every available compiler/scaling pair.
-    """
+
+def per_compiler_plots(benchmarks: pd.DataFrame, output_dir: Path, schedule: str,
+                       show: bool = False, exploratory: bool = False,
+                       correlations: bool = False) -> None:
+    """Generate optional figures for each available compiler and scaling type."""
     for (compiler, scaling), df in benchmarks.groupby(['compiler', 'scaling_type']):
-        plot_compiler_results(df, str(compiler), str(schedule), str(scaling), output_dir, show,)
+        plot_compiler_results(df, str(compiler), str(schedule), str(scaling),
+                              output_dir, show, exploratory, correlations)
