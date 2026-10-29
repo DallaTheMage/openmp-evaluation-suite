@@ -5,6 +5,10 @@
 *.pyc
 *.tex
 *.pdf
+*.aux
+*.out
+*.toc
+*.log
 main
 build/
 backup.*
