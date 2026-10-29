@@ -4,6 +4,7 @@
 *.json
 *.pyc
 *.tex
+*.pdf
 main
 build/
 backup.*
