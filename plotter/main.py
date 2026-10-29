@@ -27,62 +27,23 @@
 CLI utility for benchmark analysis and visualization.
 """
 
-import argparse
 import logging
-from pathlib import Path
 from analysis.config import SCHEDULES
 from analysis.loader import load_data
 from analysis.processing import prepare
 from analysis.plotting import per_compiler_plots
 from analysis.comparisons import compiler_comparisons
 from analysis.export import export_tables
-from analysis.scaling import prepare_scaling, generate_scaling_plots, plot_fixed_thread_metrics
+from analysis.scaling import (
+    prepare_scaling,
+    generate_scaling_plots,
+    plot_fixed_thread_metrics
+)
 from analysis.plotting import safe_name
+from analysis.parser import parse_args
 
 logger = logging.getLogger(__name__)
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=('Generate plots and statistics from benchmark results.')
-    )
-
-    parser.add_argument(
-        '-i',
-        '--input',
-        type = Path,
-        default = Path('../output'),
-        help = ('Directory containing benchmark results (default: output)'),
-    )
-
-    parser.add_argument(
-        '-o',
-        '--output',
-        type = Path,
-        default = Path('plots'),
-        help = ('Directory where plots and tables are saved (default: plots)'),
-    )
-
-    parser.add_argument(
-        '--show',
-        action = 'store_true',
-        help = 'Display generated plots interactively',
-    )
-
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action = 'store_true',
-        help = 'Enable verbose logging',
-    )
-    parser.add_argument(
-        '--exploratory', action='store_true',
-        help='Also generate legacy exploratory boxplots, scatter plots and correlations',
-    )
-    parser.add_argument(
-        '--correlations', action='store_true',
-        help='Generate Spearman correlations even without --exploratory',
-    )
-    return parser.parse_args()
 
 def configure_logging(verbose: bool,) -> None:
     logging.basicConfig(
@@ -111,8 +72,12 @@ def main() -> None:
                     subset = benchmarks[(benchmarks.compiler == compiler)
                                         & (benchmarks.scaling_type == mode)]
                     enriched = prepare_scaling(entries[mode].get('scaling'), subset, mode)
-                    folder = (output_dir / safe_name(compiler)
-                              / safe_name(schedule_str) / safe_name(mode))
+                    folder = (
+                        output_dir
+                        / safe_name(compiler)
+                        / safe_name(schedule_str)
+                        / safe_name(mode)
+                    )
                     generate_scaling_plots(enriched, folder, mode, show=args.show)
                     plot_fixed_thread_metrics(subset, folder, mode, show=args.show)
             if args.exploratory or args.correlations:
