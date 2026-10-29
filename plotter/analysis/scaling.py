@@ -36,7 +36,6 @@ from analysis.config import SCALING_NUMERIC
 
 logger = logging.getLogger(__name__)
 
-
 def _reconstruct(df: pd.DataFrame, mode: str) -> pd.DataFrame:
     needed = {'kernel', 'view_type', 'num_threads', 'window_size', 'wall_time_sec_mean'}
     if not needed.issubset(df.columns):
