@@ -44,7 +44,6 @@ from analysis.parser import parse_args
 
 logger = logging.getLogger(__name__)
 
-
 def configure_logging(verbose: bool,) -> None:
     logging.basicConfig(
         level=(logging.DEBUG if verbose else logging.INFO),

@@ -142,7 +142,6 @@ def compiler_comparisons(benchmarks: pd.DataFrame, output_dir: Path, show: bool 
             continue
         filename = f'paired_{safe_name(other)}_vs_{safe_name(reference)}.csv'
         paired.to_csv(folder / filename, index=False)
-        # Controlled comparisons by scaling type, thread count and chunk size.
         plot_threaded_compiler_comparisons(paired, reference, other, folder, show)
         if detailed:
             plot_compiler_speedup(paired, reference, other, folder, show)
