@@ -28,6 +28,7 @@ CLI utility for benchmark analysis and visualization.
 """
 
 import logging
+import pandas as pd
 from analysis.config import SCHEDULES
 from analysis.loader import load_data
 from analysis.processing import prepare
@@ -64,6 +65,7 @@ def main() -> None:
             logger.info("Loaded compilers: %s", sorted(benchmarks['compiler'].unique()),)
             logger.info("Total benchmark rows: %d", len(benchmarks),)
             benchmarks['schedule'] = schedule_str
+            scaling_results = []
             for compiler, entries in datasets.items():
                 for mode in ('Full_scale', 'Proportional'):
                     if mode not in entries:
@@ -71,6 +73,10 @@ def main() -> None:
                     subset = benchmarks[(benchmarks.compiler == compiler)
                                         & (benchmarks.scaling_type == mode)]
                     enriched = prepare_scaling(entries[mode].get('scaling'), subset, mode)
+                    if not enriched.empty:
+                        comparable_scaling = enriched.copy()
+                        comparable_scaling['compiler'] = compiler
+                        scaling_results.append(comparable_scaling)
                     folder = (
                         output_dir
                         / safe_name(compiler)
@@ -84,8 +90,10 @@ def main() -> None:
                                    show=args.show, exploratory=args.exploratory,
                                    correlations=args.correlations or args.exploratory)
             schedule_dir = output_dir / safe_name(schedule_str)
+            scaling_df = (pd.concat(scaling_results, ignore_index=True)
+                          if scaling_results else pd.DataFrame())
             compiler_comparisons(benchmarks, schedule_dir, show=args.show,
-                                 detailed=args.exploratory)
+                                 detailed=args.exploratory, scaling=scaling_df)
             export_tables(benchmarks, schedule_dir)
     logger.info("Analysis completed: %s", output_dir,)
 

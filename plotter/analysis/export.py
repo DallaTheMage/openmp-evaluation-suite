@@ -31,14 +31,14 @@ import logging
 from pathlib import Path
 import pandas as pd
 
+from analysis.columns import present_columns
 from analysis.config import GROUP_COLUMNS, SUMMARY_COLUMNS
 
 logger = logging.getLogger(__name__)
 
 
 def select_summary_columns(df: pd.DataFrame,) -> pd.DataFrame:
-    columns = [column for column in SUMMARY_COLUMNS
-               if column in df.columns]
+    columns = present_columns(df, SUMMARY_COLUMNS)
     return df[columns]
 
 def get_best_performance(benchmarks: pd.DataFrame,) -> pd.DataFrame:

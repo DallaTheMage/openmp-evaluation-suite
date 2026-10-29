@@ -77,13 +77,6 @@ static KernelStatus run_twopass_omp(
     }
 
     num_threads = (num_threads == 0U) ? 1U : num_threads;
-
-    /*
-     * Allocate the offsets outside the measured region.
-     *
-     * Offset-management overhead must not contaminate the benchmark
-     * measurement of the scan algorithm.
-     */
     offsets = calloc((size_t)num_threads, sizeof(*offsets));
 
     if (offsets == NULL) {

@@ -78,7 +78,6 @@ KernelStatus kernel_1d_simd_memory(DataView *view,
         sink += pool[i];
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -117,7 +116,6 @@ KernelStatus kernel_2d_simd_memory(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -127,10 +125,6 @@ KernelStatus kernel_2d_simd_memory(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_3D
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_3d_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -162,7 +156,6 @@ KernelStatus kernel_3d_simd_memory(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -172,10 +165,6 @@ KernelStatus kernel_3d_simd_memory(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_AOS
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_aos_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -204,7 +193,6 @@ KernelStatus kernel_aos_simd_memory(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -214,10 +202,6 @@ KernelStatus kernel_aos_simd_memory(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_SOA
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_soa_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -246,7 +230,6 @@ KernelStatus kernel_soa_simd_memory(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -256,10 +239,6 @@ KernelStatus kernel_soa_simd_memory(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_AOSOA
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_aosoa_simd_memory(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -294,7 +273,6 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -308,18 +286,12 @@ KernelStatus kernel_aosoa_simd_memory(DataView *view,
 /* ============================================================================
  * SIMD COMPUTE-BOUND BENCHMARK
  *
- * Objective:
- *   Increase the arithmetic workload for each loaded element.
+ * Objective: Increase the arithmetic workload for each loaded element.
  *
  * The access pattern remains the same as in the memory-bound version; only
- * the computational intensity changes. This helps show how layout and access
- * pattern differences change when the bottleneck shifts from memory bandwidth
- * toward SIMD execution units.
+ * the computational intensity changes.
  * ========================================================================== */
 
-/* --------------------------------------------------------------------------
- * VIEW_1D
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_1d_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -350,7 +322,6 @@ KernelStatus kernel_1d_simd_compute(DataView *view,
         sink += x;
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -396,7 +367,6 @@ KernelStatus kernel_2d_simd_compute(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -406,10 +376,6 @@ KernelStatus kernel_2d_simd_compute(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_3D
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_3d_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -448,7 +414,6 @@ KernelStatus kernel_3d_simd_compute(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -458,10 +423,6 @@ KernelStatus kernel_3d_simd_compute(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_AOS
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_aos_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -497,7 +458,6 @@ KernelStatus kernel_aos_simd_compute(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -507,10 +467,6 @@ KernelStatus kernel_aos_simd_compute(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_SOA
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_soa_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -546,7 +502,6 @@ KernelStatus kernel_soa_simd_compute(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 
@@ -556,10 +511,6 @@ KernelStatus kernel_soa_simd_compute(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-/* --------------------------------------------------------------------------
- * VIEW_AOSOA
- * -------------------------------------------------------------------------- */
 KernelStatus kernel_aosoa_simd_compute(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -601,7 +552,6 @@ KernelStatus kernel_aosoa_simd_compute(DataView *view,
         }
     }
 
-    /* Keep the reduction observable so the workload cannot be optimized away. */
     volatile double result = sink;
     (void)result;
 

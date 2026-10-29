@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Copyright (C) 2026 Lorenzo Dall'Ara
+#
+# This file is part of the OpenMP compiler-agnostic benchmark suite,
+# developed as part of a Bachelor's thesis at the
+# Alma Mater Studiorum - University of Bologna.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
+"""Small helpers for selecting and validating DataFrame columns."""
+
+from collections.abc import Iterable
+
+import pandas as pd
+
+
+def present_columns(df: pd.DataFrame, candidates: Iterable[str]) -> list[str]:
+    """Return available candidate columns in the order requested."""
+    return [column for column in candidates if column in df.columns]
+
+
+def missing_columns(df: pd.DataFrame, required: Iterable[str]) -> list[str]:
+    """Return missing required columns in the order requested."""
+    return [column for column in required if column not in df.columns]
+
+
+def has_columns(df: pd.DataFrame, *required: str) -> bool:
+    """Check that all required columns are present."""
+    return not missing_columns(df, required)

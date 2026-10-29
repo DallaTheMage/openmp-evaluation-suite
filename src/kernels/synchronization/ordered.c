@@ -58,7 +58,6 @@ KernelStatus kernel_1d_ordered(DataView *view,
         pool[r] = value * 2.0 + 1.0;
         local_sum += value;
 
-        /* Questa regione deve essere eseguita nell'ordine delle iterazioni del loop. */
         #pragma omp ordered
         {
             ordered_sum += local_sum;
@@ -101,7 +100,6 @@ KernelStatus kernel_2d_ordered(DataView *view,
             local_sum += value;
         }
 
-        /* Questa regione deve essere eseguita nell'ordine delle iterazioni del loop. */
         #pragma omp ordered
         {
             ordered_sum += local_sum;

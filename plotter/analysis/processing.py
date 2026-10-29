@@ -29,6 +29,7 @@ Benchmark data preparation and metric computation.
 import logging
 import numpy as np
 import pandas as pd
+from analysis.columns import has_columns, missing_columns, present_columns
 from analysis.config import KEYS, REQUIRED_METRIC_COLUMNS, SCALING_TYPES
 
 logger = logging.getLogger(__name__)
@@ -57,10 +58,8 @@ def merge_datasets(datasets: dict,) -> pd.DataFrame:
             data         = entries[scaling]
             aggregated   = flatten_index(data['aggregated_samples'])
             plan         = flatten_index(data['test_plan'])
-            missing_agg  = [key for key in KEYS
-                            if key not in aggregated.columns]
-            missing_plan = [key for key in KEYS
-                            if key not in plan.columns]
+            missing_agg = missing_columns(aggregated, KEYS)
+            missing_plan = missing_columns(plan, KEYS)
             if missing_agg or missing_plan:
                 logger.warning(
                     "Skipping %s/%s: missing merge keys "
@@ -71,8 +70,7 @@ def merge_datasets(datasets: dict,) -> pd.DataFrame:
                     missing_plan,
                 )
                 continue
-            extras = [column for column in plan.columns
-                      if column not in aggregated.columns]
+            extras = missing_columns(aggregated, plan.columns)
             plan   = plan[list(KEYS) + extras]
             try:
                 merged = aggregated.merge(
@@ -112,9 +110,8 @@ def normalize_numeric_columns(df: pd.DataFrame,) -> pd.DataFrame:
             .str.replace(',', '.', regex=False),
             errors='coerce',
         )
-    for column in target_columns:
-        if column in df.columns:
-            df[column] = pd.to_numeric(df[column], errors='coerce',)
+    for column in present_columns(df, target_columns):
+        df[column] = pd.to_numeric(df[column], errors='coerce')
     return df
 
 def compute_metrics(df: pd.DataFrame,) -> pd.DataFrame:
@@ -122,8 +119,7 @@ def compute_metrics(df: pd.DataFrame,) -> pd.DataFrame:
     Compute derived benchmark metrics.
     """
     df = df.copy()
-    missing = [column for column in REQUIRED_METRIC_COLUMNS
-               if column not in df.columns]
+    missing = missing_columns(df, REQUIRED_METRIC_COLUMNS)
     if missing:
         raise ValueError(f"Missing required metric columns: {missing}")
     wall_time = df['wall_time_sec_mean'].replace(0, np.nan,)
@@ -131,7 +127,7 @@ def compute_metrics(df: pd.DataFrame,) -> pd.DataFrame:
     df['wall_time_cv_pct'] = (100 * df['wall_time_std'] / wall_time)
     df['wall_time_range']  = (df['wall_time_sec_max'] - df['wall_time_sec_min'])
     energy_columns = ('energy_pkg_joules_mean', 'energy_dram_joules_mean',)
-    if all(column in df.columns for column in energy_columns):
+    if has_columns(df, *energy_columns):
         df['energy_total'] = (df['energy_pkg_joules_mean'] + df['energy_dram_joules_mean'])
         df['edp']          = (df['energy_total'] * df['wall_time_sec_mean'])
         df['power_avg']    = (df['energy_total'] / wall_time)

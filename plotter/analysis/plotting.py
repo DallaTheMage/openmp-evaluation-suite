@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from analysis.columns import has_columns, present_columns
 from analysis.config import CORRELATION_METRICS
 
 logger = logging.getLogger(__name__)
@@ -40,9 +41,6 @@ sns.set_theme(style='whitegrid')
 
 def safe_name(value: object) -> str:
     return re.sub(r'[^A-Za-z0-9_.-]+', '_', str(value),)
-
-def has_columns(df: pd.DataFrame, *columns: str,) -> bool:
-    return all(column in df.columns for column in columns)
 
 def save_figure(fig, path: Path, show: bool = False,) -> None:
     path.parent.mkdir(parents = True, exist_ok = True,)
@@ -120,8 +118,7 @@ def plot_cache_vs_time(df: pd.DataFrame, folder: Path, show: bool = False,) -> N
     save_figure(fig,folder / 'cache_vs_time.png',show,)
 
 def plot_correlations(df: pd.DataFrame, folder: Path, show: bool = False,) -> None:
-    metrics = [column for column in CORRELATION_METRICS
-               if column in df.columns]
+    metrics = present_columns(df, CORRELATION_METRICS)
     if len(metrics) < 2:
         return
     corr = df[metrics].corr(method='spearman')

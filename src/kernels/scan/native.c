@@ -44,7 +44,6 @@ KernelStatus kernel_1d_native_scan(DataView *view,
     if (total > (uint64_t)INT64_MAX) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
     const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
@@ -79,7 +78,6 @@ KernelStatus kernel_2d_native_scan(DataView *view,
     if (total > (uint64_t)INT64_MAX) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
     const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
@@ -115,7 +113,6 @@ KernelStatus kernel_3d_native_scan(DataView *view,
     if (total > (uint64_t)INT64_MAX) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
     const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
@@ -152,7 +149,6 @@ KernelStatus kernel_aos_native_scan(DataView *view,
     if (total > (uint64_t)INT64_MAX) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
     const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
@@ -186,7 +182,6 @@ KernelStatus kernel_soa_native_scan(DataView *view,
     if (total > (uint64_t)INT64_MAX) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
     const int64_t count = (int64_t)total;
     double sum                 = 0.0;
     if (profiler_start(profiler) != 0) {
@@ -225,7 +220,6 @@ KernelStatus kernel_aosoa_native_scan(DataView *view,
     if (total > (uint64_t)INT64_MAX) {
         return KERNEL_STATUS_INVALID_ARGUMENT;
     }
-    /* A signed trip count avoids GCC 13's unsigned-inscan diagnostics. */
     const int64_t count = (int64_t)total;
     double sum           = 0.0;
     if (profiler_start(profiler) != 0) {

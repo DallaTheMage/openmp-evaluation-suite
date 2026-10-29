@@ -51,7 +51,6 @@ KernelStatus kernel_1d_master(DataView *view,
     {
         #pragma omp master
         {
-            /* Operazione eseguita esclusivamente dal master thread. */
             if (length > 0) {
                 pool[0] = pool[0] * 2.0 + 1.0;
             }
@@ -81,7 +80,6 @@ KernelStatus kernel_2d_master(DataView *view,
     {
         #pragma omp master
         {
-            /* Operazione eseguita esclusivamente dal master thread. */
             if (rows > 0 && cols > 0) {
                 pool[0] = pool[0] * 2.0 + 1.0;
             }

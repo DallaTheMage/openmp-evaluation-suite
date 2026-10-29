@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from analysis.columns import has_columns, missing_columns, present_columns
 from analysis.plotting import safe_name, save_figure
 from analysis.config import SCALING_NUMERIC
 
@@ -38,15 +39,16 @@ logger = logging.getLogger(__name__)
 
 def _reconstruct(df: pd.DataFrame, mode: str) -> pd.DataFrame:
     needed = {'kernel', 'view_type', 'num_threads', 'window_size', 'wall_time_sec_mean'}
-    if not needed.issubset(df.columns):
-        logger.warning('Cannot reconstruct %s scaling: missing %s', mode, needed - set(df.columns))
+    absent = missing_columns(df, sorted(needed))
+    if absent:
+        logger.warning('Cannot reconstruct %s scaling: missing %s', mode, absent)
         return pd.DataFrame()
     data = df.copy()
     for c in ('num_threads', 'window_size', 'wall_time_sec_mean'):
         data[c] = pd.to_numeric(data[c], errors='coerce')
     data = data.dropna(subset=list(needed))
     data = data[(data.num_threads > 0) & (data.window_size > 0) & (data.wall_time_sec_mean > 0)]
-    match = ['kernel', 'view_type'] + [c for c in ('chunk_size', 'window_offset') if c in data]
+    match = ['kernel', 'view_type', *present_columns(data, ('chunk_size', 'window_offset'))]
     if mode == 'Full_scale':
         match.append('window_size')
     else:
@@ -88,12 +90,12 @@ def prepare_scaling(source: pd.DataFrame | None, benchmarks: pd.DataFrame, mode:
             df = df[df.scaling_type.eq(expected)]
     required = {'kernel', 'view_type', 'baseline_threads', 'scaled_threads',
                 'baseline_time_sec', 'scaled_time_sec'}
-    if df.empty or not required.issubset(df.columns):
-        logger.warning('%s: no valid scaling rows (missing %s)', mode, required - set(df.columns))
+    absent = missing_columns(df, sorted(required))
+    if df.empty or absent:
+        logger.warning('%s: no valid scaling rows (missing %s)', mode, absent)
         return pd.DataFrame()
-    for c in SCALING_NUMERIC:
-        if c in df:
-            df[c] = pd.to_numeric(df[c], errors='coerce')
+    for column in present_columns(df, SCALING_NUMERIC):
+        df[column] = pd.to_numeric(df[column], errors='coerce')
     df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=list(required)).copy()
     df = df[(df.baseline_threads > 0) & (df.scaled_threads >= df.baseline_threads)
             & (df.baseline_time_sec > 0) & (df.scaled_time_sec > 0)]
@@ -101,19 +103,19 @@ def prepare_scaling(source: pd.DataFrame | None, benchmarks: pd.DataFrame, mode:
         return df
     ratio = df.scaled_threads / df.baseline_threads
     if 'work_scale' not in df:
-        if {'baseline_work_elements', 'scaled_work_elements'}.issubset(df.columns):
+        if has_columns(df, 'baseline_work_elements', 'scaled_work_elements'):
             df['work_scale'] = df.scaled_work_elements / df.baseline_work_elements
         else:
             df['work_scale'] = np.nan
     work = df.work_scale
     if expected == 'strong':
         valid = work.isna() | np.isclose(work, 1, rtol=1e-8)
-        if {'baseline_work_elements', 'scaled_work_elements'}.issubset(df.columns):
+        if has_columns(df, 'baseline_work_elements', 'scaled_work_elements'):
             valid &= np.isclose(df.baseline_work_elements, df.scaled_work_elements, rtol=1e-8)
         df['work_scale'] = 1.0
     else:
         valid = work.notna() & np.isclose(work, ratio, rtol=1e-8)
-        if {'baseline_work_elements', 'scaled_work_elements'}.issubset(df.columns):
+        if has_columns(df, 'baseline_work_elements', 'scaled_work_elements'):
             valid &= (df.baseline_work_elements > 0) & np.isclose(
                 df.scaled_work_elements / df.baseline_work_elements, ratio, rtol=1e-8)
     removed = int((~valid).sum())
@@ -174,12 +176,13 @@ def plot_scaling_and_overhead(df: pd.DataFrame, folder: Path, mode: str, show: b
     for view, part in df.groupby('view_type'):
         if part.scaled_threads.nunique() < 2:
             continue
-        labels = ['kernel'] + [c for c in (
-            'chunk_size', 'window_offset', 'window_size', 'baseline_work_elements'
-        ) if c in part and part[c].nunique(dropna=False) > 1]
-        for c in labels:
-            part = part.copy()
-            part[c] = part[c].fillna('N/A')
+        options = ('chunk_size', 'window_offset', 'window_size', 'baseline_work_elements')
+        labels = ['kernel'] + [
+            column for column in present_columns(part, options)
+            if part[column].nunique(dropna=False) > 1
+        ]
+        part = part.copy()
+        part[labels] = part[labels].fillna('N/A')
         part['series'] = part[labels].astype(str).agg(' · '.join, axis=1)
         if part.duplicated(['series', 'scaled_threads']).any():
             logger.warning('Skipping scaling plot for %s: ambiguous repeated series', view)
@@ -244,7 +247,7 @@ def plot_fixed_thread_metrics(benchmarks: pd.DataFrame, folder: Path, mode: str,
     p = pd.to_numeric(benchmarks.num_threads, errors='coerce').max()
     subset = benchmarks[pd.to_numeric(benchmarks.num_threads, errors='coerce').eq(p)].copy()
     required = {'kernel', 'view_type', 'window_size', 'wall_time_sec_mean'}
-    if not required.issubset(subset.columns) or subset.empty:
+    if subset.empty or not has_columns(subset, *required):
         return
     if subset.window_size.nunique() != 1:
         logger.warning('%s p=%s: different workloads; skipping absolute metric heatmaps', mode, p)
@@ -276,14 +279,14 @@ def plot_fixed_thread_metrics(benchmarks: pd.DataFrame, folder: Path, mode: str,
         ax.set_xlabel('View')
         ax.set_ylabel('Kernel')
 
-        fig, ax = plt.subplots(figsize=(10, 9))
-        metric_axes(ax, 'wall_time_sec_mean', 'Wall time (s, log scale)')
-        fig.suptitle(f'{mode}: {int(p)} threads, {int(subset.window_size.iloc[0]):,} elements')
-        save_figure(fig, folder / 'execution_time_fixed_threads.png', show)
+    fig, ax = plt.subplots(figsize=(10, 9))
+    metric_axes(ax, 'wall_time_sec_mean', 'Wall time (s, log scale)')
+    fig.suptitle(f'{mode}: {int(p)} threads, {int(subset.window_size.iloc[0]):,} elements')
+    save_figure(fig, folder / 'execution_time_fixed_threads.png', show)
 
-        if 'energy_total' in subset and 'edp' in subset and (subset.energy_total > 0).any():
-            fig, axes = plt.subplots(1, 2, figsize=(18, 9))
-            metric_axes(axes[0], 'energy_total', 'Total measured energy (J, log scale)')
-            metric_axes(axes[1], 'edp', 'Energy-delay product (J·s, log scale)')
-            fig.suptitle(f'{mode}: {int(p)} threads, {int(subset.window_size.iloc[0]):,} elements')
-            save_figure(fig, folder / 'energy_edp_fixed_threads.png', show)
+    if has_columns(subset, 'energy_total', 'edp') and (subset.energy_total > 0).any():
+        fig, axes = plt.subplots(1, 2, figsize=(18, 9))
+        metric_axes(axes[0], 'energy_total', 'Total measured energy (J, log scale)')
+        metric_axes(axes[1], 'edp', 'Energy-delay product (J·s, log scale)')
+        fig.suptitle(f'{mode}: {int(p)} threads, {int(subset.window_size.iloc[0]):,} elements')
+        save_figure(fig, folder / 'energy_edp_fixed_threads.png', show)

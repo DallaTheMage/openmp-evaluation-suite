@@ -35,21 +35,29 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from analysis.columns import has_columns, missing_columns, present_columns
 from analysis.config import COMPARISON_COLUMNS
 from analysis.plotting import save_figure, safe_name
 
 logger = logging.getLogger(__name__)
 
+
+def _geometric_mean(values: pd.Series) -> float:
+    """Geometric mean of positive runtime ratios (validated by callers)."""
+    return float(np.exp(np.log(values).mean()))
+
+
+def _chunk_suffix(scaling: object, chunk: object) -> str:
+    """Consistent filename suffix for a scaling mode and chunk size."""
+    return f'{safe_name(str(scaling))}_chunk_{safe_name(str(chunk))}'
+
 def pair_compiler_results(benchmarks: pd.DataFrame, reference: str, other: str,) -> pd.DataFrame:
     """
     Match equivalent benchmark configurations and compute speedup.
     """
-    keys = ['scaling_type', 'kernel',]
-    keys.extend(column for column in COMPARISON_COLUMNS
-                if column in benchmarks.columns)
-    required = keys + ['compiler', 'wall_time_sec_mean',]
-    missing = [column for column in required
-               if column not in benchmarks.columns]
+    keys = ['scaling_type', 'kernel', *present_columns(benchmarks, COMPARISON_COLUMNS)]
+    required = keys + ['compiler', 'wall_time_sec_mean']
+    missing = missing_columns(benchmarks, required)
     if missing:
         raise ValueError(f"Missing comparison columns: {missing}")
     df = benchmarks[benchmarks['compiler'].isin([reference, other])
@@ -75,7 +83,7 @@ def compute_geometric_speedup(paired: pd.DataFrame,) -> pd.DataFrame:
         return pd.DataFrame()
     return (
         paired.groupby(['kernel', 'scaling_type'])['speedup']
-        .agg(lambda values: np.exp(np.log(values).mean()))
+        .agg(_geometric_mean)
         .reset_index()
     )
 
@@ -119,7 +127,181 @@ def plot_geometric_speedup(
                 show,
             )
 
-def compiler_comparisons(benchmarks: pd.DataFrame, output_dir: Path, show: bool = False, detailed: bool = False) -> None:
+def pair_scaling_efficiency(
+    scaling: pd.DataFrame,
+    reference: str,
+    other: str,
+) -> pd.DataFrame:
+    """Pair independently validated scaling efficiencies for identical workloads.
+
+    Efficiency is NOT the runtime ratio between compilers: each compiler uses
+    its own one-thread (or other explicitly recorded) scaling baseline.
+    """
+    required = {
+        'compiler', 'test_mode', 'kernel', 'view_type', 'scaled_threads',
+        'baseline_threads', 'chunk_size', 'efficiency_pct',
+    }
+    if scaling.empty or not has_columns(scaling, *required):
+        return pd.DataFrame()
+
+    subset = scaling[scaling['compiler'].isin([reference, other])].copy()
+    if subset['compiler'].nunique() < 2:
+        return pd.DataFrame()
+
+    # Matching workloads is essential, especially for weak scaling. Never
+    # compare efficiencies across arbitrary window sizes / baseline work.
+    work_keys = ['baseline_work_elements', 'scaled_work_elements']
+    if not has_columns(subset, *work_keys):
+        logger.warning('Skipping efficiency comparison %s vs %s: workload keys unavailable',
+                       other, reference)
+        return pd.DataFrame()
+
+    keys = [
+        'test_mode', 'kernel', 'view_type', 'scaled_threads',
+        'baseline_threads', 'chunk_size',
+    ]
+    keys.extend(present_columns(subset, (
+        'window_offset', 'baseline_work_elements', 'scaled_work_elements',
+    )))
+    subset['efficiency_pct'] = pd.to_numeric(subset['efficiency_pct'], errors='coerce')
+    subset = subset.replace([np.inf, -np.inf], np.nan)
+    subset = subset.dropna(subset=keys + ['efficiency_pct'])
+    subset = subset[subset['efficiency_pct'] > 0]
+    if subset.empty:
+        return pd.DataFrame()
+
+    if subset.duplicated(keys + ['compiler']).any():
+        logger.warning('Skipping efficiency comparison %s vs %s: repeated scaling configurations',
+                       other, reference)
+        return pd.DataFrame()
+
+    pivot = subset.pivot(index=keys, columns='compiler', values='efficiency_pct')
+    if not {reference, other}.issubset(pivot.columns):
+        return pd.DataFrame()
+    paired = pivot[[reference, other]].dropna().reset_index()
+    if paired.empty:
+        return paired
+    paired = paired.rename(columns={
+        reference: 'reference_efficiency_pct', other: 'other_efficiency_pct',
+    })
+    paired['delta_efficiency_pp'] = (
+        paired['other_efficiency_pct'] - paired['reference_efficiency_pct']
+    )
+    return paired
+
+
+def plot_speedup_heatmap(
+    summary: pd.DataFrame,
+    reference: str,
+    other: str,
+    path: Path,
+    scaling: str,
+    chunk: object,
+    show: bool = False,
+) -> None:
+    """Show geometric mean compiler speedup per kernel/thread, with 1x as parity."""
+    if summary.empty:
+        return
+    matrix = summary.pivot(index='kernel', columns='num_threads', values='speedup')
+    if matrix.empty:
+        return
+    log2_speedup = log2_speedup = pd.DataFrame(
+        np.log2(matrix.to_numpy(dtype=float)),
+        index=matrix.index,
+        columns=matrix.columns,
+    )
+    max_abs = float(np.nanmax(np.abs(log2_speedup.to_numpy())))
+    max_abs = max(max_abs, 0.1)
+    fig, ax = plt.subplots(figsize=(max(9, 1.2 * len(matrix.columns) + 4),
+                                    max(5, .55 * len(matrix.index) + 2)))
+    sns.heatmap(
+        log2_speedup, annot=matrix.to_numpy(), fmt='.2f',
+        cmap='RdBu_r', center=0, vmin=-max_abs, vmax=max_abs,
+        mask=matrix.isna(), ax=ax,
+        cbar_kws={'label': 'log₂(speedup): 0 = parity'},
+    )
+    ax.set_title(f'Geometric mean runtime speedup: {other} / {reference}\n'
+                 f'{scaling} | chunk_size={chunk} | >1: {other} faster')
+    ax.set_xlabel('Number of threads')
+    ax.set_ylabel('Kernel')
+    save_figure(fig, path, show)
+
+
+def plot_efficiency_heatmap(
+    summary: pd.DataFrame,
+    reference: str,
+    other: str,
+    path: Path,
+    scaling: str,
+    chunk: object,
+    show: bool = False,
+) -> None:
+    """Plot matched scaling efficiency for both compilers and their pp difference."""
+    if summary.empty:
+        return
+    index, columns = 'kernel', 'scaled_threads'
+    ref = summary.pivot(index=index, columns=columns, values='reference_efficiency_pct')
+    alt = summary.pivot(index=index, columns=columns, values='other_efficiency_pct')
+    delta = summary.pivot(index=index, columns=columns, values='delta_efficiency_pp')
+    max_eff = max(100.0, float(np.nanmax([ref.max().max(), alt.max().max()])))
+    max_delta = max(1., float(np.nanmax(np.abs(delta.to_numpy()))))
+    fig, axes = plt.subplots(1, 3, figsize=(max(18, 3.5 * len(ref.columns) + 8),
+                                          max(5, .55 * len(ref.index) + 2)))
+    for ax, data, title in zip(axes[:2], (ref, alt), (reference, other)):
+        sns.heatmap(data, ax=ax, cmap='YlGnBu', vmin=0, vmax=max_eff,
+                    annot=True, fmt='.1f', mask=data.isna(),
+                    cbar_kws={'label': 'Efficiency (%)'})
+        ax.set_title(title)
+        ax.set_xlabel('Number of threads')
+        ax.set_ylabel('Kernel' if ax is axes[0] else '')
+    sns.heatmap(delta, ax=axes[2], cmap='RdBu_r', center=0,
+                vmin=-max_delta, vmax=max_delta,
+                annot=True, fmt='+.1f', mask=delta.isna(),
+                cbar_kws={'label': 'Efficiency difference (pp)'})
+    axes[2].set_title(f'{other} − {reference}')
+    axes[2].set_xlabel('Number of threads')
+    axes[2].set_ylabel('')
+    fig.suptitle(f'Scaling efficiency (%) | {scaling} | chunk_size={chunk}\n'
+                 'Median over matched views/configurations; difference in percentage points',
+                 y=1.02)
+    save_figure(fig, path, show)
+
+
+def plot_compiler_efficiency_comparisons(
+    paired: pd.DataFrame,
+    reference: str,
+    other: str,
+    folder: Path,
+    show: bool = False,
+) -> None:
+    """Export matched efficiency and plot per-mode/per-chunk efficiency heatmaps."""
+    if paired.empty:
+        return
+    target = folder / f'by_chunk_threads_{safe_name(other)}_vs_{safe_name(reference)}'
+    target.mkdir(parents=True, exist_ok=True)
+    for (scaling, chunk), subset in paired.groupby(['test_mode', 'chunk_size'], sort=True):
+        summary = (subset.groupby(['kernel', 'scaled_threads'], as_index=False)
+                   .agg(reference_efficiency_pct=('reference_efficiency_pct', 'median'),
+                        other_efficiency_pct=('other_efficiency_pct', 'median'),
+                        delta_efficiency_pp=('delta_efficiency_pp', 'median'),
+                        samples=('delta_efficiency_pp', 'size')))
+        if summary.empty:
+            continue
+        suffix = _chunk_suffix(scaling, chunk)
+        summary.to_csv(target / f'efficiency_by_threads_{suffix}.csv', index=False)
+        plot_efficiency_heatmap(
+            summary, reference, other, target / f'heatmap_efficiency_{suffix}.png',
+            str(scaling), chunk, show,
+        )
+
+
+def compiler_comparisons(
+    benchmarks: pd.DataFrame,
+    output_dir: Path,
+    show: bool = False,
+    detailed: bool = False,
+    scaling: pd.DataFrame | None = None,
+) -> None:
     """
     Compare every unordered pair of available compilers.
 
@@ -143,6 +325,11 @@ def compiler_comparisons(benchmarks: pd.DataFrame, output_dir: Path, show: bool 
         filename = f'paired_{safe_name(other)}_vs_{safe_name(reference)}.csv'
         paired.to_csv(folder / filename, index=False)
         plot_threaded_compiler_comparisons(paired, reference, other, folder, show)
+        if scaling is not None and not scaling.empty:
+            paired_efficiency = pair_scaling_efficiency(scaling, reference, other)
+            plot_compiler_efficiency_comparisons(
+                paired_efficiency, reference, other, folder, show,
+            )
         if detailed:
             plot_compiler_speedup(paired, reference, other, folder, show)
             summary = compute_geometric_speedup(paired)
@@ -169,7 +356,7 @@ def plot_chunked_compiler_comparisons(
     for (scaling, chunk), subset in paired.dropna(subset=['chunk_size']).groupby(group_columns, sort=True):
         if subset.empty:
             continue
-        suffix = f'{safe_name(str(scaling))}_chunk_{safe_name(str(chunk))}'
+        suffix = _chunk_suffix(scaling, chunk)
         fig, ax = plt.subplots(figsize=(14, 6))
         sns.boxplot(data=subset, x='kernel', y='speedup', ax=ax)
         ax.axhline(1, color='red', linestyle='--')
@@ -204,7 +391,7 @@ def plot_threaded_compiler_comparisons(
     geometric means of the matched configurations for that kernel/thread count.
     """
     required = ['scaling_type', 'chunk_size', 'kernel', 'num_threads', 'speedup']
-    if paired.empty or any(column not in paired.columns for column in required):
+    if paired.empty or not has_columns(paired, *required):
         return
 
     valid = paired.replace([np.inf, -np.inf], np.nan).dropna(subset=required)
@@ -219,15 +406,19 @@ def plot_threaded_compiler_comparisons(
         summary = (
             subset.groupby(['kernel', 'num_threads'], as_index=False)
             .agg(
-                speedup=('speedup', lambda values: np.exp(np.log(values).mean())),
+                speedup=('speedup', _geometric_mean),
                 samples=('speedup', 'size'),
             )
         )
         if summary.empty:
             continue
 
-        suffix = f'{safe_name(str(scaling))}_chunk_{safe_name(str(chunk))}'
+        suffix = _chunk_suffix(scaling, chunk)
         summary.to_csv(thread_folder / f'geomean_by_threads_{suffix}.csv', index=False)
+        plot_speedup_heatmap(
+            summary, reference, other,
+            thread_folder / f'heatmap_speedup_{suffix}.png', str(scaling), chunk, show,
+        )
 
         fig, ax = plt.subplots(figsize=(15, 7))
         sns.lineplot(

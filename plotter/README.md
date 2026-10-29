@@ -76,7 +76,30 @@ and `icx`: `gcc` vs `clang`, `gcc` vs `icx`, and `clang` vs `icx`).
 With `n` compilers, there are at most `n * (n - 1) / 2` pairwise comparisons;
 a pair is skipped when no configurations match. Default comparisons keep
 thread counts, scaling modes and chunk sizes separate, and use geometric
-mean speedups across matched views. `--exploratory` adds pooled comparison charts.
+mean speedups across matched views. The default output also includes **speedup
+heatmaps** (kernel × threads, with 1× as parity) and **scaling-efficiency
+heatmaps** for both compilers plus their difference in percentage points.
+The latter only use matched, validated scaling measurements of identical
+workloads; they are omitted when the required scaling/workload data are missing.
+`--exploratory` adds pooled comparison charts.
+
+For every compiler pair and schedule, see
+`plots/<schedule>/comparisons/by_chunk_threads_<other>_vs_<reference>/`:
+
+| Output | Meaning |
+|---|---|
+| `geomean_by_threads_<mode>_chunk_<chunk>.png/.csv` | Existing geometric mean runtime speedup by kernel/thread. |
+| `heatmap_speedup_<mode>_chunk_<chunk>.png` | Same data as a heatmap, with a symmetric **log₂** color scale around 1× parity. Cell labels show speedup as a ratio. |
+| `heatmap_efficiency_<mode>_chunk_<chunk>.png` | Three panels: reference efficiency (%), alternative efficiency (%), and alternative minus reference (**percentage points**). |
+| `efficiency_by_threads_<mode>_chunk_<chunk>.csv` | Median of matched efficiencies and their paired percentage-point differences, plus observation counts. |
+
+Strong scaling efficiency is `S(p)/(p/p0)`; weak scaling efficiency is
+`T(p0,W0)/T(p,W(p))` when work grows proportionally to threads. Both
+come from `prepare_scaling`, not from compiler-to-compiler speedup ratios.
+An efficiency above 100% is possible (superlinear scaling or measurement
+noise). Each heatmap aggregates only within a fixed mode/chunk; where multiple
+views or configurations exist at the same kernel/thread, the efficiency map
+uses their **median**, calculated exclusively from matched pairs.
 
 All per-schedule exports/comparisons are saved to separate locations,
 `plots/<schedule>/`, so static, dynamic and guided never overwrite each

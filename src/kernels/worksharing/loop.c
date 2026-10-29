@@ -62,7 +62,6 @@ KernelStatus kernel_1d_loop(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
 KernelStatus kernel_2d_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -94,8 +93,6 @@ KernelStatus kernel_2d_loop(DataView *view,
     }
     return KERNEL_STATUS_OK;
 }
-
-
 
 KernelStatus kernel_3d_loop(DataView *view,
     const TestCase *test_case,
@@ -132,8 +129,6 @@ KernelStatus kernel_3d_loop(DataView *view,
     return KERNEL_STATUS_OK;
 }
 
-
-
 KernelStatus kernel_aos_loop(DataView *view,
     const TestCase *test_case,
     Profiler *profiler,
@@ -165,8 +160,6 @@ KernelStatus kernel_aos_loop(DataView *view,
     }
     return KERNEL_STATUS_OK;
 }
-
-
 
 KernelStatus kernel_soa_loop(DataView *view,
     const TestCase *test_case,
@@ -203,7 +196,6 @@ KernelStatus kernel_soa_loop(DataView *view,
     }
     return KERNEL_STATUS_OK;
 }
-
 
 KernelStatus kernel_aosoa_loop(DataView *view,
     const TestCase *test_case,
