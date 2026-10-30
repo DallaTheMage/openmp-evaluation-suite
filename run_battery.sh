@@ -23,11 +23,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-set -eo pipefail
-# Initialize Intel oneAPI before enabling nounset
-source /opt/intel/oneapi/setvars.sh
-# Enable strict Bash error handling
-set -u
+set -euo pipefail
 
 TESTBATTERY_FILE="${1:-default.battery.conf}"
 if [[ ! -f "$TESTBATTERY_FILE" ]]; then
@@ -116,6 +112,17 @@ for compiler in "${COMPILER_LIST[@]}"; do
             exit 1
             ;;
     esac
+done
+
+# Initialize Intel oneAPI only when icx is part of the configured compiler list.
+for compiler in "${COMPILER_LIST[@]}"; do
+    if [[ "$compiler" == "icx" ]]; then
+        # Intel oneAPI setup scripts may reference unset environment variables.
+        set +u
+        source /opt/intel/oneapi/setvars.sh
+        set -u
+        break
+    fi
 done
 
 for schedule in "${SCHEDULING_LIST[@]}"; do

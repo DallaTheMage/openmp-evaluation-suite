@@ -4,25 +4,28 @@ Generate interpretable visualizations from OpenMP Evaluation Suite benchmark CSV
 
 ## Installation and usage
 
-Python >=3.10; install dependencies:
+Python >=3.10 is required. Run the following **from the repository root**:
 
 ```bash
-pip install -r requirements.txt
-python main.py -i /path/to/output -o /path/to/plots
+python3 -m pip install -r plotter/requirements.txt
+cd plotter
+python3 main.py -i ../output -o plots
 ```
 
-For the provided example archive, use `-i /path/to/extracted/output`.
-The default input is `../output`, relative to the current working directory.
+The input must be an `output/`-style directory containing compiler directories, such as `output/gcc/static/`. For a test battery, select one optimization directory, for example `-i ../results/<run-id>/output_O2`, rather than the top-level `results/<run-id>` folder. For an extracted example archive, use `-i /path/to/extracted/output`.
+
+The default input (`../output`) and default output (`plots`) are resolved **relative to the current working directory**, not automatically relative to `main.py`; the examples below assume you are in `plotter/`.
 
 Optional:
 
 ```bash
-python main.py -i ../output -o plots --correlations
-python main.py -i ../output -o plots --exploratory
-python main.py -i ../output -o plots --verbose
+python3 main.py -i ../output -o plots --correlations
+python3 main.py -i ../output -o plots --exploratory
+python3 main.py -i ../output -o plots --verbose
+python3 main.py -i ../output -o plots --show
 ```
 
-`--correlations` enables only Spearman heatmaps; `--exploratory` additionally
+`--show` opens plots interactively (requires a graphical display). `--correlations` enables only Spearman heatmaps; `--exploratory` additionally
 produces legacy time/IPC/EDP distributions and energy/cache scatterplots.
 These exploratory charts include heterogeneous thread counts and (in weak
 scaling) workloads; **do not treat them as controlled benchmark comparisons**.
