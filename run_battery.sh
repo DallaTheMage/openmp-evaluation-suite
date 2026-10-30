@@ -221,7 +221,7 @@ for optimization in "${OPTIMIZATION_LIST[@]}"; do
             ./build.sh "$CONFIGURATION_FILE" \
                 OPT_LEVEL="-$optimization" \
                 COMPILERNAME="$compiler" \
-                SCHEDULE_TYPE="$schedule"
+                CHOSEN_SCHEDULE_ID="$schedule"
 
             EXECUTABLE="./build/$compiler/main"
             if [[ ! -x "$EXECUTABLE" ]]; then
