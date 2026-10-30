@@ -12,7 +12,7 @@
 main
 build/
 backup.*
-BACKUP/
+backup/
 autotune.conf
 TODO
 .venv/
