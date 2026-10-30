@@ -27,7 +27,6 @@
 
 .DEFAULT_GOAL := all
 
-# GNU Make already defines CC=cc unless explicitly overridden.
 CC ?= cc
 CFLAGS ?= -O2 -g -Wall -Wextra -Wpedantic -std=c99 \
           -D_GNU_SOURCE -Iinclude -Isrc/microroutines \
@@ -35,11 +34,9 @@ CFLAGS ?= -O2 -g -Wall -Wextra -Wpedantic -std=c99 \
 LDFLAGS ?= -fopenmp
 LDLIBS ?= -lm
 
-# Keep build products for different compiler names separate.
 BUILD_DIR := build/$(notdir $(CC))
 TARGET    := $(BUILD_DIR)/main
 
-# Preserve the source layout below the compiler-specific build directory.
 SOURCES := $(shell find src -type f -name '*.c')
 OBJECTS := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 DEPS    := $(OBJECTS:.o=.d)
@@ -56,11 +53,10 @@ $(BUILD_DIR)/%.o: src/%.c
 	@mkdir -p "$(@D)"
 	$(CC) $(CFLAGS) -c "$<" -o "$@"
 
-# Header changes trigger incremental recompilation.
 -include $(DEPS)
 
 clean-all:
-	rm -rf build output plotter/plots
+	rm -rf build output plotter/plots results/
 
 clean-build:
 	rm -rf build
@@ -70,3 +66,6 @@ clean-output:
 
 clean-plots:
 	rm -rf plotter/plots
+
+clean-battery-results:
+	rm -rf results
