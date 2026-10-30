@@ -9,12 +9,10 @@
 *.out
 *.toc
 *.log
-main
-build/
-backup.*
-backup/
 autotune.conf
-TODO
-.venv/
-plotter/plots/
 tesi/
+build/
+.venv/
+backup/
+results/
+plotter/plots/
