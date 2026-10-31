@@ -148,8 +148,6 @@ def pair_scaling_efficiency(
     if subset['compiler'].nunique() < 2:
         return pd.DataFrame()
 
-    # Matching workloads is essential, especially for weak scaling. Never
-    # compare efficiencies across arbitrary window sizes / baseline work.
     work_keys = ['baseline_work_elements', 'scaled_work_elements']
     if not has_columns(subset, *work_keys):
         logger.warning('Skipping efficiency comparison %s vs %s: workload keys unavailable',

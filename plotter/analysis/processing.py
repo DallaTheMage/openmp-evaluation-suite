@@ -87,8 +87,9 @@ def merge_datasets(datasets: dict,) -> pd.DataFrame:
                     exc,
                 )
                 continue
-            # Averages can hide invalid readings. Require every raw observation
-            # to have valid package/DRAM flags when raw samples are available.
+            # Averages can hide invalid readings.
+            # Require every raw observation to have valid package/DRAM flags
+            # when raw samples are available.
             raw = data.get('raw_samples')
             if raw is not None and all(c in raw.columns for c in
                     (*KEYS, 'energy_pkg_valid', 'energy_dram_valid',
@@ -152,8 +153,6 @@ def compute_metrics(df: pd.DataFrame,) -> pd.DataFrame:
         # Zero DRAM is legitimate only if explicitly marked valid in raw data.
         valid = pkg.gt(0) & dram.ge(0) & np.isfinite(pkg) & np.isfinite(dram)
         fallback = valid.copy()
-        # Fall back conservatively only for observations lacking raw validity.
-        # Never override a negative/invalid flag with a positive mean.
         for name, positive in (('energy_pkg_joules_min', True),
                                ('energy_dram_joules_min', False)):
             if name in df:
