@@ -87,6 +87,24 @@ def merge_datasets(datasets: dict,) -> pd.DataFrame:
                     exc,
                 )
                 continue
+            # Averages can hide invalid readings. Require every raw observation
+            # to have valid package/DRAM flags when raw samples are available.
+            raw = data.get('raw_samples')
+            if raw is not None and all(c in raw.columns for c in
+                    (*KEYS, 'energy_pkg_valid', 'energy_dram_valid',
+                     'energy_pkg_joules', 'energy_dram_joules')):
+                validity = raw.copy()
+                pkg_ok = (pd.to_numeric(validity['energy_pkg_valid'], errors='coerce').eq(1)
+                          & pd.to_numeric(validity['energy_pkg_joules'], errors='coerce').gt(0))
+                dram_ok = (pd.to_numeric(validity['energy_dram_valid'], errors='coerce').eq(1)
+                           & pd.to_numeric(validity['energy_dram_joules'], errors='coerce').ge(0))
+                validity['energy_run_valid'] = pkg_ok & dram_ok
+                flags = (validity.groupby(list(KEYS), as_index=False)
+                         .agg(energy_valid_runs=('energy_run_valid', 'sum'),
+                              energy_checked_runs=('energy_run_valid', 'size'),
+                              energy_all_valid=('energy_run_valid', 'all')))
+                merged = merged.merge(flags, on=list(KEYS), how='left',
+                                      validate='one_to_one')
             merged['compiler']     = compiler
             merged['scaling_type'] = scaling
             frames.append(merged)
@@ -128,11 +146,38 @@ def compute_metrics(df: pd.DataFrame,) -> pd.DataFrame:
     df['wall_time_range']  = (df['wall_time_sec_max'] - df['wall_time_sec_min'])
     energy_columns = ('energy_pkg_joules_mean', 'energy_dram_joules_mean',)
     if has_columns(df, *energy_columns):
-        df['energy_total'] = (df['energy_pkg_joules_mean'] + df['energy_dram_joules_mean'])
-        df['edp']          = (df['energy_total'] * df['wall_time_sec_mean'])
-        df['power_avg']    = (df['energy_total'] / wall_time)
+        pkg = pd.to_numeric(df['energy_pkg_joules_mean'], errors='coerce')
+        dram = pd.to_numeric(df['energy_dram_joules_mean'], errors='coerce')
+        # A zero or negative package reading is not a free measurement.
+        # Zero DRAM is legitimate only if explicitly marked valid in raw data.
+        valid = pkg.gt(0) & dram.ge(0) & np.isfinite(pkg) & np.isfinite(dram)
+        fallback = valid.copy()
+        # Fall back conservatively only for observations lacking raw validity.
+        # Never override a negative/invalid flag with a positive mean.
+        for name, positive in (('energy_pkg_joules_min', True),
+                               ('energy_dram_joules_min', False)):
+            if name in df:
+                values = pd.to_numeric(df[name], errors='coerce')
+                fallback &= values.gt(0) if positive else values.ge(0)
+        if 'energy_all_valid' in df:
+            checked = df['energy_all_valid'].notna()
+            valid = valid & df['energy_all_valid'].eq(True)
+            valid = valid.where(checked, fallback)
+            if (~checked).any():
+                logger.warning('%d rows lack raw energy flags: using conservative aggregate checks',
+                               int((~checked).sum()))
+        else:
+            valid = fallback
+            logger.warning('Raw energy validity flags unavailable: using conservative aggregate checks')
+        valid &= pd.to_numeric(df['wall_time_sec_mean'], errors='coerce').gt(0)
+        df['energy_valid'] = valid
+        df['energy_total'] = (pkg + dram).where(valid, np.nan)
+        df['edp'] = (df['energy_total'] * df['wall_time_sec_mean'])
+        df['power_avg'] = (df['energy_total'] / wall_time)
+        logger.info('Energy validation: %d/%d valid benchmark rows', int(valid.sum()), len(df))
     else:
         logger.warning("Energy metrics unavailable: missing energy columns")
+        df['energy_valid'] = False
         df['energy_total'] = np.nan
         df['edp']          = np.nan
         df['power_avg']    = np.nan

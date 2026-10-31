@@ -49,10 +49,6 @@
 #include "core/internal/DispatchValidation.h"
 #include "kernels/KernelRegistry.h"
 
-/* ========================================================================== */
-/* Internal helpers                                                           */
-/* ========================================================================== */
-
 /**
  * @brief Check whether a size_t multiplication would overflow.
  *
@@ -100,8 +96,6 @@ static int size_add_overflow(
 /**
  * @brief Count all measured samples required by a test plan.
  *
- * Warm-up repetitions are not included in the sample count.
- *
  * @param plan Test plan.
  * @param work_reps Number of measured repetitions.
  * @param out_count Destination for the total sample count.
@@ -138,7 +132,6 @@ static DispatchStatus count_samples(
     return DISPATCH_OK;
 }
 
-/* Run one configuration; warm-ups and validation remain outside measured samples. */
 static DispatchStatus dispatch_execute_test_case(
     const TestSet *set,
     const KernelTestGroup *group,
@@ -150,8 +143,7 @@ static DispatchStatus dispatch_execute_test_case(
     uint32_t work_reps,
     RawSampleSet *out_samples,
     CacheEviction *eviction,
-    size_t *sample_index)
-{
+    size_t *sample_index) {
     const DataView view = set->view;
     DispatchStatus status;
     const size_t sample_count = out_samples->count;
@@ -182,9 +174,6 @@ static DispatchStatus dispatch_execute_test_case(
     fflush(stdout);
 
     #if BENCH_VALIDATE_RESULTS
-    /* One extra invocation per configuration. Its metric is discarded.
-     * The kernel's internal timing still runs, but the verification
-     * itself happens strictly AFTER profiler_stop(). */
     if (group->kernel == KERNEL_LOOP ||
         group->kernel == KERNEL_REDUCTION ||
         group->kernel == KERNEL_LOOP) {
@@ -250,25 +239,8 @@ static DispatchStatus dispatch_execute_test_case(
     fflush(stdout);    return DISPATCH_OK;
 }
 
-/* ========================================================================== */
-/* Public API                                                                 */
-/* ========================================================================== */
-
 /**
  * @brief Execute a test plan and collect profiling samples.
- *
- * Each test case is executed for the requested number of warm-up and measured
- * repetitions.
- *
- * Before every kernel invocation, the dispatcher restores the corresponding
- * logical window into the working buffer. Restoration occurs outside the
- * kernel profiling interval.
- *
- * Warm-up metrics are discarded. Measured metrics are stored in the output
- * sample set.
- *
- * If an execution fails, dispatch stops and releases the partially populated
- * output collection.
  *
  * @param plan Test plan containing kernel configurations and data views.
  * @param memory_manager Memory manager used to restore working data.
@@ -387,8 +359,6 @@ DispatchStatus dispatch_test_plan(
 
 /**
  * @brief Release the dynamically allocated sample array.
- *
- * This function resets the collection to an empty state.
  *
  * @param samples Sample set to destroy. Passing NULL is allowed.
  */

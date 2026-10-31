@@ -101,6 +101,15 @@ def prepare_scaling(source: pd.DataFrame | None, benchmarks: pd.DataFrame, mode:
             & (df.baseline_time_sec > 0) & (df.scaled_time_sec > 0)]
     if df.empty:
         return df
+    # Older strong-scaling CSVs record the fixed workload as window_size,
+    # without explicit baseline_work_elements/scaled_work_elements fields.
+    # This is an exact reconstruction, not an assumption about weak scaling.
+    if expected == 'strong' and 'window_size' in df:
+        size = pd.to_numeric(df['window_size'], errors='coerce')
+        if 'baseline_work_elements' not in df:
+            df['baseline_work_elements'] = size
+        if 'scaled_work_elements' not in df:
+            df['scaled_work_elements'] = size
     ratio = df.scaled_threads / df.baseline_threads
     if 'work_scale' not in df:
         if has_columns(df, 'baseline_work_elements', 'scaled_work_elements'):
@@ -172,6 +181,54 @@ def plot_efficiency_heatmaps(df: pd.DataFrame, folder: Path, mode: str, show: bo
     fig.suptitle(f'{"Strong" if mode == "Full_scale" else "Weak"} scaling efficiency (%) by kernel/view', y=1.01)
     save_figure(fig, folder / 'efficiency_by_threads.png', show)
 
+def plot_speedup_by_threads(df: pd.DataFrame, folder: Path, mode: str,
+                            show: bool = False) -> None:
+    """Always export parallel scaling separately from optional overhead diagnostics.
+
+    Strong scaling displays speedup; weak scaling displays efficiency because
+    increasing work makes conventional strong speedup misleading.
+    """
+    for view, part in df.groupby('view_type'):
+        if part.scaled_threads.nunique() < 2:
+            continue
+        options = ('chunk_size', 'window_offset', 'window_size', 'baseline_work_elements')
+        labels = ['kernel'] + [
+            col for col in present_columns(part, options)
+            if part[col].nunique(dropna=False) > 1
+        ]
+        part = part.copy()
+        part[labels] = part[labels].fillna('N/A')
+        part['series'] = part[labels].astype(str).agg(' · '.join, axis=1)
+        if part.duplicated(['series', 'scaled_threads']).any():
+            logger.warning('Skipping speedup plot for %s: ambiguous repeated series', view)
+            continue
+        if part.baseline_threads.nunique() != 1:
+            logger.warning('Skipping view %s: different baseline thread counts', view)
+            continue
+        fig, ax = plt.subplots(figsize=(12, 6.5))
+        series_groups = list(part.groupby('series', sort=True))
+        colors = sns.color_palette('tab20', n_colors=len(series_groups))
+        for (label, series), color in zip(series_groups, colors):
+            series = series.sort_values('scaled_threads')
+            y = series.speedup if mode == 'Full_scale' else series.efficiency_pct
+            ax.plot(series.scaled_threads, y, marker='o', markersize=4,
+                    linewidth=1.5, color=color, label=label)
+        ticks = sorted(part.scaled_threads.unique())
+        if mode == 'Full_scale':
+            ax.plot(ticks, np.array(ticks) / part.baseline_threads.iloc[0], '--',
+                    color='black', linewidth=1.6, label='Ideal')
+            ax.set_ylabel('Strong speedup (×)')
+            ax.set_title(f'Strong speedup · {view}')
+        else:
+            ax.axhline(100, linestyle='--', color='black', linewidth=1.6, label='Ideal')
+            ax.set_ylabel('Weak scaling efficiency (%)')
+            ax.set_title(f'Weak scaling efficiency · {view}')
+        ax.set_xlabel('Number of threads')
+        ax.set_xticks(ticks)
+        ax.legend(title='Kernel / configuration', loc='upper left',
+                  bbox_to_anchor=(1.01, 1), fontsize='small')
+        save_figure(fig, folder / f'speedup_by_threads_{safe_name(view)}.png', show)
+
 def plot_scaling_and_overhead(df: pd.DataFrame, folder: Path, mode: str, show: bool = False) -> None:
     for view, part in df.groupby('view_type'):
         if part.scaled_threads.nunique() < 2:
@@ -234,12 +291,14 @@ def export_scaling(df: pd.DataFrame, folder: Path) -> None:
     df.to_csv(folder / 'scaling_enriched.csv', index=False)
 
 def generate_scaling_plots(df: pd.DataFrame, folder: Path, mode: str,
-                           show: bool = False) -> None:
+                           show: bool = False, diagnostics: bool = False) -> None:
     if df.empty:
         return
     export_scaling(df, folder)
     plot_efficiency_heatmaps(df, folder, mode, show)
-    plot_scaling_and_overhead(df, folder, mode, show)
+    plot_speedup_by_threads(df, folder, mode, show)
+    if diagnostics:
+        plot_scaling_and_overhead(df, folder, mode, show)
 
 def plot_fixed_thread_metrics(benchmarks: pd.DataFrame, folder: Path, mode: str, show: bool = False) -> None:
     if benchmarks.empty or 'num_threads' not in benchmarks:

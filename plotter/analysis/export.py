@@ -82,4 +82,5 @@ def export_tables(benchmarks: pd.DataFrame, output_dir: Path,) -> None:
     unstable.to_csv(output_dir / 'unstable_benchmarks.csv', index = False,)
     logger.info("Exported benchmark tables to %s", output_dir,)
     if not best_performance.empty:
-        logger.info( "Fastest configurations:\n%s", best_performance.to_string(index=False),)
+        logger.info('Exported %d best-performance configurations grouped by workload',
+                    len(best_performance))

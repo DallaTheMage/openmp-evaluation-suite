@@ -1,10 +1,11 @@
 # OpenMP Evaluation Suite — Plotting Utility
 
-Generate interpretable visualizations from OpenMP Evaluation Suite benchmark CSVs.
+Scientific visualizations of benchmark CSVs. Python >= 3.10, with the packages in
+`plotter/requirements.txt`.
 
-## Installation and usage
+## Installation
 
-Python >=3.10 is required. Run the following **from the repository root**:
+From the repository root:
 
 ```bash
 python3 -m pip install -r plotter/requirements.txt
@@ -12,107 +13,133 @@ cd plotter
 python3 main.py -i ../output -o plots
 ```
 
-The input must be an `output/`-style directory containing compiler directories, such as `output/gcc/static/`. For a test battery, select one optimization directory, for example `-i ../results/<run-id>/output_O2`, rather than the top-level `results/<run-id>` folder. For an extracted example archive, use `-i /path/to/extracted/output`.
+## Input organization: independent runs, *not* optimization comparisons
 
-The default input (`../output`) and default output (`plots`) are resolved **relative to the current working directory**, not automatically relative to `main.py`; the examples below assume you are in `plotter/`.
+**Optimization folders are entirely optional.** A single experiment directory
+is enough:
 
-Optional:
-
-```bash
-python3 main.py -i ../output -o plots --correlations
-python3 main.py -i ../output -o plots --exploratory
-python3 main.py -i ../output -o plots --verbose
-python3 main.py -i ../output -o plots --show
+```
+output/
+    gcc/static/Full_scale/{aggregated_samples.csv,test_plan.csv,...}
+    gcc/static/Proportional/{...}
+    clang/dynamic/Full_scale/{...}
+    ...
 ```
 
-`--show` opens plots interactively (requires a graphical display). `--correlations` enables only Spearman heatmaps; `--exploratory` additionally
-produces legacy time/IPC/EDP distributions and energy/cache scatterplots.
-These exploratory charts include heterogeneous thread counts and (in weak
-scaling) workloads; **do not treat them as controlled benchmark comparisons**.
+Use `python3 main.py -i ../output -o plots` for the layout above.
 
-## Default plots (few, targeted)
+Alternatively, one input root may contain any number of independent runs:
 
-For each `<compiler>/<schedule>/<Full_scale|Proportional>`:
+```
+RESULTS/
+    output_O2/gcc/static/...
+    output_O3/gcc/static/...
+    experimental-flags/gcc/static/...
+```
 
-| Output | Meaning |
+Use `python3 main.py -i ../RESULTS -o plots`. The output is separated into
+`plots/output_O2/`, `plots/output_O3/`, and `plots/experimental-flags/`.
+The run directories **need not represent compiler optimization flags** and may
+have arbitrary names. **No comparison, pooling, or assumption about optimization
+levels** is performed. A single child directory works exactly the same way.
+The tool chooses direct-run mode when the input directly contains compiler
+subdirectories; otherwise it discovers immediate child directories with that
+structure. Missing compilers, schedules, or scaling modes are skipped.
+
+## Flags
+
+```bash
+python3 main.py -i ../output -o plots --formats png pdf svg
+python3 main.py -i ../output -o plots --diagnostics
+python3 main.py -i ../output -o plots --legacy-lines
+python3 main.py -i ../output -o plots --exploratory
+python3 main.py -i ../output -o plots --correlations
+python3 main.py -i ../output -o plots --verbose
+```
+
+`--diagnostics` enables the crowded per-view scaling/relative-overhead plots.
+`--legacy-lines` enables the categorical `geomean_by_threads_*.png` plots
+already summarized by the compiler heatmaps. `--exploratory` retains legacy
+heterogeneous distributions/boxplots and pooled correlations. Without these
+flags, those diagnostic and redundant plots are omitted. `--show` displays
+figures interactively. Default formats: PNG only.
+
+## Core plots and matching rules
+
+| Output family | Meaning |
 |---|---|
-| `efficiency_by_threads.png` | Strong or weak scaling **efficiency (%)** per kernel/view, with a separate panel for each thread count. |
-| `scaling_overhead_<view>.png` | Strong **speedup** vs threads or weak **efficiency** vs threads (top); signed extra execution time relative to ideal (%) (bottom). Same kernel colors in both panels. |
-| `execution_time_fixed_threads.png` | Absolute execution times at the *highest available thread count* and fixed workload (log color scale); no mixing of thread counts. |
-| `energy_edp_fixed_threads.png` | Measured energy and EDP at the same fixed workload and threads; zeros are treated as missing readings. |
-| `scaling_enriched.csv` | Tabular baseline, timings, work scale, speedup, efficiency, absolute and relative overhead, ideal time. |
+| `<compiler>/<schedule>/<mode>/efficiency_by_threads.png` | Kernel × view scaling efficiency at each non-baseline thread count. |
+| `<compiler>/<schedule>/<mode>/execution_time_fixed_threads.png` | Absolute wall time at the maximum thread count, provided workloads can be compared. |
+| `<compiler>/<schedule>/<mode>/energy_edp_fixed_threads.png` | Absolute measured energy and EDP; excludes invalid measurements. |
+| `<schedule>/comparisons/.../heatmap_speedup_*.png` | Geometric mean runtime ratio between compilers, matched by all experiment keys. |
+| `<schedule>/comparisons/.../heatmap_efficiency_*.png` | Per-compiler matched scaling efficiency and the paired difference in percentage points. |
+| `schedule_comparisons/schedule_speedup_*.png` | Runtime ratios to `static` (when available), per compiler/scaling/chunk, matching the *same kernel, view, workload, thread count, and chunk*. |
+| `layout_comparisons/layout_speedup_*.png` | Runtime ratios to 1D for matching compiler, schedule, kernel, workload, thread count and chunk; maximum-thread overview. |
+| `energy_tradeoffs/energy_tradeoff_*.png` | Strong scaling runtime, energy, EDP gains relative to the *same workload's valid one-thread baseline*. |
+| `figures_manifest.csv` | Figure inventory with relative path, family, file format, and source directory. |
 
-Because a kernel may have very different running times from another, the
-relative-overhead plot may use a **symmetric logarithmic axis**. A negative
-overhead or efficiency above 100% means that the observed time is better than
-the chosen theoretical baseline (or is affected by measurement noise); it
-is not an instrumentation result measuring the runtime scheduler alone.
+All new cross-dimension comparisons export paired observations and per-group
+summaries to CSV beside the figures. Geometric means are applied to **positive
+ratios from paired configurations only**; the `matched_configs` column gives
+the number of matched rows for each summary cell. These are *descriptive*
+summaries, not statistical significance claims or confidence intervals.
 
-**Strong scaling (Full_scale):** same total workload, increasing `p`.
+A ratio > 1 means the alternative is faster (or uses less energy/EDP for
+the energy-normalized metrics). All heatmap color scales are symmetric in log₂
+around 1× parity. Missing comparable configurations remain missing, not zero.
 
-- `S(p) = T(1, W) / T(p, W)`
-- `E_strong(p) = S(p)/p`
-- `O_strong(p) = T(p,W) - T(1,W)/p` in seconds
+### Scaling
 
-**Weak scaling (Proportional):** same work per thread, increasing total work
-proportionally (`W(p)=p*W(1)`).
+Strong scaling (`Full_scale`) keeps workload constant:
 
-- `E_weak(p) = T(1, W(1))/T(p, W(p))`
-- `O_weak(p) = T(p, W(p)) - T(1, W(1))` in seconds
+- `S(p) = T(p0,W)/T(p,W)`; `E_strong(p) = S(p)/(p/p0)`.
+- Ideal time: `T(p0,W) × p0/p`.
 
-The normalized overhead shown below a speedup/efficiency curve is
-`100 * (T_measured/T_ideal - 1)`: 0% is ideal, positive is extra time.
+Weak scaling (`Proportional`) grows workload with thread count:
 
-Scaling metrics are read from each benchmark suite `scaling.csv`, with
-workload ratios validated before use. If that optional file is unavailable,
-the utility can reconstruct the measurements from `aggregated_samples.csv`
-and `test_plan.csv` without averaging unrelated configurations. It omits
-ambiguous configurations rather than synthesizing arbitrary curves.
+- For `W(p)/W(p0) = p/p0`, weak efficiency is
+  `E_weak(p) = T(p0,W(p0))/T(p,W(p))`.
+- Ideal time: `T(p0,W(p0))`.
 
-## Cross-compiler comparison and export
+The exported `overhead_sec` measures extra time relative to the *ideal model*;
+it does **not** isolate OpenMP runtime scheduling overhead. It may be negative.
+Scaling columns are read from `scaling.csv` with workload validation, or
+reconstructed when possible from aggregated data. Older strong-scaling CSVs
+that store the fixed workload as `window_size` are supported.
 
-Compiler directories are discovered automatically from the input directory;
-there is no fixed list of supported compiler names. Compiler comparisons
-require at least two compilers with matching benchmark configurations.
-Every unordered compiler pair is compared (for example, with `gcc`, `clang`
-and `icx`: `gcc` vs `clang`, `gcc` vs `icx`, and `clang` vs `icx`).
-With `n` compilers, there are at most `n * (n - 1) / 2` pairwise comparisons;
-a pair is skipped when no configurations match. Default comparisons keep
-thread counts, scaling modes and chunk sizes separate, and use geometric
-mean speedups across matched views. The default output also includes **speedup
-heatmaps** (kernel × threads, with 1× as parity) and **scaling-efficiency
-heatmaps** for both compilers plus their difference in percentage points.
-The latter only use matched, validated scaling measurements of identical
-workloads; they are omitted when the required scaling/workload data are missing.
-`--exploratory` adds pooled comparison charts.
+### Energy
 
-For every compiler pair and schedule, see
-`plots/<schedule>/comparisons/by_chunk_threads_<other>_vs_<reference>/`:
+Energy is derived from package + DRAM readings. A package measurement must be
+positive; DRAM must be nonnegative. If per-run `raw_samples.csv` validation
+flags are available, **every run** contributing to an aggregate must have
+valid flags and numeric readings; otherwise a conservative aggregate-minimum
+check is used. Missing or invalid readings make energy, EDP, and average power
+`NaN`, never zero. Extremely short kernel readings may be excluded when RAPL
+reports zero; that is intentional. This is more conservative than analyzing
+means that contain invalid raw runs.
 
-| Output | Meaning |
-|---|---|
-| `geomean_by_threads_<mode>_chunk_<chunk>.png/.csv` | Existing geometric mean runtime speedup by kernel/thread. |
-| `heatmap_speedup_<mode>_chunk_<chunk>.png` | Same data as a heatmap, with a symmetric **log₂** color scale around 1× parity. Cell labels show speedup as a ratio. |
-| `heatmap_efficiency_<mode>_chunk_<chunk>.png` | Three panels: reference efficiency (%), alternative efficiency (%), and alternative minus reference (**percentage points**). |
-| `efficiency_by_threads_<mode>_chunk_<chunk>.csv` | Median of matched efficiencies and their paired percentage-point differences, plus observation counts. |
+The `energy_tradeoffs` overview uses *only* strong scaling with paired valid
+one-thread baselines for exactly the same workload. There is intentionally no
+energy or time comparison across arbitrary kernel workloads.
 
-Strong scaling efficiency is `S(p)/(p/p0)`; weak scaling efficiency is
-`T(p0,W0)/T(p,W(p))` when work grows proportionally to threads. Both
-come from `prepare_scaling`, not from compiler-to-compiler speedup ratios.
-An efficiency above 100% is possible (superlinear scaling or measurement
-noise). Each heatmap aggregates only within a fixed mode/chunk; where multiple
-views or configurations exist at the same kernel/thread, the efficiency map
-uses their **median**, calculated exclusively from matched pairs.
+### Selection and limitations
 
-All per-schedule exports/comparisons are saved to separate locations,
-`plots/<schedule>/`, so static, dynamic and guided never overwrite each
-other. Per-compiler graphics are in `plots/<compiler>/<schedule>/<mode>/`.
+- `scaling_overhead_<view>.png` and categorical kernel line plots are optional
+  diagnostics, not main-paper figures.
+- Runtime and EDP extrema are grouped by workload size and window offset.
+- Scheduling may have no effect on kernels that do not use schedule clauses;
+  interpret those contrasts carefully.
+- Compiler, schedule and layout comparisons cannot establish causality alone.
+- If multiple sizes/other matched workloads contribute to one cell, its
+  geometric mean and match count are exported, so disaggregation is possible.
+- Plotting does not establish statistical significance. Inspect run-level data
+  and measurement variability before making fine-grained claims.
 
-## Limitations
+### Default scaling figures
 
-- Overhead is a **model-based difference** from ideal execution time, not a
-  measurement exclusively of OpenMP thread scheduling overhead.
-- Thread scaling is meaningful only for comparable hardware conditions and
-  baseline work mapping. Weak-scaling plots validate `work_scale = p/p0`.
-- Energy metrics are only as reliable as the benchmark collection backend;
-  zero readings are not interpreted as free execution.
+`speedup_by_threads_<view>.png` is generated by default for every eligible view,
+independently of `--diagnostics`. It plots strong speedup with the ideal
+reference line for `Full_scale`, or weak scaling efficiency with the 100%
+reference line for `Proportional`. `efficiency_by_threads.png` remains a
+default output. `--diagnostics` additionally generates the combined
+`scaling_overhead_<view>.png` figures.

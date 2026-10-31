@@ -68,7 +68,8 @@ SUMMARY_COLUMNS = (
     'energy_total',
     'edp',
 )
-GROUP_COLUMNS = ('compiler', 'scaling_type', 'kernel',)
+# Never rank distinct workload sizes as if they were equivalent experiments.
+GROUP_COLUMNS = ('compiler', 'scaling_type', 'kernel', 'window_size', 'window_offset',)
 SCALING_NUMERIC = (
     'baseline_threads', 'scaled_threads', 'baseline_time_sec',
     'scaled_time_sec', 'baseline_work_elements', 'scaled_work_elements',

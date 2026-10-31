@@ -71,4 +71,16 @@ def parse_args() -> argparse.Namespace:
         '--correlations', action='store_true',
         help='Generate Spearman correlations even without --exploratory',
     )
+    parser.add_argument(
+        '--diagnostics', action='store_true',
+        help='Include crowded scaling/overhead figures (not part of the core selection)',
+    )
+    parser.add_argument(
+        '--legacy-lines', action='store_true',
+        help='Also generate redundant geometric-mean-by-kernel line plots',
+    )
+    parser.add_argument(
+        '--formats', nargs='+', choices=('png', 'pdf', 'svg'), default=['png'],
+        help='Figure formats to export (default: png); e.g. --formats png pdf',
+    )
     return parser.parse_args()

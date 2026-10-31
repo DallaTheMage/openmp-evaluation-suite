@@ -205,7 +205,7 @@ def plot_speedup_heatmap(
     matrix = summary.pivot(index='kernel', columns='num_threads', values='speedup')
     if matrix.empty:
         return
-    log2_speedup = log2_speedup = pd.DataFrame(
+    log2_speedup = pd.DataFrame(
         np.log2(matrix.to_numpy(dtype=float)),
         index=matrix.index,
         columns=matrix.columns,
@@ -301,6 +301,7 @@ def compiler_comparisons(
     show: bool = False,
     detailed: bool = False,
     scaling: pd.DataFrame | None = None,
+    legacy_lines: bool = False,
 ) -> None:
     """
     Compare every unordered pair of available compilers.
@@ -324,7 +325,8 @@ def compiler_comparisons(
             continue
         filename = f'paired_{safe_name(other)}_vs_{safe_name(reference)}.csv'
         paired.to_csv(folder / filename, index=False)
-        plot_threaded_compiler_comparisons(paired, reference, other, folder, show)
+        plot_threaded_compiler_comparisons(paired, reference, other, folder, show,
+                                           legacy_lines=legacy_lines)
         if scaling is not None and not scaling.empty:
             paired_efficiency = pair_scaling_efficiency(scaling, reference, other)
             plot_compiler_efficiency_comparisons(
@@ -384,6 +386,7 @@ def plot_threaded_compiler_comparisons(
     other: str,
     folder: Path,
     show: bool = False,
+    legacy_lines: bool = False,
 ) -> None:
     """
     Plot speedup by kernel with a distinct series for each thread count.
@@ -420,6 +423,8 @@ def plot_threaded_compiler_comparisons(
             thread_folder / f'heatmap_speedup_{suffix}.png', str(scaling), chunk, show,
         )
 
+        if not legacy_lines:
+            continue
         fig, ax = plt.subplots(figsize=(15, 7))
         sns.lineplot(
             data=summary,

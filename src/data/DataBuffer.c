@@ -83,7 +83,6 @@ DataBuffer *create_data_buffer(size_t element_count, size_t alignment) {
     return buffer;
 }
 
-
 void destroy_data_buffer(DataBuffer *buffer) {
     if (buffer == NULL) {
         return;

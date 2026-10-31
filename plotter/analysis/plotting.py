@@ -38,6 +38,13 @@ from analysis.config import CORRELATION_METRICS
 
 logger = logging.getLogger(__name__)
 sns.set_theme(style='whitegrid')
+FIGURE_FORMATS = ('png',)
+
+def set_figure_formats(formats) -> None:
+    """Set file exports for every existing plot without changing their call sites."""
+    global FIGURE_FORMATS
+    FIGURE_FORMATS = tuple(dict.fromkeys(formats))
+
 
 def safe_name(value: object) -> str:
     return re.sub(r'[^A-Za-z0-9_.-]+', '_', str(value),)
@@ -45,11 +52,13 @@ def safe_name(value: object) -> str:
 def save_figure(fig, path: Path, show: bool = False,) -> None:
     path.parent.mkdir(parents = True, exist_ok = True,)
     fig.tight_layout()
-    fig.savefig(path, dpi=200, bbox_inches='tight',)
+    for extension in FIGURE_FORMATS:
+        target = path.with_suffix('.' + extension)
+        fig.savefig(target, dpi=200, bbox_inches='tight')
     if show:
         plt.show()
     plt.close(fig)
-    logger.info("Saved plot: %s", path)
+    logger.info('Saved figure: %s (%s)', path.stem, ', '.join(FIGURE_FORMATS))
 
 def plot_boxplot(
     df: pd.DataFrame,

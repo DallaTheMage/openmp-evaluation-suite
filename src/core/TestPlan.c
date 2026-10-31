@@ -62,8 +62,6 @@ void test_plan_destroy_kernel_groups(KernelTestGroupArray *groups) {
 /**
  * @brief Destroy one test set.
  *
- * DataView is non-owning, so only its kernel groups require destruction.
- *
  * @param test_set Test set to destroy.
  */
 static void destroy_test_set(TestSet *test_set) {
@@ -73,11 +71,6 @@ static void destroy_test_set(TestSet *test_set) {
     test_plan_destroy_kernel_groups(&test_set->kernels);
     test_set->view = (DataView){0};
 }
-
-
-/* ========================================================================= */
-/* Public API                                                                */
-/* ========================================================================= */
 
 bool test_plan_max_workload(
     const TestPlan *plan,
@@ -129,10 +122,9 @@ bool test_plan_rebind_buffer(
 
     return true;
 }
+
 /**
  * @brief Destroy a test plan and all resources owned by it.
- *
- * DataViews are non-owning references and are not destroyed here.
  *
  * @param plan Test plan to destroy.
  */

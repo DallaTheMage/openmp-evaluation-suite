@@ -26,7 +26,6 @@
  * @brief Filesystem and CSV-file management for benchmark output.
  */
 
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
