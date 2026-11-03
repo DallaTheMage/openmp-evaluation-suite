@@ -213,9 +213,9 @@ echo "Results directory:   $RESULTS_DIR"
 echo "========================================"
 echo ""
 
-for optimization in "${OPTIMIZATION_LIST[@]}"; do
+for schedule in "${SCHEDULING_LIST[@]}"; do
     for compiler in "${COMPILER_LIST[@]}"; do
-        for schedule in "${SCHEDULING_LIST[@]}"; do
+        for optimization in "${OPTIMIZATION_LIST[@]}"; do
             CURRENT_TEST="Test $COUNT/$TOTAL_TESTS - $compiler $schedule -$optimization"
 
             echo ""
