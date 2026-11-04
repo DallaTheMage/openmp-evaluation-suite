@@ -175,8 +175,7 @@ static DispatchStatus dispatch_execute_test_case(
 
     #if BENCH_VALIDATE_RESULTS
     if (group->kernel == KERNEL_LOOP ||
-        group->kernel == KERNEL_REDUCTION ||
-        group->kernel == KERNEL_LOOP) {
+        group->kernel == KERNEL_REDUCTION) {
         PerformanceMetric validation_metric;
         status = dispatch_execute_kernel(
             function, &view, test_case, memory_manager,
